@@ -1,31 +1,11 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-DQ3WI8O4.css",
+    "file": "assets/app-Q6TV97HY.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
-  "resources/img/bg-main-1.webp": {
-    "file": "assets/bg-main-1-no0VAA9D.webp",
-    "src": "resources/img/bg-main-1.webp"
-  },
-  "resources/img/icon-checked.png": {
-    "file": "assets/icon-checked-gqTdMGTf.png",
-    "src": "resources/img/icon-checked.png"
-  },
-  "resources/img/icon-search.svg": {
-    "file": "assets/icon-search-C1ac-LFx.svg",
-    "src": "resources/img/icon-search.svg"
-  },
-  "resources/img/icon-select.png": {
-    "file": "assets/icon-select-ifDxmh6n.png",
-    "src": "resources/img/icon-select.png"
-  },
-  "resources/img/img-started1.webp": {
-    "file": "assets/img-started1-BV6w2H6T.webp",
-    "src": "resources/img/img-started1.webp"
-  },
   "resources/js/app.js": {
-    "file": "assets/app-DTtw-qbX.js",
+    "file": "assets/app-CiTsvVYV.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

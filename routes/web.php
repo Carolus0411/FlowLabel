@@ -21,10 +21,28 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     });
 
     Volt::route('/dashboard', 'dashboard')->name('dashboard');
+
     Volt::route('/contact', 'contact.index')->name('contact.index');
     Volt::route('/contact/create', 'contact.create')->name('contact.create');
     Volt::route('/contact/{contact}/edit', 'contact.edit')->name('contact.edit');
     Volt::route('/contact/import', 'contact.import')->name('contact.import');
+
+    Volt::route('/coa', 'coa.index')->name('coa.index');
+    Volt::route('/coa/create', 'coa.create')->name('coa.create');
+    Volt::route('/coa/{coa}/edit', 'coa.edit')->name('coa.edit');
+    Volt::route('/coa/import', 'coa.import')->name('coa.import');
+
+    Volt::route('/service-charge', 'service-charge.index')->name('service-charge.index');
+    Volt::route('/service-charge/create', 'service-charge.create')->name('service-charge.create');
+    Volt::route('/service-charge/{serviceCharge}/edit', 'service-charge.edit')->name('service-charge.edit');
+    Volt::route('/service-charge/import', 'service-charge.import')->name('service-charge.import');
+
+    Volt::route('/ppn', 'ppn.index')->name('ppn.index');
+    Volt::route('/ppn/create', 'ppn.create')->name('ppn.create');
+    Volt::route('/ppn/{ppn}/edit', 'ppn.edit')->name('ppn.edit');
+    Volt::route('/pph', 'pph.index')->name('pph.index');
+    Volt::route('/pph/create', 'pph.create')->name('pph.create');
+    Volt::route('/pph/{pph}/edit', 'pph.edit')->name('pph.edit');
 
     Volt::route('/users', 'users.index')->name('users.index');
     Volt::route('/users/create', 'users.create')->name('users.create');

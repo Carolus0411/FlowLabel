@@ -103,4 +103,4 @@ focus-trap/dist/focus-trap.js:
   * focus-trap 6.9.4
   * @license MIT, https://github.com/focus-trap/focus-trap/blob/master/LICENSE
   *)
-*/Wo.start();window.showHideNavbar=()=>{let e=document.documentElement.scrollTop,t=document.querySelector(".banner"),r=document.querySelector(".topbar");t&&r&&(e>50?(t.classList.add("hide"),r.classList.add("opacity-0")):(t.classList.remove("hide"),r.classList.remove("opacity-0")))};window.showHideNavbar();onscroll=e=>{window.showHideNavbar()};
+*/Wo.start();
