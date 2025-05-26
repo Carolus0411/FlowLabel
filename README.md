@@ -1,6 +1,6 @@
 ## About
 
-Verola official website.
+IBS Finance System.
 
 ## Requirements
 
@@ -15,9 +15,9 @@ Verola official website.
 Clone the repository then go into the application folder
 
 ```
-git clone https://github.com/akhmads/verola
+git clone https://github.com/akhmads/ibs-finance
 
-cd verola
+cd ibs-finance
 ```
 
 Install composer and node dependencies
