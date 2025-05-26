@@ -1,0 +1,54 @@
+<?php
+
+use Illuminate\Support\Facades\Gate;
+use Livewire\Volt\Component;
+use Mary\Traits\Toast;
+use Spatie\Permission\Models\Permission;
+
+new class extends Component {
+    use Toast;
+
+    public Permission $permission;
+
+    public $resource = '';
+    public $name = '';
+    public string $guard_name = '';
+
+    public function mount(): void
+    {
+        Gate::authorize('update permissions');
+        $this->fill($this->permission);
+    }
+
+    public function save(): void
+    {
+        $data = $this->validate([
+            'resource' => 'required',
+            'name' => 'required',
+            'guard_name' => 'required',
+        ]);
+
+        $this->permission->update($data);
+
+        $this->success('Permission has been updated.', redirectTo: route('permissions.index'));
+    }
+}; ?>
+
+<div>
+    <x-header title="Update Permission" separator />
+    <div class="lg:w-[70%]">
+        <x-form wire:submit="save">
+            <x-card>
+                <div class="space-y-4">
+                    <x-input label="Resource" wire:model="resource" />
+                    <x-input label="Name" wire:model="name" />
+                    <x-input label="Guard" wire:model="guard_name" />
+                </div>
+            </x-card>
+            <x-slot:actions>
+                <x-button label="Cancel" link="{{ route('permissions.index') }}" />
+                <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
+            </x-slot:actions>
+        </x-form>
+    </div>
+</div>
