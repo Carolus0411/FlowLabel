@@ -13,8 +13,15 @@ if ($attributes->has('wire:model.live')) $live = '.live';
 $name = $attributes->whereStartsWith('wire:model')->first();
 $uuid = md5($name);
 $_errors = $errors->get($name);
+$hasError = $errors->has($name);
 @endphp
-<div>
+<div
+    x-data="{
+        open: false,
+        selection: $wire.entangle('{{ $name }}'){{ $live }},
+        hasValue: false,
+    }"
+>
     <fieldset class="fieldset py-0">
 
     {{-- LABEL --}}
@@ -29,10 +36,7 @@ $_errors = $errors->get($name);
         x-data="{
             options: {{ json_encode($options) }},
             placeholder: '{{ $placeholder }}',
-            open: false,
             preventSearch: false,
-            hasValue: false,
-            selection: $wire.entangle('{{ $name }}'){{ $live }},
             init() {
                 let self = this;
                 if ((this.selection != null) && (this.selection != '')) {
@@ -47,9 +51,8 @@ $_errors = $errors->get($name);
                 this.open =! this.open;
             },
             search(value) {
-                let self = this;
                 if(!this.preventSearch) {
-                    $wire.{!! $search !!};
+                    @this.{!! $search !!};
                     $refs.keyword.focus();
                 }
                 this.preventSearch = false;
@@ -64,6 +67,7 @@ $_errors = $errors->get($name);
                 $refs.label.innerHTML = this.placeholder;
                 this.selection = '';
                 this.hasValue = false;
+                this.open = true;
             },
         }"
         x-ref="button"
@@ -81,19 +85,18 @@ $_errors = $errors->get($name);
         </span>
 
         <div
-            wire:ignore
             @click="toggle()"
             tabindex="0"
             {{
                 $attributes->whereStartsWith('class')->class([
-                    "w-full select",
-                    "select-error" => $errors->has($name)
+                    "w-full select flex items-center justify-start",
+                    "select-error" => $hasError,
                 ])
             }}
         >
-            <div x-ref="label" class="text-sm truncate">
+            <p wire:ignore x-ref="label" class="text-sm truncate max-w-[300px]">
                 {!! empty($placeholder) ? '&nbsp;' : $placeholder !!}
-            </div>
+            </p>
         </div>
 
         <div
@@ -101,7 +104,7 @@ $_errors = $errors->get($name);
             x-show="open"
             x-trap.noscroll="open"
             x-anchor.bottom-start.offset.5="$refs.button"
-            class="absolute z-50 w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-800 rounded-md shadow-xs"
+            class="absolute z-50 w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-800 rounded-md shadow"
             @keydown.down="$focus.wrap().next()"
             @keydown.up="$focus.wrap().previous()"
         >

@@ -16,8 +16,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
 
     {{-- EasyMDE --}}
-    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
-    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+    {{-- <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css"> --}}
+    {{-- <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script> --}}
 
     {{-- Chart.js  --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
