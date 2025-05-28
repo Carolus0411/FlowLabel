@@ -13,17 +13,19 @@ return new class extends Migration
     {
         Schema::create('sales_invoice', function (Blueprint $table) {
             $table->id();
+            $table->string('code')->unique();
             $table->date('invoice_date')->nullable();
             $table->date('due_date')->nullable();
             $table->foreignId('contact_id')->index()->default(0);
             $table->integer('top')->default(0);
-            $table->decimal('dpp', 12, 2)->default(0);
+            $table->decimal('dpp_amount', 12, 2)->default(0);
             $table->foreignId('ppn_id')->index()->default(0);
             $table->decimal('ppn_amount', 10, 2)->default(0);
             $table->foreignId('pph_id')->index()->default(0);
             $table->decimal('pph_amount', 10, 2)->default(0);
-            $table->decimal('stamp', 10, 2)->default(0);
-            $table->decimal('invoice_total', 12, 2)->default(0);
+            $table->decimal('stamp_amount', 10, 2)->default(0);
+            $table->decimal('invoice_amount', 12, 2)->default(0);
+            $table->integer('saved')->index()->default(0);
             $table->timestamps();
         });
     }

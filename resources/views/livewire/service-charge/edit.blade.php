@@ -92,5 +92,9 @@ new class extends Component {
             <x-button label="Cancel" link="{{ route('service-charge.index') }}" />
             <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
         </x-slot:actions>
+        {{-- <div class="lg:bottom-0 lg:sticky p-5 bg-base-300 flex justify-center items-center gap-3 border-t-2 border-t-base-300">
+            <x-button label="Cancel" link="{{ route('service-charge.index') }}" />
+            <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
+        </div> --}}
     </x-form>
 </div>

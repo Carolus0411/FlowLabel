@@ -3,12 +3,10 @@
 use Illuminate\Support\Facades\Gate;
 use Livewire\Volt\Component;
 use Mary\Traits\Toast;
-use App\Models\Contact;
+use App\Models\Uom;
 
 new class extends Component {
     use Toast;
-
-    public Contact $contact;
 
     public $code = '';
     public $name = '';
@@ -16,28 +14,27 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('update contact');
-        $this->fill($this->contact);
+        Gate::authorize('create uom');
     }
 
     public function save(): void
     {
         $data = $this->validate([
-            'code' => 'required|unique:contact,code,'.$this->contact->id,
+            'code' => 'required|unique:uom,code',
             'name' => 'required',
             'is_active' => 'boolean',
         ]);
 
-        $this->contact->update($data);
+        Uom::create($data);
 
-        $this->success('Contact successfully updated.', redirectTo: route('contact.index'));
+        $this->success('Uom successfully created.', redirectTo: route('uom.index'));
     }
 }; ?>
 
 <div>
-    <x-header title="Update Contact" separator>
+    <x-header title="Create Uom" separator>
         <x-slot:actions>
-            <x-button label="Back" link="{{ route('contact.index') }}" icon="o-arrow-uturn-left" />
+            <x-button label="Back" link="{{ route('uom.index') }}" icon="o-arrow-uturn-left" />
         </x-slot:actions>
     </x-header>
 
@@ -50,7 +47,7 @@ new class extends Component {
             </div>
         </x-card>
         <x-slot:actions>
-            <x-button label="Cancel" link="{{ route('contact.index') }}" />
+            <x-button label="Cancel" link="{{ route('uom.index') }}" />
             <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
         </x-slot:actions>
     </x-form>

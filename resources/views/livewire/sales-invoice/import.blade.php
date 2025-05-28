@@ -45,7 +45,6 @@ new class extends Component {
                             Contact::where('id', $row['id'])->delete();
                         }
 
-                        $data['code'] = $row['code'];
                         $data['name'] = $row['name'];
                         $data['is_active'] = $row['is_active'];
 

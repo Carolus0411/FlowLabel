@@ -8,7 +8,8 @@ use App\Models\Contact;
 new class extends Component {
     use Toast;
 
-    public string $name = '';
+    public $code = '';
+    public $name = '';
     public bool $is_active = false;
 
     public function mount(): void
@@ -19,6 +20,7 @@ new class extends Component {
     public function save(): void
     {
         $data = $this->validate([
+            'code' => 'required|unique:coa,code',
             'name' => 'required',
             'is_active' => 'boolean',
         ]);
@@ -39,6 +41,7 @@ new class extends Component {
     <x-form wire:submit="save">
         <x-card>
             <div class="space-y-4">
+                <x-input label="Code" wire:model="code" />
                 <x-input label="Name" wire:model="name" />
                 <x-toggle label="Active" wire:model="is_active" />
             </div>

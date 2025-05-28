@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sales_invoice_details', function (Blueprint $table) {
+        Schema::create('sales_invoice_detail', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sales_invoice_id')->index()->default(0);
             $table->foreignId('service_charge_id')->index()->default(0);
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sales_invoice_details');
+        Schema::dropIfExists('sales_invoice_detail');
     }
 };

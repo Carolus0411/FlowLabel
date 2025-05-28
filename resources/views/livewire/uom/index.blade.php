@@ -7,28 +7,28 @@ use Livewire\Volt\Component;
 use Livewire\Attributes\Session;
 use Livewire\WithPagination;
 use Mary\Traits\Toast;
-use App\Models\Contact;
+use App\Models\Uom;
 
 new class extends Component {
     use Toast, WithPagination;
 
-    #[Session(key: 'contact_per_page')]
+    #[Session(key: 'uom_per_page')]
     public int $perPage = 10;
 
-    #[Session(key: 'contact_name')]
+    #[Session(key: 'uom_name')]
     public string $name = '';
 
-    #[Session(key: 'contact_active')]
+    #[Session(key: 'uom_active')]
     public string $is_active = '';
 
     public int $filterCount = 0;
     public bool $drawer = false;
-    public array $sortBy = ['column' => 'name', 'direction' => 'asc'];
+    public array $sortBy = ['column' => 'code', 'direction' => 'asc'];
     public array $activeList;
 
     public function mount(): void
     {
-        Gate::authorize('view contact');
+        Gate::authorize('view uom');
         $this->updateFilterCount();
 
         $this->activeList = [
@@ -48,9 +48,9 @@ new class extends Component {
         ];
     }
 
-    public function contacts(): LengthAwarePaginator
+    public function currencies(): LengthAwarePaginator
     {
-        return Contact::query()
+        return Uom::query()
         ->orderBy(...array_values($this->sortBy))
         ->filterLike('name', $this->name)
         ->active($this->is_active)
@@ -61,7 +61,7 @@ new class extends Component {
     {
         return [
             'headers' => $this->headers(),
-            'contacts' => $this->contacts(),
+            'currencies' => $this->currencies(),
         ];
     }
 
@@ -100,66 +100,67 @@ new class extends Component {
         $this->filterCount = $count;
     }
 
-    public function delete(Contact $contact): void
+    public function delete(Uom $uom): void
     {
-        Gate::authorize('delete contact');
-        $contact->delete();
-        $this->success('Contact has been deleted.');
+        Gate::authorize('delete uom');
+        $uom->delete();
+        $this->success('Uom has been deleted.');
     }
 
     public function export()
     {
-        Gate::authorize('export contact');
+        Gate::authorize('export uom');
 
-        $contact = Contact::orderBy('id','asc');
-        $writer = SimpleExcelWriter::streamDownload('Contact.xlsx');
-        foreach ( $contact->lazy() as $contact ) {
+        $uom = Uom::orderBy('id','asc');
+        $writer = SimpleExcelWriter::streamDownload('Uom.xlsx');
+        foreach ( $uom->lazy() as $uom ) {
             $writer->addRow([
-                'id' => $contact->id ?? '',
-                'name' => $contact->name ?? '',
-                'is_active' => $contact->is_active ?? '',
+                'id' => $uom->id ?? '',
+                'code' => $uom->code ?? '',
+                'name' => $uom->name ?? '',
+                'is_active' => $uom->is_active ?? '',
             ]);
         }
         return response()->streamDownload(function() use ($writer){
             $writer->close();
-        }, 'Contact.xlsx');
+        }, 'Uom.xlsx');
     }
 }; ?>
 
 <div>
     {{-- HEADER --}}
-    <x-header title="Contact" separator progress-indicator>
+    <x-header title="Uom" separator progress-indicator>
         <x-slot:actions>
-            @can('export contact')
+            @can('export uom')
             <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
             @endcan
-            @can('import contact')
-            <x-button label="Import" link="{{ route('contact.import') }}" icon="o-arrow-up-tray" />
+            @can('import uom')
+            <x-button label="Import" link="{{ route('uom.import') }}" icon="o-arrow-up-tray" />
             @endcan
             <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
-            @can('create contact')
-            <x-button label="Create" link="{{ route('contact.create') }}" icon="o-plus" class="btn-primary" />
+            @can('create uom')
+            <x-button label="Create" link="{{ route('uom.create') }}" icon="o-plus" class="btn-primary" />
             @endcan
         </x-slot:actions>
     </x-header>
 
     {{-- TABLE --}}
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
-        <x-table :headers="$headers" :rows="$contacts" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text>
-            @scope('cell_is_active', $contact)
-            @if ($contact->is_active)
+        <x-table :headers="$headers" :rows="$currencies" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text>
+            @scope('cell_is_active', $uom)
+            @if ($uom->is_active)
             <x-badge value="Active" class="text-xs uppercase badge-success badge-soft" />
             @else
             <x-badge value="Inactive" class="text-xs uppercase badge-error badge-soft" />
             @endif
             @endscope
-            @scope('actions', $contact)
+            @scope('actions', $uom)
             <div class="flex gap-1.5">
-                @can('delete contact')
-                <x-button wire:click="delete({{ $contact->id }})" spinner="delete({{ $contact->id }})" wire:confirm="Are you sure you want to delete this row?" icon="o-trash" class="btn btn-sm" />
+                @can('delete uom')
+                <x-button wire:click="delete({{ $uom->id }})" spinner="delete({{ $uom->id }})" wire:confirm="Are you sure you want to delete this row?" icon="o-trash" class="btn btn-sm" />
                 @endcan
-                @can('update contact')
-                <x-button link="{{ route('contact.edit', $contact->id) }}" icon="o-pencil-square" class="btn btn-sm" />
+                @can('update uom')
+                <x-button link="{{ route('uom.edit', $uom->id) }}" icon="o-pencil-square" class="btn btn-sm" />
                 @endcan
             </div>
             @endscope

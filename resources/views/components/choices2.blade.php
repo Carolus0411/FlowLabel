@@ -19,7 +19,7 @@ $hasError = $errors->has($name);
     x-data="{
         open: false,
         selection: $wire.entangle('{{ $name }}'){{ $live }},
-        hasValue: false,
+        hasValue: false
     }"
 >
     <fieldset class="fieldset py-0">

@@ -8,34 +8,29 @@ use App\Models\Contact;
 new class extends Component {
     use Toast;
 
-    public Contact $contact;
-
-    public $code = '';
-    public $name = '';
+    public string $name = '';
     public bool $is_active = false;
 
     public function mount(): void
     {
-        Gate::authorize('update contact');
-        $this->fill($this->contact);
+        Gate::authorize('create contact');
     }
 
     public function save(): void
     {
         $data = $this->validate([
-            'code' => 'required|unique:contact,code,'.$this->contact->id,
             'name' => 'required',
             'is_active' => 'boolean',
         ]);
 
-        $this->contact->update($data);
+        Contact::create($data);
 
-        $this->success('Contact successfully updated.', redirectTo: route('contact.index'));
+        $this->success('Contact successfully created.', redirectTo: route('contact.index'));
     }
 }; ?>
 
 <div>
-    <x-header title="Update Contact" separator>
+    <x-header title="Create Contact" separator>
         <x-slot:actions>
             <x-button label="Back" link="{{ route('contact.index') }}" icon="o-arrow-uturn-left" />
         </x-slot:actions>
@@ -44,7 +39,6 @@ new class extends Component {
     <x-form wire:submit="save">
         <x-card>
             <div class="space-y-4">
-                <x-input label="Code" wire:model="code" />
                 <x-input label="Name" wire:model="name" />
                 <x-toggle label="Active" wire:model="is_active" />
             </div>

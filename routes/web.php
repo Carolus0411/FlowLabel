@@ -32,6 +32,11 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/currency/{currency}/edit', 'currency.edit')->name('currency.edit');
     Volt::route('/currency/import', 'currency.import')->name('currency.import');
 
+    Volt::route('/uom', 'uom.index')->name('uom.index');
+    Volt::route('/uom/create', 'uom.create')->name('uom.create');
+    Volt::route('/uom/{uom}/edit', 'uom.edit')->name('uom.edit');
+    Volt::route('/uom/import', 'uom.import')->name('uom.import');
+
     Volt::route('/coa', 'coa.index')->name('coa.index');
     Volt::route('/coa/create', 'coa.create')->name('coa.create');
     Volt::route('/coa/{coa}/edit', 'coa.edit')->name('coa.edit');
@@ -48,6 +53,11 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/pph', 'pph.index')->name('pph.index');
     Volt::route('/pph/create', 'pph.create')->name('pph.create');
     Volt::route('/pph/{pph}/edit', 'pph.edit')->name('pph.edit');
+
+    Volt::route('/sales-invoice', 'sales-invoice.index')->name('sales-invoice.index');
+    Volt::route('/sales-invoice/create', 'sales-invoice.create')->name('sales-invoice.create');
+    Volt::route('/sales-invoice/{salesInvoice}/edit', 'sales-invoice.edit')->name('sales-invoice.edit');
+    Volt::route('/sales-invoice/import', 'sales-invoice.import')->name('sales-invoice.import');
 
     Volt::route('/users', 'users.index')->name('users.index');
     Volt::route('/users/create', 'users.create')->name('users.create');

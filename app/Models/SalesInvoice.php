@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Filterable;
 
@@ -11,4 +15,36 @@ class SalesInvoice extends Model
 
     protected $table = 'sales_invoice';
     protected $guarded = [];
+
+    #[Scope]
+    protected function stored(Builder $query): void
+    {
+        $query->where('saved', 1);
+    }
+
+    #[Scope]
+    protected function draft(Builder $query): void
+    {
+        $query->where('saved', 0);
+    }
+
+    public function details(): HasMany
+	{
+		return $this->hasMany(SalesInvoiceDetail::class,'sales_invoice_id','id');
+	}
+
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class,'contact_id','id')->withDefault();
+    }
+
+    public function ppn(): BelongsTo
+    {
+        return $this->belongsTo(Ppn::class,'ppn_id','id')->withDefault();
+    }
+
+    public function pph(): BelongsTo
+    {
+        return $this->belongsTo(Pph::class,'pph_id','id')->withDefault();
+    }
 }

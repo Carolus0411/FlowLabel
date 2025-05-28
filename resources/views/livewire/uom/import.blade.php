@@ -6,7 +6,7 @@ use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Spatie\SimpleExcel\SimpleExcelReader;
 use Mary\Traits\Toast;
-use App\Models\Contact;
+use App\Models\Uom;
 
 new class extends Component {
     use Toast, WithFileUploads;
@@ -15,7 +15,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('import contact');
+        Gate::authorize('import uom');
     }
 
     public function save()
@@ -35,45 +35,45 @@ new class extends Component {
                 $rows = SimpleExcelReader::create($target)->getRows();
                 $rows->each(function(array $row) {
 
-                    if ( !empty($row['name']) )
+                    if ( !empty($row['code']) AND !empty($row['name']) )
                     {
                         if (!empty($row['id'])) {
                             $data['id'] = $row['id'];
                         }
 
                         if (!empty($row['id'])) {
-                            Contact::where('id', $row['id'])->delete();
+                            Uom::where('id', $row['id'])->delete();
                         }
 
                         $data['code'] = $row['code'];
                         $data['name'] = $row['name'];
                         $data['is_active'] = $row['is_active'];
 
-                        Contact::create($data);
+                        Uom::create($data);
                     }
 
                 });
             }
 
             DB::commit();
-            $this->success('Success','Contact successfully imported.', redirectTo: route('contact.index'));
+            $this->success('Success','Uom successfully imported.', redirectTo: route('uom.index'));
         }
         catch (Exception $e)
         {
             DB::rollBack();
             logger()->error($e->getMessage());
-            $this->error('Error','Contact failed to import.', redirectTo: route('contact.index'));
+            $this->error('Error','Uom failed to import.', redirectTo: route('uom.index'));
         }
     }
 }; ?>
 
 <div>
-    <x-header title="Import Contact" separator />
+    <x-header title="Import Uom" separator />
     <x-card>
         <x-form wire:submit="save">
             <x-file wire:model="file" label="File" hint="xlsx or csv" wire:target="save" wire:loading.attr="disabled" />
             <x-slot:actions>
-                <x-button label="Cancel" link="{{ route('contact.index') }}" wire:target="save" wire:loading.attr="disabled" />
+                <x-button label="Cancel" link="{{ route('uom.index') }}" wire:target="save" wire:loading.attr="disabled" />
                 <x-button label="Import" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
             </x-slot:actions>
         </x-form>

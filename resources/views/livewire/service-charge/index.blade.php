@@ -133,6 +133,7 @@ new class extends Component {
 
 <div>
     {{-- HEADER --}}
+    <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0.5 pt-3">
     <x-header title="Service Charge" separator progress-indicator>
         <x-slot:actions>
             @can('export service charge')
@@ -147,6 +148,7 @@ new class extends Component {
             @endcan
         </x-slot:actions>
     </x-header>
+    </div>
 
     {{-- TABLE --}}
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">

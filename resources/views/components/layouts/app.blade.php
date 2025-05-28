@@ -74,6 +74,10 @@
 
                 <x-menu-item title="Home" icon="o-sparkles" link="{{ route('dashboard') }}" />
 
+                <x-menu-sub title="Sales" icon="o-shopping-cart">
+                    <x-menu-item title="Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales invoice')" />
+                </x-menu-sub>
+
                 <x-menu-sub title="Master" icon="o-circle-stack">
                     <x-menu-item title="Contact" link="{{ route('contact.index') }}" :hidden="auth()->user()->cannot('view contact')" />
                     <x-menu-item title="PPN" link="{{ route('ppn.index') }}" :hidden="auth()->user()->cannot('view ppn')" />
@@ -81,6 +85,7 @@
                     <x-menu-item title="Chart Of Account" link="{{ route('coa.index') }}" :hidden="auth()->user()->cannot('view coa')" />
                     <x-menu-item title="Service Charge" link="{{ route('service-charge.index') }}" :hidden="auth()->user()->cannot('view service charge')" />
                     <x-menu-item title="Currency" link="{{ route('currency.index') }}" :hidden="auth()->user()->cannot('view currency')" />
+                    <x-menu-item title="Uom" link="{{ route('uom.index') }}" :hidden="auth()->user()->cannot('view uom')" />
                 </x-menu-sub>
 
                 <x-menu-sub title="Setup" icon="o-cog-6-tooth">

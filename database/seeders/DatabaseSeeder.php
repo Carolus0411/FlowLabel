@@ -24,5 +24,10 @@ class DatabaseSeeder extends Seeder
         $this->call(PermissionSeeder::class);
         $this->call(PpnSeeder::class);
         $this->call(PphSeeder::class);
+        $this->call(ContactSeeder::class);
+        $this->call(CurrencySeeder::class);
+        $this->call(UomSeeder::class);
+        $this->call(CoaSeeder::class);
+        $this->call(ServiceChargeSeeder::class);
     }
 }
