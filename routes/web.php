@@ -27,6 +27,11 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/contact/{contact}/edit', 'contact.edit')->name('contact.edit');
     Volt::route('/contact/import', 'contact.import')->name('contact.import');
 
+    Volt::route('/currency', 'currency.index')->name('currency.index');
+    Volt::route('/currency/create', 'currency.create')->name('currency.create');
+    Volt::route('/currency/{currency}/edit', 'currency.edit')->name('currency.edit');
+    Volt::route('/currency/import', 'currency.import')->name('currency.import');
+
     Volt::route('/coa', 'coa.index')->name('coa.index');
     Volt::route('/coa/create', 'coa.create')->name('coa.create');
     Volt::route('/coa/{coa}/edit', 'coa.edit')->name('coa.edit');

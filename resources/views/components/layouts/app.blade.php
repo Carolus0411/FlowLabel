@@ -80,6 +80,7 @@
                     <x-menu-item title="PPH" link="{{ route('pph.index') }}" :hidden="auth()->user()->cannot('view pph')" />
                     <x-menu-item title="Chart Of Account" link="{{ route('coa.index') }}" :hidden="auth()->user()->cannot('view coa')" />
                     <x-menu-item title="Service Charge" link="{{ route('service-charge.index') }}" :hidden="auth()->user()->cannot('view service charge')" />
+                    <x-menu-item title="Currency" link="{{ route('currency.index') }}" :hidden="auth()->user()->cannot('view currency')" />
                 </x-menu-sub>
 
                 <x-menu-sub title="Setup" icon="o-cog-6-tooth">
