@@ -1,4 +1,5 @@
 import "./bootstrap";
+import mask from "./mask";
 
 import {
     Livewire,
@@ -11,3 +12,11 @@ import {
 // Alpine.plugin(focus);
 
 Livewire.start();
+
+window.mask = mask;
+
+document.addEventListener("livewire:navigated", () => {
+    setTimeout(function () {
+        window.mask();
+    }, 100);
+});

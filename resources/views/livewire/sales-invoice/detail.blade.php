@@ -159,7 +159,10 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div
+    x-data="{ drawer : $wire.entangle('drawer') }"
+    x-init="$watch('drawer', value => { mask() })"
+>
     <x-card title="Details" separator progress-indicator>
         <x-slot:menu>
             @if ($open)
@@ -225,6 +228,7 @@ new class extends Component {
     </x-card>
 
     {{-- FORM --}}
+    {{-- x-mask: dynamic="$money($input,'.','')" --}}
     <x-drawer wire:model="drawer" title="Create Item" right separator with-close-button class="lg:w-1/3">
         <x-form wire:submit="save">
             <div class="space-y-4">
@@ -232,9 +236,9 @@ new class extends Component {
                 <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
                     <x-choices-offline label="Unit" :options="\App\Models\Uom::query()->isActive()->get()" wire:model="uom_id" option-label="code" single searchable placeholder="-- Select --" />
                     <x-choices-offline label="Currency" :options="\App\Models\Currency::query()->isActive()->get()" wire:model="currency_id" option-label="code" single searchable placeholder="-- Select --" />
-                    <x-input label="Qty" wire:model="qty" x-mask:dynamic="$money($input,'.','')" />
-                    <x-input label="Price" wire:model="price" x-mask:dynamic="$money($input,'.','')" />
-                    <x-input label="Rate" wire:model="currency_rate" x-mask:dynamic="$money($input,'.','')" />
+                    <x-input label="Qty" wire:model="qty" class="money" />
+                    <x-input label="Price" wire:model="price" class="money" />
+                    <x-input label="Rate" wire:model="currency_rate" class="money" />
                 </div>
                 <x-input label="Note" wire:model="note" />
             </div>

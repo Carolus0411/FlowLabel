@@ -146,13 +146,20 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div
+    x-data="{
+        init : function() {
+            setTimeout(function () {
+                mask()
+            }, 100);
+        }
+    }"
+>
     <x-header title="Update Sales Invoice" separator>
         <x-slot:actions>
             <x-button label="Back" link="{{ route('sales-invoice.index') }}" icon="o-arrow-uturn-left" />
         </x-slot:actions>
     </x-header>
-
     <div class="space-y-4">
         <x-card>
             <x-form wire:submit="save">
@@ -166,7 +173,7 @@ new class extends Component {
                         <x-input label="DPP" wire:model="dpp_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
                         <x-choices label="PPN" wire:model.live="ppn_id" :options="$ppns" search-function="searchPpn" option-label="name" single searchable placeholder="-- Select --" />
                         <x-choices label="PPH" wire:model.live="pph_id" :options="$pphs" search-function="searchPph" option-label="name" single searchable placeholder="-- Select --" />
-                        <x-input label="Stamp" wire:model.live.debounce.400ms="stamp_amount" x-mask:dynamic="$money($input,'.',',')" />
+                        <x-input label="Stamp" wire:model.live.debounce.400ms="stamp_amount" class="money" />
                         <x-input label="PPN Amount" wire:model="ppn_amount" readonly class="bg-base-200" />
                         <x-input label="PPH Amount" wire:model="pph_amount" readonly class="bg-base-200" />
                         <x-input label="Invoice Amount" wire:model="invoice_amount" readonly class="bg-base-200" />

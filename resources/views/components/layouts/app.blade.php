@@ -15,6 +15,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
 
+    {{-- IMask --}}
+    <script src="https://unpkg.com/imask"></script>
+
     {{-- EasyMDE --}}
     {{-- <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css"> --}}
     {{-- <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script> --}}
