@@ -48,17 +48,12 @@ x-cloak {
     @apply !text-xs;
 }
 
-.table-slim tbody td {
-    @apply !p-0;
+.table {
+    @apply !static;
 }
 
-/* fix checkbox align */
-.table-slim tbody .w-1 {
-    @apply text-center;
-}
-
-.table-slim tbody td a {
-    @apply !py-1;
+.table details.dropdown {
+    @apply !static;
 }
 
 /* mary pagination */

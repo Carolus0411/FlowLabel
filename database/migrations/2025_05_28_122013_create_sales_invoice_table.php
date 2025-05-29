@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->date('invoice_date')->nullable();
             $table->date('due_date')->nullable();
+            $table->string('note')->nullable();
             $table->foreignId('contact_id')->index()->default(0);
             $table->integer('top')->default(0);
             $table->decimal('dpp_amount', 12, 2)->default(0);
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->decimal('stamp_amount', 10, 2)->default(0);
             $table->decimal('invoice_amount', 12, 2)->default(0);
             $table->integer('saved')->index()->default(0);
+            $table->enum('status', ['open','close','void'])->index()->default('open');
             $table->timestamps();
         });
     }

@@ -32,11 +32,18 @@ new class extends Component {
     public function headers(): array
     {
         return [
+            ['key' => 'act', 'label' => '#', 'disableLink' => true, 'sortable' => false],
             ['key' => 'code', 'label' => 'Code'],
             ['key' => 'invoice_date', 'label' => 'Invoice Date', 'format' => ['date', 'd-m-Y']],
-            ['key' => 'contact.name', 'label' => 'Code', 'sortable' => false],
-            ['key' => 'dpp_amount', 'label' => 'DPP', 'format' => ['currency', '2.,', '']],
-            ['key' => 'created_at', 'label' => 'Created At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
+            ['key' => 'contact.name', 'label' => 'Customer', 'sortable' => false],
+            ['key' => 'dpp_amount', 'label' => 'DPP Amount', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
+            ['key' => 'ppn.value', 'label' => 'PPN %', 'class' => 'text-right', 'sortable' => false],
+            ['key' => 'ppn_amount', 'label' => 'PPN', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
+            ['key' => 'pph.value', 'label' => 'PPH %', 'class' => 'text-right', 'sortable' => false],
+            ['key' => 'pph_amount', 'label' => 'PPH', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
+            ['key' => 'stamp_amount', 'label' => 'Stamp', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
+            ['key' => 'invoice_amount', 'label' => 'Invoice Amount', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
+            // ['key' => 'created_at', 'label' => 'Created At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
             ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
         ];
     }
@@ -47,6 +54,8 @@ new class extends Component {
             'code' => uniqid(),
             'invoice_date' => Carbon::now(),
             'due_date' => Carbon::now()->addDays(30),
+            'top' => 30,
+            'status' => 'open',
         ]);
 
         $this->redirectRoute('sales-invoice.edit', $salesInvoice->id);
@@ -55,7 +64,7 @@ new class extends Component {
     public function salesInvoices(): LengthAwarePaginator
     {
         return SalesInvoice::stored()
-            ->with(['contact'])
+            ->with(['contact','ppn','pph'])
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
             ->paginate($this->perPage);
@@ -146,7 +155,13 @@ new class extends Component {
 
     {{-- TABLE --}}
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
-        <x-table :headers="$headers" :rows="$salesInvoices" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text>
+        <x-table :headers="$headers" :rows="$salesInvoices" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text :link="route('sales-invoice.edit', ['salesInvoice' => '[id]'])">
+            @scope('cell_act', $user)
+            <x-dropdown class="btn-sm btn-ghost">
+                <x-menu-item title="Test" />
+                <x-menu-item title="Yes!" />
+            </x-dropdown>
+            @endscope
             @scope('actions', $salesInvoice)
             <div class="flex gap-1.5">
                 @can('delete sales invoice')

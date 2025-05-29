@@ -126,26 +126,19 @@ new class extends Component {
 
         $data = $this->calculate();
 
-        $this->dispatch('detail-updated', data: $data);
-
         $this->drawer = false;
         $this->success('Item has been created.');
     }
 
-    public function calculate(): array
+    public function calculate(): void
     {
         $dpp_amount = $this->salesInvoice->details()->sum('amount');
 
-        $invoice_amount = $dpp_amount;
-
         $data = [
             'dpp_amount' => $dpp_amount,
-            'invoice_amount' => $invoice_amount,
         ];
 
-        $this->salesInvoice->update($data);
-
-        return $data;
+        $this->dispatch('detail-updated', data: $data);
     }
 
     public function delete(string $id): void
@@ -153,8 +146,6 @@ new class extends Component {
         SalesInvoiceDetail::find($id)->delete();
 
         $this->calculate();
-
-        $this->dispatch('detail-updated');
 
         $this->success('Item has been deleted.');
     }
@@ -176,59 +167,61 @@ new class extends Component {
             @endif
         </x-slot:menu>
 
-        <table class="table">
-        <thead>
-        <tr>
-            <th class="text-left">Service Charge</th>
-            <th class="text-right lg:w-[4rem]">Qty</th>
-            <th class="text-right lg:w-[4rem]">Unit</th>
-            <th class="text-right lg:w-[6rem]">Price</th>
-            <th class="text-right lg:w-[3rem]">Currency</th>
-            <th class="text-right lg:w-[6rem]">Rate</th>
-            <th class="text-right lg:w-[9rem]">FG Amount</th>
-            <th class="text-right lg:w-[9rem]">IDR Amount</th>
-            @if ($open)
-            <th class="lg:w-[4rem]"></th>
-            @endif
-        </tr>
-        </thead>
-        <tbody>
+        <div class="overflow-x-auto">
+            <table class="table">
+            <thead>
+            <tr>
+                <th class="text-left">Service Charge</th>
+                <th class="text-right lg:w-[4rem]">Qty</th>
+                <th class="text-right lg:w-[4rem]">Unit</th>
+                <th class="text-right lg:w-[6rem]">Price</th>
+                <th class="text-right lg:w-[3rem]">Currency</th>
+                <th class="text-right lg:w-[6rem]">Rate</th>
+                <th class="text-right lg:w-[9rem]">FG Amount</th>
+                <th class="text-right lg:w-[9rem]">IDR Amount</th>
+                @if ($open)
+                <th class="lg:w-[4rem]"></th>
+                @endif
+            </tr>
+            </thead>
+            <tbody>
 
-        @forelse ($details as $key => $detail)
-        <tr wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
-            @if ($open)
-            <td wire:click="edit('{{ $detail->id }}')" class=""><b>{{ $detail->serviceCharge->code ?? '' }}</b>, {{ $detail->serviceCharge->name ?? '' }}</td>
-            <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
-            <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->uom->code ?? '' }}</td>
-            <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->price, 2) }}</td>
-            <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->currency->code ?? '' }}</td>
-            <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
-            <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
-            <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
-            <td>
-            <div class="flex items-center">
-                <x-button icon="o-x-mark" wire:click="delete('{{ $detail->id }}')" spinner="delete('{{ $detail->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
-            </div>
-            </td>
-            @else
-            <td class="">{{ $detail->serviceCharge->code ?? '' }}; {{ $detail->serviceCharge->name ?? '' }}</td>
-            <td class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
-            <td class="">{{ $detail->uom->code ?? '' }}</td>
-            <td class="text-right">{{ Cast::money($detail->price, 2) }}</td>
-            <td class="">{{ $detail->currency->code ?? '' }}</td>
-            <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
-            <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
-            <td class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
-            @endif
-        </tr>
-        @empty
-        <tr class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
-            <td colspan="10" class="text-center">No record found.</td>
-        </tr>
-        @endforelse
+            @forelse ($details as $key => $detail)
+            <tr wire:key="table-row-{{ $detail->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
+                @if ($open)
+                <td wire:click="edit('{{ $detail->id }}')" class=""><b>{{ $detail->serviceCharge->code ?? '' }}</b>, {{ $detail->serviceCharge->name ?? '' }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->uom->code ?? '' }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->price, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->currency->code ?? '' }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
+                <td>
+                <div class="flex items-center">
+                    <x-button icon="o-x-mark" wire:click="delete('{{ $detail->id }}')" spinner="delete('{{ $detail->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
+                </div>
+                </td>
+                @else
+                <td class="">{{ $detail->serviceCharge->code ?? '' }}; {{ $detail->serviceCharge->name ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
+                <td class="">{{ $detail->uom->code ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($detail->price, 2) }}</td>
+                <td class="">{{ $detail->currency->code ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
+                @endif
+            </tr>
+            @empty
+            <tr class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
+                <td colspan="10" class="text-center">No record found.</td>
+            </tr>
+            @endforelse
 
-        </tbody>
-        </table>
+            </tbody>
+            </table>
+        </div>
     </x-card>
 
     {{-- FORM --}}
