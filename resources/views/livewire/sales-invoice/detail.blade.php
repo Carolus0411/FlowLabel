@@ -124,23 +124,28 @@ new class extends Component {
             ]);
         }
 
-        $this->calculate();
+        $data = $this->calculate();
 
-        $this->dispatch('detail-updated');
+        $this->dispatch('detail-updated', data: $data);
 
         $this->drawer = false;
         $this->success('Item has been created.');
     }
 
-    public function calculate(): void
+    public function calculate(): array
     {
         $dpp_amount = $this->salesInvoice->details()->sum('amount');
 
         $invoice_amount = $dpp_amount;
 
-        $this->salesInvoice->update([
-            'invoice_amount' => $invoice_amount
-        ]);
+        $data = [
+            'dpp_amount' => $dpp_amount,
+            'invoice_amount' => $invoice_amount,
+        ];
+
+        $this->salesInvoice->update($data);
+
+        return $data;
     }
 
     public function delete(string $id): void
@@ -174,16 +179,16 @@ new class extends Component {
         <table class="table">
         <thead>
         <tr>
-            <td class="text-left">Service Charge</td>
-            <td class="text-right lg:w-[8rem]">Qty</td>
-            <td class="text-right lg:w-[4rem]">Unit</td>
-            <td class="text-right lg:w-[8rem]">Price</td>
-            <td class="text-right lg:w-[4rem]">Currency</td>
-            <td class="text-right lg:w-[8rem]">Rate</td>
-            <td class="text-right lg:w-[9rem]">FG Amount</td>
-            <td class="text-right lg:w-[9rem]">IDR Amount</td>
+            <th class="text-left">Service Charge</th>
+            <th class="text-right lg:w-[4rem]">Qty</th>
+            <th class="text-right lg:w-[4rem]">Unit</th>
+            <th class="text-right lg:w-[6rem]">Price</th>
+            <th class="text-right lg:w-[3rem]">Currency</th>
+            <th class="text-right lg:w-[6rem]">Rate</th>
+            <th class="text-right lg:w-[9rem]">FG Amount</th>
+            <th class="text-right lg:w-[9rem]">IDR Amount</th>
             @if ($open)
-            <td class="lg:w-[4rem]"></td>
+            <th class="lg:w-[4rem]"></th>
             @endif
         </tr>
         </thead>
@@ -192,7 +197,7 @@ new class extends Component {
         @forelse ($details as $key => $detail)
         <tr wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
             @if ($open)
-            <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->serviceCharge->name ?? '' }}</td>
+            <td wire:click="edit('{{ $detail->id }}')" class=""><b>{{ $detail->serviceCharge->code ?? '' }}</b>, {{ $detail->serviceCharge->name ?? '' }}</td>
             <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
             <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->uom->code ?? '' }}</td>
             <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->price, 2) }}</td>
@@ -206,7 +211,7 @@ new class extends Component {
             </div>
             </td>
             @else
-            <td class="">{{ $detail->serviceCharge->name ?? '' }}</td>
+            <td class="">{{ $detail->serviceCharge->code ?? '' }}; {{ $detail->serviceCharge->name ?? '' }}</td>
             <td class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
             <td class="">{{ $detail->uom->code ?? '' }}</td>
             <td class="text-right">{{ Cast::money($detail->price, 2) }}</td>

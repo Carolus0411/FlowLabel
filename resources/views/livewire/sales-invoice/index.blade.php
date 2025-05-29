@@ -33,6 +33,9 @@ new class extends Component {
     {
         return [
             ['key' => 'code', 'label' => 'Code'],
+            ['key' => 'invoice_date', 'label' => 'Invoice Date', 'format' => ['date', 'd-m-Y']],
+            ['key' => 'contact.name', 'label' => 'Code', 'sortable' => false],
+            ['key' => 'dpp_amount', 'label' => 'DPP', 'format' => ['currency', '2.,', '']],
             ['key' => 'created_at', 'label' => 'Created At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
             ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
         ];
@@ -52,9 +55,10 @@ new class extends Component {
     public function salesInvoices(): LengthAwarePaginator
     {
         return SalesInvoice::stored()
-        ->orderBy(...array_values($this->sortBy))
-        ->filterLike('code', $this->code)
-        ->paginate($this->perPage);
+            ->with(['contact'])
+            ->orderBy(...array_values($this->sortBy))
+            ->filterLike('code', $this->code)
+            ->paginate($this->perPage);
     }
 
     public function with(): array
