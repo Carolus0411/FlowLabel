@@ -14,6 +14,7 @@ new class extends Component {
 
     public $code = '';
     public $name = '';
+    public $transport = '';
     public $type = '';
     public $buying_coa_id = '';
     public $selling_coa_id = '';
@@ -58,6 +59,7 @@ new class extends Component {
         $data = $this->validate([
             'code' => 'required|unique:service_charge,code,'.$this->serviceCharge->id,
             'name' => 'required',
+            'transport' => 'required',
             'type' => 'required',
             'buying_coa_id' => 'required',
             'selling_coa_id' => 'required',
@@ -82,6 +84,7 @@ new class extends Component {
             <div class="space-y-4">
                 <x-input label="Code" wire:model="code" />
                 <x-input label="Name" wire:model="name" />
+                <x-select label="Transport" wire:model="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" />
                 <x-select label="Type" wire:model="type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" />
                 <x-choices label="Buying Coa" wire:model="buying_coa_id" :options="$buyingCoaSearchable" search-function="searchBuyingCoa" option-label="full_name" single searchable values-as-string placeholder="-- Select --" />
                 <x-choices label="Selling Coa" wire:model="selling_coa_id" :options="$sellingCoaSearchable" search-function="searchSellingCoa" option-label="full_name" single searchable values-as-string placeholder="-- Select --" />

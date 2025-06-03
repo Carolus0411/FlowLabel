@@ -59,6 +59,11 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/sales-invoice/{salesInvoice}/edit', 'sales-invoice.edit')->name('sales-invoice.edit');
     Volt::route('/sales-invoice/import', 'sales-invoice.import')->name('sales-invoice.import');
 
+    Volt::route('/journal', 'journal.index')->name('journal.index');
+    Volt::route('/journal/create', 'journal.create')->name('journal.create');
+    Volt::route('/journal/{journal}/edit', 'journal.edit')->name('journal.edit');
+    Volt::route('/journal/import', 'journal.import')->name('journal.import');
+
     Volt::route('/users', 'users.index')->name('users.index');
     Volt::route('/users/create', 'users.create')->name('users.create');
     Volt::route('/users/{user}/edit', 'users.edit')->name('users.edit');
@@ -72,6 +77,10 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/roles/{role}/edit', 'roles.edit')->name('roles.edit');
     Volt::route('/roles/import', 'roles.import')->name('roles.import');
     Volt::route('/send-test-mail', 'mail.test')->name('mail.test');
+
+    Volt::route('/user-logs', 'user-logs.index')->name('user-logs.index');
+    Volt::route('/user-logs/create', 'user-logs.create')->name('user-logs.create');
+    Volt::route('/user-logs/{userLog}/edit', 'user-logs.edit')->name('user-logs.edit');
 
     Volt::route('/settings', 'setting.general')->name('setting.general');
 

@@ -20,6 +20,10 @@ new class extends Component {
     public $code = '';
     public $invoice_date = '';
     public $due_date = '';
+    public $transport = '';
+    public $service_type = '';
+    public $invoice_type = '';
+    public $note = '';
     public $contact_id = '';
     public $top = '';
     public $ppn_id = '';
@@ -84,6 +88,10 @@ new class extends Component {
             'code' => 'required',
             'invoice_date' => 'required',
             'due_date' => 'required',
+            'transport' => 'required',
+            'service_type' => 'required',
+            'invoice_type' => 'required',
+            'note' => 'nullable',
             'contact_id' => 'required',
             'top' => 'required|integer|gt:0',
             'ppn_id' => 'required',
@@ -144,6 +152,14 @@ new class extends Component {
         $this->pph_amount = Cast::money($pph_amount);
         $this->invoice_amount = Cast::money($invoice_amount);
     }
+
+    public function delete(SalesInvoice $salesInvoice): void
+    {
+        Gate::authorize('delete sales invoice');
+        $salesInvoice->details()->delete();
+        $salesInvoice->delete();
+        $this->success('Invoice has been deleted.', redirectTo: route('sales-invoice.index'));
+    }
 }; ?>
 
 <div
@@ -155,11 +171,25 @@ new class extends Component {
         }
     }"
 >
-    <x-header title="Update Sales Invoice" separator>
-        <x-slot:actions>
-            <x-button label="Back" link="{{ route('sales-invoice.index') }}" icon="o-arrow-uturn-left" />
-        </x-slot:actions>
-    </x-header>
+    <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0 pt-3">
+        <x-header title="Update Sales Invoice" subtitle="Status : {{ $salesInvoice->status }}" separator>
+            <x-slot:actions>
+                {{-- @if ($salesInvoice->status == 'close')
+                <x-badge value="Open" class="badge-success" />
+                @elseif ($salesInvoice->status == 'void')
+                <x-badge value="Open" class="badge-error" />
+                @else
+                <x-badge value="Open" class="badge-xl text-base badge-primary badge-soft" />
+                @endif --}}
+                <x-button label="Back" link="{{ route('sales-invoice.index') }}" icon="o-arrow-uturn-left" />
+                @if ($salesInvoice->saved == '1' AND $salesInvoice->status == 'open')
+                <x-button label="Close" icon="o-check" wire:click="close" spinner="close" class="btn-success" />
+                @endif
+                <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
+            </x-slot:actions>
+        </x-header>
+    </div>
+
     <div class="space-y-4">
         <x-card>
             <x-form wire:submit="save">
@@ -168,21 +198,52 @@ new class extends Component {
                         <x-input label="Code" wire:model="code" readonly class="bg-base-200" />
                         <x-datetime label="Invoice Date" wire:model="invoice_date" />
                         <x-datetime label="Due Date" wire:model="due_date" />
-                        <x-choices label="Customer" wire:model="contact_id" :options="$contacts" search-function="searchContact" option-label="name" single searchable placeholder="-- Select --" />
+                        <x-select label="Transport" wire:model.live="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" />
+                        <x-select label="Service Type" wire:model.live="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" />
+                        <x-select label="Invoice Type" wire:model="invoice_type" :options="\App\Enums\InvoiceType::toSelect()" placeholder="-- Select --" />
+                        <x-choices
+                            label="Customer"
+                            wire:model="contact_id"
+                            :options="$contacts"
+                            search-function="searchContact"
+                            option-label="name"
+                            single
+                            searchable
+                            placeholder="-- Select --"
+                        />
                         <x-input label="Top" wire:model="top" />
+                        <x-input label="Note" wire:model="note" />
                         <x-input label="DPP" wire:model="dpp_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
-                        <x-choices label="PPN" wire:model.live="ppn_id" :options="$ppns" search-function="searchPpn" option-label="name" single searchable placeholder="-- Select --" />
-                        <x-choices label="PPH" wire:model.live="pph_id" :options="$pphs" search-function="searchPph" option-label="name" single searchable placeholder="-- Select --" />
+                        <x-choices
+                            label="PPN"
+                            wire:model.live="ppn_id"
+                            :options="$ppns"
+                            search-function="searchPpn"
+                            option-label="name"
+                            single
+                            searchable
+                            placeholder="-- Select --"
+                        />
+                        <x-choices
+                            label="PPH"
+                            wire:model.live="pph_id"
+                            :options="$pphs"
+                            search-function="searchPph"
+                            option-label="name"
+                            single
+                            searchable
+                            placeholder="-- Select --"
+                        />
                         <x-input label="Stamp" wire:model.live.debounce.400ms="stamp_amount" class="money" />
                         <x-input label="PPN Amount" wire:model="ppn_amount" readonly class="bg-base-200" />
                         <x-input label="PPH Amount" wire:model="pph_amount" readonly class="bg-base-200" />
                         <x-input label="Invoice Amount" wire:model="invoice_amount" readonly class="bg-base-200" />
                     </div>
                 </div>
-                <x-slot:actions>
+                {{-- <x-slot:actions>
                     <x-button label="Cancel" link="{{ route('sales-invoice.index') }}" />
                     <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
-                </x-slot:actions>
+                </x-slot:actions> --}}
             </x-form>
         </x-card>
 
@@ -193,7 +254,56 @@ new class extends Component {
         @enderror
 
         <div class="overflow-x-auto">
-            <livewire:sales-invoice.detail :id="$salesInvoice->id" />
+            <livewire:sales-invoice.detail :id="$salesInvoice->id" :transport="$transport" :service_type="$service_type" />
         </div>
+
+        @if ($salesInvoice->saved == '1')
+        <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
+            <x-card>
+                <div class="space-y-4">
+                    <h2 class="text-lg font-semibold">Histories</h2>
+                    <table class="table table-sm">
+                    <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Time</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @forelse ($salesInvoice->logs()->with('user')->latest()->limit(10)->get() as $log)
+                    <tr>
+                        <td>{{ $log->user->name }}</td>
+                        <td>{{ $log->action }}</td>
+                        <td>{{ $log->created_at->diffForHumans() }}</td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="3">No data found.</td></tr>
+                    @endforelse
+                    </tbody>
+                    </table>
+                </div>
+            </x-card>
+            <x-card>
+                <div class="space-y-4">
+                    <h2 class="text-lg font-semibold">Danger Zone</h2>
+                    <div class="text-xs">
+                        <p>Once you delete a invoice, there is no going back. Please be certain.</p>
+                    </div>
+                    <div>
+                        <x-button
+                            label="Delete Permanently"
+                            icon="o-trash"
+                            wire:click="delete('{{ $salesInvoice->id }}')"
+                            spinner="save"
+                            wire:confirm="Are you sure you want to delete this invoice?"
+                            class="btn-error btn-soft"
+                        />
+                    </div>
+                </div>
+            </x-card>
+        </div>
+        @endif
+
     </div>
 </div>

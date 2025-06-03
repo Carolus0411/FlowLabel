@@ -15,9 +15,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
 
-    {{-- IMask --}}
-    <script src="https://unpkg.com/imask"></script>
-
     {{-- EasyMDE --}}
     {{-- <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css"> --}}
     {{-- <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script> --}}
@@ -31,7 +28,7 @@
 <body class="min-h-screen font-inter antialiased bg-base-200 dark:bg-base-200">
 
     {{-- The navbar with `sticky` and `full-width` --}}
-    <x-nav id="nav" sticky full-width class="h-[65px]">
+    <x-nav id="nav" sticky full-width class="h-[65px] z-50">
 
         <x-slot:brand>
             {{-- Drawer toggle for "main-drawer" --}}
@@ -81,6 +78,10 @@
                     <x-menu-item title="Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales invoice')" />
                 </x-menu-sub>
 
+                <x-menu-sub title="General Ledger" icon="o-clipboard-document-list">
+                    <x-menu-item title="Journal" link="{{ route('journal.index') }}" :hidden="auth()->user()->cannot('view journal')" />
+                </x-menu-sub>
+
                 <x-menu-sub title="Master" icon="o-circle-stack">
                     <x-menu-item title="Contact" link="{{ route('contact.index') }}" :hidden="auth()->user()->cannot('view contact')" />
                     <x-menu-item title="PPN" link="{{ route('ppn.index') }}" :hidden="auth()->user()->cannot('view ppn')" />
@@ -100,6 +101,7 @@
                     <x-menu-item title="Users" link="{{ route('users.index') }}" :hidden="auth()->user()->cannot('view users')" />
                     <x-menu-item title="Roles" link="{{ route('roles.index') }}" :hidden="auth()->user()->cannot('view roles')" />
                     <x-menu-item title="Permissions" link="{{ route('permissions.index') }}" :hidden="auth()->user()->cannot('view permissions')" />
+                    <x-menu-item title="User Logs" link="{{ route('user-logs.index') }}" :hidden="auth()->user()->cannot('view user logs')" />
                 </x-menu-sub>
 
                 <x-menu-separator />

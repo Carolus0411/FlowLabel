@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Reactive;
 use Livewire\Volt\Component;
 use Mary\Traits\Toast;
 use App\Helpers\Cast;
@@ -28,6 +29,12 @@ new class extends Component {
     public $price = 0;
     public $foreign_amount = 0;
     public $amount = 0;
+
+    #[Reactive]
+    public $transport = '';
+
+    #[Reactive]
+    public $service_type = '';
 
     public function mount( $id = '' ): void
     {
@@ -232,10 +239,34 @@ new class extends Component {
     <x-drawer wire:model="drawer" title="Create Item" right separator with-close-button class="lg:w-1/3">
         <x-form wire:submit="save">
             <div class="space-y-4">
-                <x-choices-offline label="Service Charge" :options="\App\Models\ServiceCharge::query()->isActive()->get()" wire:model="service_charge_id" single searchable placeholder="-- Select --" />
+                <x-choices-offline
+                    label="Service Charge"
+                    :options="\App\Models\ServiceCharge::query()->whereIn('transport', [$transport,''])->whereIn('type', [$service_type,''])->isActive()->get()"
+                    wire:model="service_charge_id"
+                    option-label="full_name"
+                    single
+                    searchable
+                    placeholder="-- Select --"
+                />
                 <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
-                    <x-choices-offline label="Unit" :options="\App\Models\Uom::query()->isActive()->get()" wire:model="uom_id" option-label="code" single searchable placeholder="-- Select --" />
-                    <x-choices-offline label="Currency" :options="\App\Models\Currency::query()->isActive()->get()" wire:model="currency_id" option-label="code" single searchable placeholder="-- Select --" />
+                    <x-choices-offline
+                        label="Unit"
+                        :options="\App\Models\Uom::query()->isActive()->get()"
+                        wire:model="uom_id"
+                        option-label="code"
+                        single
+                        searchable
+                        placeholder="-- Select --"
+                    />
+                    <x-choices-offline
+                        label="Currency"
+                        :options="\App\Models\Currency::query()->isActive()->get()"
+                        wire:model="currency_id"
+                        option-label="code"
+                        single
+                        searchable
+                        placeholder="-- Select --"
+                    />
                     <x-input label="Qty" wire:model="qty" class="money" />
                     <x-input label="Price" wire:model="price" class="money" />
                     <x-input label="Rate" wire:model="currency_rate" class="money" />

@@ -42,6 +42,7 @@ new class extends Component {
         return [
             ['key' => 'code', 'label' => 'Code'],
             ['key' => 'name', 'label' => 'Name'],
+            ['key' => 'transport', 'label' => 'Transport'],
             ['key' => 'type', 'label' => 'Type'],
             ['key' => 'is_active', 'label' => 'Active', 'class' => 'lg:w-[120px]'],
             // ['key' => 'created_at', 'label' => 'Created At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
@@ -119,6 +120,7 @@ new class extends Component {
                 'id' => $serviceCharge->id ?? '',
                 'code' => $serviceCharge->code ?? '',
                 'name' => $serviceCharge->name ?? '',
+                'transport' => $serviceCharge->transport ?? '',
                 'type' => $serviceCharge->type ?? '',
                 'coa_buying' => $serviceCharge->coaBuying->code,
                 'coa_selling' => $serviceCharge->coaSelling->code,

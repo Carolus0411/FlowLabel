@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Traits\Filterable;
 
@@ -12,6 +14,50 @@ class ServiceCharge extends Model
 
     protected $table = 'service_charge';
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Model $model) {
+            $model->full_name = $model->code . ', ' . $model->name;
+        });
+
+        static::updating(function (Model $model) {
+            $model->full_name = $model->code . ', ' . $model->name;
+        });
+    }
+
+    #[Scope]
+    protected function search(Builder $query, mixed $keyword = ''): void
+    {
+        $query->where(function (Builder $query) use ($keyword) {
+            $query->filterLike('code', $keyword);
+            $query->orFilterLike('name', $keyword);
+        });
+    }
+
+    #[Scope]
+    protected function export(Builder $query): void
+    {
+        $query->whereIn('type', ['import','']);
+    }
+
+    #[Scope]
+    protected function import(Builder $query): void
+    {
+        $query->whereIn('type', ['export','']);
+    }
+
+    #[Scope]
+    protected function air(Builder $query): void
+    {
+        $query->whereIn('transport', ['air','']);
+    }
+
+    #[Scope]
+    protected function sea(Builder $query): void
+    {
+        $query->whereIn('transport', ['sea','']);
+    }
 
     public function coaBuying(): BelongsTo
     {

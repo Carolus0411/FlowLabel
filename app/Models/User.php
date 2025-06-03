@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Permission\Traits\HasRoles;
 use App\Traits\Filterable;
 use App\Enums\ActiveStatus;
@@ -55,4 +56,9 @@ class User extends Authenticatable implements MustVerifyEmail
     // {
     //     return $this->belongsTo(Branch::class,'branch_id','id')->withDefault();
     // }
+
+    public function logs(): HasMany
+	{
+		return $this->hasMany(UserLog::class,'user_id','id');
+	}
 }
