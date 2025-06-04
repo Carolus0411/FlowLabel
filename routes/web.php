@@ -82,7 +82,8 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/user-logs/create', 'user-logs.create')->name('user-logs.create');
     Volt::route('/user-logs/{userLog}/edit', 'user-logs.edit')->name('user-logs.edit');
 
-    Volt::route('/settings', 'setting.general')->name('setting.general');
+    Volt::route('/settings/general', 'setting.general')->name('setting.general');
+    Volt::route('/settings/account-mapping', 'setting.account-mapping')->name('setting.account-mapping');
 
     Route::get('/logout', function () {
         auth()->logout();

@@ -8,8 +8,6 @@ use Mary\Traits\Toast;
 use App\Helpers\Cast;
 use App\Helpers\Code;
 use App\Models\Contact;
-use App\Models\Ppn;
-use App\Models\Pph;
 use App\Models\Journal;
 
 new class extends Component {
@@ -23,8 +21,15 @@ new class extends Component {
     public $contact_id = '';
     public $type = '';
     public $status = '';
+    public $ref_name = '';
+    public $ref_id = '';
     public $debit_total = 0;
     public $credit_total = 0;
+
+    public $open = true;
+    public $closeConfirm = false;
+    public $validityStatus = false;
+    public $validityMessage = '';
 
     public $details;
     public Collection $contacts;
@@ -34,7 +39,15 @@ new class extends Component {
         Gate::authorize('update journal');
         $this->fill($this->journal);
         $this->searchContact();
-        $this->calculate();
+        $this->validity();
+    }
+
+    public function with(): array
+    {
+        $this->open = $this->journal->status == 'open';
+        $this->contact_id = $this->contact_id ?? '';
+
+        return [];
     }
 
     public function searchContact(string $value = ''): void
@@ -68,13 +81,12 @@ new class extends Component {
             $this->journal->details()->update(['code' => $code]);
         }
 
-        $this->calculate();
-
         $data['debit_total'] = Cast::number($this->debit_total);
         $data['credit_total'] = Cast::number($this->credit_total);
 
         $this->journal->update($data);
 
+        $this->validity();
         $this->success('Journal successfully updated.', redirectTo: route('journal.index'));
     }
 
@@ -83,20 +95,12 @@ new class extends Component {
     {
         $this->debit_total = Cast::money($data['debit_total'] ?? 0);
         $this->credit_total = Cast::money($data['credit_total'] ?? 0);
-        $this->calculate();
+        $this->validity();
     }
 
     public function updated($property, $value): void
     {
-        // if ( in_array($property, ['ppn_id','pph_id','stamp_amount']))
-        // {
-        //     $this->calculate();
-        // }
-    }
 
-    public function calculate()
-    {
-        // calculate here ...
     }
 
     public function delete(Journal $journal): void
@@ -104,7 +108,39 @@ new class extends Component {
         Gate::authorize('delete journal');
         $journal->details()->delete();
         $journal->delete();
-        $this->success('Invoice has been deleted.', redirectTo: route('journal.index'));
+        $this->success('Journal successfully deleted.', redirectTo: route('journal.index'));
+    }
+
+    public function validity(): void
+    {
+        $this->debit_total = $this->journal->details()->sum('debit');
+        $this->credit_total = $this->journal->details()->sum('credit');
+
+        $this->validityStatus = true;
+        $this->validityMessage = '';
+
+        if (empty($this->debit_total) OR empty($this->credit_total)) {
+            $this->validityStatus = false;
+            $this->validityMessage = 'Debit or Credit cannot be zero';
+        }
+
+        if ($this->debit_total != $this->credit_total) {
+            $this->validityStatus = false;
+            $this->validityMessage = 'Debit and Credit must be same';
+        }
+    }
+
+    public function close(): void
+    {
+        $this->journal->details()->update([
+            'status' => 'close'
+        ]);
+
+        $this->journal->update([
+            'status' => 'close'
+        ]);
+
+        $this->success('Journal successfully closed.', redirectTo: route('journal.index'));
     }
 }; ?>
 
@@ -121,10 +157,12 @@ new class extends Component {
         <x-header title="Update Journal" subtitle="Status : {{ $journal->status }}" separator>
             <x-slot:actions>
                 <x-button label="Back" link="{{ route('journal.index') }}" icon="o-arrow-uturn-left" />
-                @if ($journal->saved == '1' AND $journal->status == 'open')
-                <x-button label="Close" icon="o-check" wire:click="close" spinner="close" class="btn-success" />
+                @if ($validityStatus AND $journal->saved == '1' AND $journal->status == 'open')
+                <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
+                @if ($open)
                 <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
+                @endif
             </x-slot:actions>
         </x-header>
     </div>
@@ -134,9 +172,9 @@ new class extends Component {
             <x-form wire:submit="save">
                 <div class="space-y-4">
                     <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-3 gap-4">
-                        <x-input label="Code" wire:model="code" readonly class="bg-base-200" />
-                        <x-datetime label="Date" wire:model="date" />
-                        <x-select label="Type" wire:model="type" :options="\App\Enums\JournalType::toSelect()" placeholder="-- Select --" />
+                        <x-input label="Code" wire:model="code" readonly class="bg-base-200" :disabled="!$open" />
+                        <x-datetime label="Date" wire:model="date" :disabled="!$open" />
+                        <x-select label="Type" wire:model="type" :options="\App\Enums\JournalType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Contact"
                             wire:model="contact_id"
@@ -146,10 +184,11 @@ new class extends Component {
                             single
                             searchable
                             placeholder="-- Select --"
+                            :disabled="!$open"
                         />
                         <x-input label="Ref Name" wire:model="ref_name" readonly class="bg-base-200" />
                         <x-input label="Ref ID" wire:model="ref_id" readonly class="bg-base-200" />
-                        <x-input label="Note" wire:model="note" />
+                        <x-input label="Note" wire:model="note" :disabled="!$open" />
                         <x-input label="Debit Total" wire:model="debit_total" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
                         <x-input label="Credit Total" wire:model="credit_total" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
                     </div>
@@ -166,6 +205,12 @@ new class extends Component {
                 <span class="text-red-500 text-sm p-1">{{ $message }}</span>
             </div>
         @enderror
+
+        @unless ($validityStatus)
+        <div class="flex justify-center">
+            <span class="text-red-500 text-sm p-1">{{ $validityMessage }}</span>
+        </div>
+        @endif
 
         <div class="overflow-x-auto">
             <livewire:journal.detail :id="$journal->id" />
@@ -220,4 +265,16 @@ new class extends Component {
         @endif
 
     </div>
+
+    <x-modal wire:model="closeConfirm" title="Closing Confirmation" persistent>
+        <div class="flex pb-2">
+            Are you sure you want to close this journal?
+        </div>
+        <x-slot:actions>
+            <div class="flex items-center gap-4">
+                <x-button label="Cancel" icon="o-x-mark" @click="$wire.closeConfirm = false" class="" />
+                <x-button label="Yes, I am sure" icon="o-check" wire:click="close" spinner="close" class="" />
+            </div>
+        </x-slot:actions>
+    </x-modal>
 </div>

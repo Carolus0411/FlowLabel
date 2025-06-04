@@ -34,6 +34,7 @@ new class extends Component {
     public $stamp_amount = 0;
     public $invoice_amount = 0;
 
+    public $closeConfirm = false;
     public $details;
     public Collection $contacts;
     public Collection $ppns;
@@ -159,6 +160,18 @@ new class extends Component {
         $salesInvoice->details()->delete();
         $salesInvoice->delete();
         $this->success('Invoice has been deleted.', redirectTo: route('sales-invoice.index'));
+    }
+
+    public function close(): void
+    {
+        // $this->salesInvoice->update([
+        //     'status' => 'close'
+        // ]);
+
+        $this->salesInvoice->load(['details.serviceCharge','details.serviceCharge.coaSelling']);
+        \App\Events\SalesInvoiceClosed::dispatch($this->salesInvoice);
+
+        $this->success('Journal successfully closed.', redirectTo: route('journal.index'));
     }
 }; ?>
 
@@ -306,4 +319,16 @@ new class extends Component {
         @endif
 
     </div>
+
+    <x-modal wire:model="closeConfirm" title="Closing Confirmation" persistent>
+        <div class="flex pb-2">
+            Are you sure you want to close this invoice?
+        </div>
+        <x-slot:actions>
+            <div class="flex items-center gap-4">
+                <x-button label="Cancel" icon="o-x-mark" @click="$wire.closeConfirm = false" class="" />
+                <x-button label="Yes, I am sure" icon="o-check" wire:click="close" spinner="close" class="" />
+            </div>
+        </x-slot:actions>
+    </x-modal>
 </div>

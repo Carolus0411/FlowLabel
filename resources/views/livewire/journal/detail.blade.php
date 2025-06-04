@@ -22,12 +22,12 @@ new class extends Component {
     public $coa_code = '';
     public $description = '';
     public bool $dc = false;
-    public $debit = 0;
-    public $credit = 0;
+    public $amount = 0;
 
     public function mount( $id = '' ): void
     {
         $this->journal = Journal::find($id);
+        $this->open = $this->journal->status == 'open';
     }
 
     public function with(): array
@@ -42,9 +42,8 @@ new class extends Component {
         $this->selected = null;
         $this->coa_code = '';
         $this->description = '';
-        $this->dc = '';
-        $this->debit = 0;
-        $this->credit = 0;
+        $this->dc = false;
+        $this->amount = 0;
         $this->resetValidation();
     }
 
@@ -58,6 +57,9 @@ new class extends Component {
     public function edit(JournalDetail $detail): void
     {
         $this->clearForm();
+
+        $detail->dc = $detail->dc == 'C' ? true : false;
+        $detail->amount = abs($detail->amount);
 
         $this->fill($detail);
 
@@ -73,20 +75,26 @@ new class extends Component {
             'coa_code' => 'required',
             'description' => 'required',
             'dc' => 'required',
-            'debit' => ['required'],
-            'credit' => ['required'],
+            'amount' => ['required', new Number],
         ]);
 
-        $debit = Cast::number($this->debit);
-        $credit = Cast::number($this->credit);
+        $amount = Cast::number($this->amount);
+
+        if ($this->dc) {
+            $debit = 0;
+            $credit = $amount;
+        } else {
+            $debit = $amount;
+            $credit = 0;
+        }
 
         if ($this->mode == 'add')
         {
             $this->journal->details()->create([
                 'coa_code' => $this->coa_code,
                 'description' => $this->description,
-                'dc' => $this->dc ? 'D' : 'C',
-                'debit' => $this->debit,
+                'dc' => $this->dc ? 'C' : 'D',
+                'debit' => $debit,
                 'credit' => $credit,
                 'date' => $this->journal->date,
             ]);
@@ -97,8 +105,8 @@ new class extends Component {
             $this->selected->update([
                 'coa_code' => $this->coa_code,
                 'description' => $this->description,
-                'dc' => $this->dc ? 'D' : 'C',
-                'debit' => $this->debit,
+                'dc' => $this->dc ? 'C' : 'D',
+                'debit' => $debit,
                 'credit' => $credit,
                 'date' => $this->journal->date,
             ]);
@@ -134,16 +142,21 @@ new class extends Component {
 
     public function updated($property, $value): void
     {
-        if ($property == 'dc') {
-            $this->debit = 0;
-            $this->credit = 0;
-        }
+        // updated here ...
     }
 }; ?>
 
 <div
-    x-data="{ drawer : $wire.entangle('drawer') }"
-    x-init="$watch('drawer', value => { mask() })"
+    x-data="{
+        drawer : $wire.entangle('drawer'),
+        dc : $wire.entangle('dc'),
+        dcLabel : '',
+        init : function() {
+            this.dcLabel = this.dc ? 'Credit' : 'Debit'
+            $watch('drawer', value => { mask() })
+            $watch('dc', value => { this.dcLabel = this.dc ? 'Credit' : 'Debit' })
+        }
+    }"
 >
     <x-card title="Details" separator progress-indicator>
         <x-slot:menu>
@@ -168,8 +181,8 @@ new class extends Component {
             <tbody>
 
             @forelse ($details as $key => $detail)
+            @if ($open)
             <tr wire:key="table-row-{{ $detail->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
-                @if ($open)
                 <td wire:click="edit('{{ $detail->id }}')" class=""><b>{{ $detail->coa->code ?? '' }}</b>, {{ $detail->coa->name ?? '' }}</td>
                 <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->description ?? '' }}</td>
                 <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->debit, 2) }}</td>
@@ -179,13 +192,15 @@ new class extends Component {
                     <x-button icon="o-x-mark" wire:click="delete('{{ $detail->id }}')" spinner="delete('{{ $detail->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
                 </div>
                 </td>
-                @else
-                <td class="">{{ $detail->coa->code ?? '' }}; {{ $detail->coa->name ?? '' }}</td>
+            </tr>
+            @else
+            <tr wire:key="table-row-{{ $detail->id }}" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
+                <td class=""><b>{{ $detail->coa->code ?? '' }}</b>, {{ $detail->coa->name ?? '' }}</td>
                 <td class="">{{ $detail->description }}</td>
                 <td class="text-right">{{ Cast::money($detail->debit, 2) }}</td>
                 <td class="text-right">{{ Cast::money($detail->credit, 2) }}</td>
-                @endif
             </tr>
+            @endif
             @empty
             <tr class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
                 <td colspan="10" class="text-center">No record found.</td>
@@ -212,10 +227,12 @@ new class extends Component {
                     searchable
                     placeholder="-- Select --"
                 />
-
-                <x-toggle label="D/C" wire:model.live="dc" />
-                <x-input label="Debit" wire:model="debit" class="money" :disabled="$dc" />
-                <x-input label="Credit" wire:model="credit" class="money" :disabled="!$dc" />
+                <x-toggle label="D/C" wire:model="dc">
+                    <x-slot:label>
+                        <span x-text="dcLabel"></span>
+                    </x-slot:label>
+                </x-toggle>
+                <x-input label="Amount" wire:model="amount" class="money" />
                 <x-input label="Note" wire:model="description" />
             </div>
             <x-slot:actions>

@@ -7,7 +7,6 @@ export default function mask() {
         el[i].addEventListener("input", clearMask);
         el[i].addEventListener("blur", applyMask);
     }
-    // console.log("mask initialize");
 }
 
 function maskInit(el) {
@@ -18,16 +17,16 @@ function maskInit(el) {
         if (!isNaN(value)) {
             const formattedValue = new Intl.NumberFormat("en-US").format(value);
             el.value = formattedValue;
+        } else {
+            el.value = 0;
         }
     }
-    // console.log("mask init");
 }
 
 function clearMask(event) {
     let value = event.target.value;
     value = value.replace(/[^0-9.]/g, ""); // Clean non-numeric chars
     event.target.value = value;
-    // console.log("mask remove");
 }
 
 function applyMask(event) {
@@ -36,6 +35,7 @@ function applyMask(event) {
     if (!isNaN(value)) {
         const formattedValue = new Intl.NumberFormat("en-US").format(value);
         event.target.value = formattedValue;
+    } else {
+        event.target.value = 0;
     }
-    // console.log("mask applied");
 }

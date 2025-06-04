@@ -104,13 +104,6 @@ new class extends Component {
         $this->filterCount = $count;
     }
 
-    public function delete(Journal $journal): void
-    {
-        Gate::authorize('delete journal');
-        $journal->delete();
-        $this->success('Invoice has been deleted.');
-    }
-
     public function export()
     {
         Gate::authorize('export journal');
@@ -119,8 +112,19 @@ new class extends Component {
         $writer = SimpleExcelWriter::streamDownload('Journal.xlsx');
         foreach ( $journal->lazy() as $journal ) {
             $writer->addRow([
-                'id' => $journal->id ?? '',
-                'code' => $journal->code ?? '',
+                'id' => $journal->id,
+                'code' => $journal->code,
+                'date' => $journal->date,
+                'note' => $journal->note,
+                'type' => $journal->type,
+                'contact_id' => $journal->contact_id,
+                'ref_name' => $journal->ref_name,
+                'ref_id' => $journal->ref_id,
+                'debit_total' => $journal->debit_total,
+                'credit_total' => $journal->credit_total,
+                'status' => $journal->status,
+                'saved' => $journal->saved,
+                'created_by' => $journal->created_by,
             ]);
         }
         return response()->streamDownload(function() use ($writer){
@@ -149,21 +153,16 @@ new class extends Component {
     {{-- TABLE --}}
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$journals" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text :link="route('journal.edit', ['journal' => '[id]'])">
-            {{-- @scope('cell_act', $journal)
-            <x-dropdown class="btn-sm btn-soft">
-                <x-menu-item title="Edit" link="{{ route('journal.edit', $journal->id) }}" icon="o-pencil-square" />
-            </x-dropdown>
-            @endscope --}}
             @scope('cell_status', $journal)
             @if ($journal->status == 'close')
-            <x-badge value="Open" class="text-xs badge-success" />
+            <x-badge value="Closed" class="text-xs badge-success" />
             @elseif ($journal->status == 'void')
-            <x-badge value="Open" class="text-xs badge-error" />
+            <x-badge value="Void" class="text-xs badge-error" />
             @else
             <x-badge value="Open" class="text-xs badge-primary" />
             @endif
             @endscope
-            @scope('actions', $journal)
+            {{-- @scope('actions', $journal)
             <div class="flex gap-1.5">
                 @can('delete journal')
                 <x-button wire: click="delete({{ $journal->id }})" spinner="delete({{ $journal->id }})" wire: confirm="Are you sure you want to delete this row?" icon="o-trash" class="btn btn-sm" />
@@ -172,7 +171,7 @@ new class extends Component {
                 <x-button link="{{ route('journal.edit', $journal->id) }}" icon="o-pencil-square" class="btn btn-sm" />
                 @endcan
             </div>
-            @endscope
+            @endscope --}}
         </x-table>
     </x-card>
 
