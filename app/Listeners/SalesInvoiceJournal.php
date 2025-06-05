@@ -25,6 +25,7 @@ class SalesInvoiceJournal
     public function handle(SalesInvoiceClosed $salesInvoiceClosed): void
     {
         $salesInvoice = $salesInvoiceClosed->salesInvoice;
+        $salesInvoice->load(['details.serviceCharge','details.serviceCharge.coaSelling']);
 
         $code = Code::auto('JV', $salesInvoice->invoice_date);
 

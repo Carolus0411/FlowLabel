@@ -31,6 +31,7 @@ class ServiceChargeSeeder extends Seeder
             $data['code'] = $row['code'];
             $data['name'] = $row['name'];
             $data['type'] = $row['type'];
+            $data['transport'] = $row['transport'];
             $data['buying_coa_id'] = $buying_coa_id;
             $data['selling_coa_id'] = $selling_coa_id;
             $data['is_active'] = $row['is_active'];

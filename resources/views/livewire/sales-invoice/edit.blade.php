@@ -162,13 +162,21 @@ new class extends Component {
         $this->success('Invoice has been deleted.', redirectTo: route('sales-invoice.index'));
     }
 
+    public function void(SalesInvoice $salesInvoice): void
+    {
+        Gate::authorize('void sales invoice');
+        $salesInvoice->update([
+            'status' => 'void'
+        ]);
+        $this->success('Invoice has been voided.', redirectTo: route('sales-invoice.index'));
+    }
+
     public function close(): void
     {
         // $this->salesInvoice->update([
         //     'status' => 'close'
         // ]);
 
-        $this->salesInvoice->load(['details.serviceCharge','details.serviceCharge.coaSelling']);
         \App\Events\SalesInvoiceClosed::dispatch($this->salesInvoice);
 
         $this->success('Journal successfully closed.', redirectTo: route('journal.index'));
@@ -300,6 +308,16 @@ new class extends Component {
             <x-card>
                 <div class="space-y-4">
                     <h2 class="text-lg font-semibold">Danger Zone</h2>
+                    <div>
+                        <x-button
+                            label="Void"
+                            icon="o-archive-box-x-mark"
+                            wire:click="void('{{ $salesInvoice->id }}')"
+                            spinner="void('{{ $salesInvoice->id }}')"
+                            wire:confirm="Are you sure you want to void this invoice?"
+                            class="btn-error btn-soft"
+                        />
+                    </div>
                     <div class="text-xs">
                         <p>Once you delete a invoice, there is no going back. Please be certain.</p>
                     </div>
@@ -308,7 +326,7 @@ new class extends Component {
                             label="Delete Permanently"
                             icon="o-trash"
                             wire:click="delete('{{ $salesInvoice->id }}')"
-                            spinner="save"
+                            spinner="delete('{{ $salesInvoice->id }}')"
                             wire:confirm="Are you sure you want to delete this invoice?"
                             class="btn-error btn-soft"
                         />

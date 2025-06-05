@@ -31,6 +31,9 @@ return new class extends Migration
             $table->decimal('invoice_amount', 12, 2)->default(0);
             $table->integer('saved')->index()->default(0);
             $table->enum('status', ['open','close','void'])->index()->default('open');
+            $table->enum('payment_status', ['unpaid','paid','outstanding'])->index()->default('unpaid');
+            $table->foreignId('created_by')->index()->default(0);
+            $table->foreignId('updated_by')->index()->default(0);
             $table->timestamps();
         });
     }

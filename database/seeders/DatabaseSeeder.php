@@ -29,5 +29,6 @@ class DatabaseSeeder extends Seeder
         $this->call(UomSeeder::class);
         $this->call(CoaSeeder::class);
         $this->call(ServiceChargeSeeder::class);
+        $this->call(AccountMappingSeeder::class);
     }
 }

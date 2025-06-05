@@ -48,6 +48,20 @@ class SalesInvoice extends Model
         return $this->belongsTo(Pph::class,'pph_id','id')->withDefault();
     }
 
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class,'created_by','id')->withDefault();
+    }
+
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class,'updated_by','id')->withDefault();
+    }
+
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class,'closed_by','id')->withDefault();
+    }
     public function logs(): HasMany
 	{
 		return $this->hasMany(UserLog::class,'ref_id','code');
@@ -55,6 +69,15 @@ class SalesInvoice extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (Model $model) {
+            $model->created_by = auth()->user()->id;
+            $model->updated_by = auth()->user()->id;
+        });
+
+        static::updating(function (Model $model) {
+            $model->updated_by = auth()->user()->id;
+        });
+
         static::updated(function (Model $model) {
             auth()->user()->logs()->create([
                 'resource' => class_basename($model),

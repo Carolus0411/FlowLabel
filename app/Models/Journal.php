@@ -79,6 +79,11 @@ class Journal extends Model
         return $this->belongsTo(User::class,'updated_by','id')->withDefault();
     }
 
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class,'closed_by','id')->withDefault();
+    }
+
     public function logs(): HasMany
 	{
 		return $this->hasMany(UserLog::class,'ref_id','code');
