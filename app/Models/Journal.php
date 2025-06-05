@@ -29,6 +29,13 @@ class Journal extends Model
         });
 
         static::updated(function (Model $model) {
+
+            // if ($model->isDirty('status')) {
+            //     $model->details()->update([
+            //         'status' => $model->status
+            //     ]);
+            // }
+
             auth()->user()->logs()->create([
                 'resource' => class_basename($model),
                 'action' => $model->isDirty('code') ? 'create' : 'update',
@@ -86,6 +93,6 @@ class Journal extends Model
 
     public function logs(): HasMany
 	{
-		return $this->hasMany(UserLog::class,'ref_id','code');
+		return $this->hasMany(UserLog::class,'ref_id','code')->where('resource', 'Journal');
 	}
 }

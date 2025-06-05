@@ -4,8 +4,8 @@ namespace App\Listeners;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\DB;
 use App\Events\SalesInvoiceVoided;
-use App\Models\Coa;
 use App\Models\Journal;
 
 class SalesInvoiceUnjournal
@@ -23,11 +23,20 @@ class SalesInvoiceUnjournal
      */
     public function handle(SalesInvoiceVoided $salesInvoiceVoided): void
     {
-        $salesInvoice = $salesInvoiceVoided->salesInvoice;
+        DB::transaction(function () use ($salesInvoiceVoided) {
 
-        $journal = Journal::where('ref_name','SalesInvoice')->where('ref_id', $salesInvoice->code)->first();
+            $salesInvoice = $salesInvoiceVoided->salesInvoice;
 
-        $journal->details()->delete();
-        $journal->delete();
+            $journal = Journal::where('ref_name','SalesInvoice')->where('ref_id', $salesInvoice->code)->first();
+
+            if (isset($journal->details)) {
+                $journal->details()->delete();
+            }
+
+            if ($journal) {
+                $journal->delete();
+            }
+
+        });
     }
 }

@@ -132,10 +132,6 @@ new class extends Component {
 
     public function close(): void
     {
-        $this->journal->details()->update([
-            'status' => 'close'
-        ]);
-
         $this->journal->update([
             'status' => 'close'
         ]);
@@ -154,7 +150,19 @@ new class extends Component {
     }"
 >
     <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0 pt-3">
-        <x-header title="Update Journal" subtitle="Status : {{ $journal->status }}" separator>
+        <x-header separator>
+            <x-slot:title>
+                <div class="flex items-center gap-4">
+                    <span>Update Journal</span>
+                    @if ($journal->status == 'close')
+                    <x-badge value="Close" class="badge-success uppercase" />
+                    @elseif ($journal->status == 'void')
+                    <x-badge value="Void" class="badge-error uppercase" />
+                    @else
+                    <x-badge value="Open" class="badge-primary uppercase" />
+                    @endif
+                </div>
+            </x-slot:title>
             <x-slot:actions>
                 <x-button label="Back" link="{{ route('journal.index') }}" icon="o-arrow-uturn-left" />
                 @if ($validityStatus AND $journal->saved == '1' AND $journal->status == 'open')

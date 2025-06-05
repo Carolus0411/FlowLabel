@@ -208,7 +208,7 @@ new class extends Component {
     </x-drawer>
 
     {{-- JOURNAL MODAL --}}
-    <x-modal wire:model="journalModal" title="Journal" persistent box-class="max-w-11/12 lg:max-w-2/3">
+    <x-modal wire:model="journalModal" title="Journal" subtitle="{{ $journal->code ?? '' }}" box-class="max-w-11/12 lg:max-w-2/3">
         <div class="overflow-x-auto">
             <table class="table">
             <thead>
@@ -237,6 +237,7 @@ new class extends Component {
         </div>
         <x-slot:actions>
             <x-button label="Close" icon="o-x-mark" @click="$wire.journalModal = false" />
+            <x-button label="View Journal" icon="o-eye" link="{{ route('journal.edit', $journal->id ?? 0) }}" class="btn-primary" />
         </x-slot:actions>
     </x-modal>
 </div>

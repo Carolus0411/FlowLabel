@@ -64,7 +64,7 @@ class SalesInvoice extends Model
     }
     public function logs(): HasMany
 	{
-		return $this->hasMany(UserLog::class,'ref_id','code');
+		return $this->hasMany(UserLog::class,'ref_id','code')->where('resource', 'SalesInvoice');;
 	}
 
     protected static function booted(): void

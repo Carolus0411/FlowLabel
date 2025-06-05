@@ -166,7 +166,7 @@ new class extends Component {
         Gate::authorize('delete sales invoice');
         $salesInvoice->details()->delete();
         $salesInvoice->delete();
-        $this->success('Invoice has been deleted.', redirectTo: route('sales-invoice.index'));
+        $this->success('Invoice successfully deleted.', redirectTo: route('sales-invoice.index'));
     }
 
     public function void(SalesInvoice $salesInvoice): void
@@ -175,18 +175,22 @@ new class extends Component {
         $salesInvoice->update([
             'status' => 'void'
         ]);
-        $this->success('Invoice has been voided.', redirectTo: route('sales-invoice.index'));
+
+        \App\Events\SalesInvoiceVoided::dispatch($this->salesInvoice);
+
+        $this->success('Invoice successfully voided.', redirectTo: route('sales-invoice.index'));
     }
 
     public function close(): void
     {
-        // $this->salesInvoice->update([
-        //     'status' => 'close'
-        // ]);
+        Gate::authorize('close sales invoice');
+        $this->salesInvoice->update([
+            'status' => 'close'
+        ]);
 
         \App\Events\SalesInvoiceClosed::dispatch($this->salesInvoice);
 
-        $this->success('Journal successfully closed.', redirectTo: route('journal.index'));
+        $this->success('Invoice successfully closed.', redirectTo: route('sales-invoice.index'));
     }
 }; ?>
 
@@ -200,7 +204,19 @@ new class extends Component {
     }"
 >
     <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0 pt-3">
-        <x-header title="Update Sales Invoice" subtitle="Status : {{ $salesInvoice->status }}" separator>
+        <x-header separator>
+            <x-slot:title>
+                <div class="flex items-center gap-4">
+                    <span>Update Sales Invoice</span>
+                    @if ($salesInvoice->status == 'close')
+                    <x-badge value="Close" class="badge-success uppercase" />
+                    @elseif ($salesInvoice->status == 'void')
+                    <x-badge value="Void" class="badge-error uppercase" />
+                    @else
+                    <x-badge value="Open" class="badge-primary uppercase" />
+                    @endif
+                </div>
+            </x-slot:title>
             <x-slot:actions>
                 {{-- @if ($salesInvoice->status == 'close')
                 <x-badge value="Open" class="badge-success" />
@@ -213,7 +229,9 @@ new class extends Component {
                 @if ($salesInvoice->saved == '1' AND $salesInvoice->status == 'open')
                 <x-button label="Close" icon="o-check" wire:click="close" spinner="close" class="btn-success" />
                 @endif
+                @if ($open)
                 <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
+                @endif
             </x-slot:actions>
         </x-header>
     </div>
