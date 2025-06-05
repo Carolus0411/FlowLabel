@@ -34,6 +34,7 @@ new class extends Component {
     public $stamp_amount = 0;
     public $invoice_amount = 0;
 
+    public $open = true;
     public $closeConfirm = false;
     public $details;
     public Collection $contacts;
@@ -48,6 +49,12 @@ new class extends Component {
         $this->searchPpn();
         $this->searchPph();
         $this->calculate();
+    }
+
+    public function with(): array
+    {
+        $this->open = $this->salesInvoice->status == 'open';
+        return [];
     }
 
     public function searchContact(string $value = ''): void
@@ -217,11 +224,11 @@ new class extends Component {
                 <div class="space-y-4">
                     <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-3 gap-4">
                         <x-input label="Code" wire:model="code" readonly class="bg-base-200" />
-                        <x-datetime label="Invoice Date" wire:model="invoice_date" />
-                        <x-datetime label="Due Date" wire:model="due_date" />
-                        <x-select label="Transport" wire:model.live="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" />
-                        <x-select label="Service Type" wire:model.live="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" />
-                        <x-select label="Invoice Type" wire:model="invoice_type" :options="\App\Enums\InvoiceType::toSelect()" placeholder="-- Select --" />
+                        <x-datetime label="Invoice Date" wire:model="invoice_date" :disabled="!$open" />
+                        <x-datetime label="Due Date" wire:model="due_date" :disabled="!$open" />
+                        <x-select label="Transport" wire:model.live="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" :disabled="!$open" />
+                        <x-select label="Service Type" wire:model.live="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
+                        <x-select label="Invoice Type" wire:model="invoice_type" :options="\App\Enums\InvoiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Customer"
                             wire:model="contact_id"
@@ -231,10 +238,11 @@ new class extends Component {
                             single
                             searchable
                             placeholder="-- Select --"
+                            :disabled="!$open"
                         />
-                        <x-input label="Top" wire:model="top" />
-                        <x-input label="Note" wire:model="note" />
-                        <x-input label="DPP" wire:model="dpp_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
+                        <x-input label="Top" wire:model="top" :disabled="!$open" />
+                        <x-input label="Note" wire:model="note" :disabled="!$open" />
+                        <x-input label="DPP" wire:model="dpp_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" :disabled="!$open" />
                         <x-choices
                             label="PPN"
                             wire:model.live="ppn_id"
@@ -244,6 +252,7 @@ new class extends Component {
                             single
                             searchable
                             placeholder="-- Select --"
+                            :disabled="!$open"
                         />
                         <x-choices
                             label="PPH"
@@ -254,8 +263,9 @@ new class extends Component {
                             single
                             searchable
                             placeholder="-- Select --"
+                            :disabled="!$open"
                         />
-                        <x-input label="Stamp" wire:model.live.debounce.400ms="stamp_amount" class="money" />
+                        <x-input label="Stamp" wire:model.live.debounce.400ms="stamp_amount" class="money" :disabled="!$open" />
                         <x-input label="PPN Amount" wire:model="ppn_amount" readonly class="bg-base-200" />
                         <x-input label="PPH Amount" wire:model="pph_amount" readonly class="bg-base-200" />
                         <x-input label="Invoice Amount" wire:model="invoice_amount" readonly class="bg-base-200" />
@@ -308,6 +318,8 @@ new class extends Component {
             <x-card>
                 <div class="space-y-4">
                     <h2 class="text-lg font-semibold">Danger Zone</h2>
+                    @can('void sales invoice')
+                    @if ($salesInvoice->status != 'void')
                     <div>
                         <x-button
                             label="Void"
@@ -318,6 +330,10 @@ new class extends Component {
                             class="btn-error btn-soft"
                         />
                     </div>
+                    @endif
+                    @endcan
+
+                    @can('delete sales invoice')
                     <div class="text-xs">
                         <p>Once you delete a invoice, there is no going back. Please be certain.</p>
                     </div>
@@ -331,6 +347,7 @@ new class extends Component {
                             class="btn-error btn-soft"
                         />
                     </div>
+                    @endcan
                 </div>
             </x-card>
         </div>

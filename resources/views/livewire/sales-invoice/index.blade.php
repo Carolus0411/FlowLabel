@@ -174,9 +174,9 @@ new class extends Component {
             @endscope
             @scope('cell_status', $salesInvoice)
             @if ($salesInvoice->status == 'close')
-            <x-badge value="Open" class="text-xs badge-success" />
+            <x-badge value="Close" class="text-xs badge-success" />
             @elseif ($salesInvoice->status == 'void')
-            <x-badge value="Open" class="text-xs badge-error" />
+            <x-badge value="Void" class="text-xs badge-error" />
             @else
             <x-badge value="Open" class="text-xs badge-primary" />
             @endif

@@ -43,6 +43,8 @@ new class extends Component {
 
     public function with(): array
     {
+        $this->open = $this->salesInvoice->status == 'open';
+
         return [
             'details' => $this->salesInvoice->details()->with(['serviceCharge','currency','uom'])->get()
         ];
@@ -197,8 +199,8 @@ new class extends Component {
             <tbody>
 
             @forelse ($details as $key => $detail)
+            @if ($open)
             <tr wire:key="table-row-{{ $detail->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
-                @if ($open)
                 <td wire:click="edit('{{ $detail->id }}')" class=""><b>{{ $detail->serviceCharge->code ?? '' }}</b>, {{ $detail->serviceCharge->name ?? '' }}</td>
                 <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
                 <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->uom->code ?? '' }}</td>
@@ -212,7 +214,9 @@ new class extends Component {
                     <x-button icon="o-x-mark" wire:click="delete('{{ $detail->id }}')" spinner="delete('{{ $detail->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
                 </div>
                 </td>
-                @else
+            </tr>
+            @else
+            <tr wire:key="table-row-{{ $detail->id }}" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
                 <td class="">{{ $detail->serviceCharge->code ?? '' }}; {{ $detail->serviceCharge->name ?? '' }}</td>
                 <td class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
                 <td class="">{{ $detail->uom->code ?? '' }}</td>
@@ -221,8 +225,8 @@ new class extends Component {
                 <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
                 <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
                 <td class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
-                @endif
             </tr>
+            @endif
             @empty
             <tr class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
                 <td colspan="10" class="text-center">No record found.</td>
