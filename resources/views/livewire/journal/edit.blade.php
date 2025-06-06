@@ -136,6 +136,7 @@ new class extends Component {
             'status' => 'close'
         ]);
 
+        $this->closeConfirm = false;
         $this->success('Journal successfully closed.', redirectTo: route('journal.index'));
     }
 }; ?>

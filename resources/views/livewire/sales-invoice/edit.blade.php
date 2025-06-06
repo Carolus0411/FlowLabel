@@ -190,6 +190,7 @@ new class extends Component {
 
         \App\Events\SalesInvoiceClosed::dispatch($this->salesInvoice);
 
+        $this->closeConfirm = false;
         $this->success('Invoice successfully closed.', redirectTo: route('sales-invoice.index'));
     }
 }; ?>
@@ -227,7 +228,7 @@ new class extends Component {
                 @endif --}}
                 <x-button label="Back" link="{{ route('sales-invoice.index') }}" icon="o-arrow-uturn-left" />
                 @if ($salesInvoice->saved == '1' AND $salesInvoice->status == 'open')
-                <x-button label="Close" icon="o-check" wire:click="close" spinner="close" class="btn-success" />
+                <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
                 @if ($open)
                 <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />

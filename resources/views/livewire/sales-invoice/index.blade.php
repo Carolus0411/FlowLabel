@@ -237,7 +237,9 @@ new class extends Component {
         </div>
         <x-slot:actions>
             <x-button label="Close" icon="o-x-mark" @click="$wire.journalModal = false" />
-            <x-button label="View Journal" icon="o-eye" link="{{ route('journal.edit', $journal->id ?? 0) }}" class="btn-primary" />
+            @unless (empty($journal->id))
+            <x-button label="View Journal" icon="o-eye" link="{{ route('journal.edit', $journal->id) }}" class="btn-primary" />
+            @endunless
         </x-slot:actions>
     </x-modal>
 </div>

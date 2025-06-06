@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Events\SalesInvoiceVoided;
 use App\Models\Journal;
 
-class SalesInvoiceUnjournal
+class SalesInvoiceVoidJournal
 {
     /**
      * Create the event listener.
