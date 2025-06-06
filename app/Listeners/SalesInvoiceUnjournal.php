@@ -27,14 +27,14 @@ class SalesInvoiceUnjournal
 
             $salesInvoice = $salesInvoiceVoided->salesInvoice;
 
-            $journal = Journal::where('ref_name','SalesInvoice')->where('ref_id', $salesInvoice->code)->first();
-
-            if (isset($journal->details)) {
-                $journal->details()->delete();
-            }
+            $journal = Journal::where('ref_name','SalesInvoice')
+                ->where('ref_id', $salesInvoice->code)
+                ->first();
 
             if ($journal) {
-                $journal->delete();
+                $journal->update([
+                    'status' => 'void'
+                ]);
             }
 
         });

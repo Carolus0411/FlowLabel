@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('banks', function (Blueprint $table) {
+        Schema::create('cash_account', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->index();
+            $table->foreignId('currency_id')->index()->nullable();
+            $table->string('coa_code',20)->index();
+            $table->boolean('is_active')->index();
             $table->timestamps();
         });
     }
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('banks');
+        Schema::dropIfExists('cash_account');
     }
 };

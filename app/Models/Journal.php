@@ -30,11 +30,11 @@ class Journal extends Model
 
         static::updated(function (Model $model) {
 
-            // if ($model->isDirty('status')) {
-            //     $model->details()->update([
-            //         'status' => $model->status
-            //     ]);
-            // }
+            if ($model->isDirty('status')) {
+                $model->details()->update([
+                    'status' => $model->status
+                ]);
+            }
 
             auth()->user()->logs()->create([
                 'resource' => class_basename($model),

@@ -21,14 +21,14 @@ class JournalDetail extends Model
             $model->year = Carbon::parse($model->date)->format('Y');
             $model->month = Carbon::parse($model->date)->format('Ym');
             $model->amount = $model->dc == 'D' ? $model->debit : ($model->credit * -1);
-            $model->status = $model->journal->status;
+            $model->status = $model->status ?? $model->journal->status;
         });
 
         static::updating(function (Model $model) {
             $model->year = Carbon::parse($model->date)->format('Y');
             $model->month = Carbon::parse($model->date)->format('Ym');
             $model->amount = $model->dc == 'D' ? $model->debit : ($model->credit * -1);
-            $model->status = $model->journal->status;
+            $model->status = $model->status ?? $model->journal->status;
         });
     }
 
