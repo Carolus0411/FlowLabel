@@ -37,10 +37,15 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/uom/{uom}/edit', 'uom.edit')->name('uom.edit');
     Volt::route('/uom/import', 'uom.import')->name('uom.import');
 
-    Volt::route('/bank', 'bank.index')->name('bank.index');
-    Volt::route('/bank/create', 'bank.create')->name('bank.create');
-    Volt::route('/bank/{bank}/edit', 'bank.edit')->name('bank.edit');
-    Volt::route('/bank/import', 'bank.import')->name('bank.import');
+    Volt::route('/bank-name', 'bank.index')->name('bank.index');
+    Volt::route('/bank-name/create', 'bank.create')->name('bank.create');
+    Volt::route('/bank-name/{bank}/edit', 'bank.edit')->name('bank.edit');
+    Volt::route('/bank-name/import', 'bank.import')->name('bank.import');
+
+    Volt::route('/bank-account', 'bank-account.index')->name('bank-account.index');
+    Volt::route('/bank-account/create', 'bank-account.create')->name('bank-account.create');
+    Volt::route('/bank-account/{bankAccount}/edit', 'bank-account.edit')->name('bank-account.edit');
+    Volt::route('/bank-account/import', 'bank-account.import')->name('bank-account.import');
 
     Volt::route('/coa', 'coa.index')->name('coa.index');
     Volt::route('/coa/create', 'coa.create')->name('coa.create');

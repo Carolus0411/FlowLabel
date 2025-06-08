@@ -30,5 +30,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CoaSeeder::class);
         $this->call(ServiceChargeSeeder::class);
         $this->call(AccountMappingSeeder::class);
+        $this->call(BankSeeder::class);
     }
 }
