@@ -37,6 +37,11 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/uom/{uom}/edit', 'uom.edit')->name('uom.edit');
     Volt::route('/uom/import', 'uom.import')->name('uom.import');
 
+    Volt::route('/bank', 'bank.index')->name('bank.index');
+    Volt::route('/bank/create', 'bank.create')->name('bank.create');
+    Volt::route('/bank/{bank}/edit', 'bank.edit')->name('bank.edit');
+    Volt::route('/bank/import', 'bank.import')->name('bank.import');
+
     Volt::route('/coa', 'coa.index')->name('coa.index');
     Volt::route('/coa/create', 'coa.create')->name('coa.create');
     Volt::route('/coa/{coa}/edit', 'coa.edit')->name('coa.edit');

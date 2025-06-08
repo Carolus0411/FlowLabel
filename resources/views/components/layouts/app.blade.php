@@ -90,6 +90,9 @@
                     <x-menu-item title="Service Charge" link="{{ route('service-charge.index') }}" :hidden="auth()->user()->cannot('view service charge')" />
                     <x-menu-item title="Currency" link="{{ route('currency.index') }}" :hidden="auth()->user()->cannot('view currency')" />
                     <x-menu-item title="Uom" link="{{ route('uom.index') }}" :hidden="auth()->user()->cannot('view uom')" />
+                    <x-menu-sub title="Cash And Bank">
+                        <x-menu-item title="Bank" link="{{ route('bank.index') }}" :hidden="auth()->user()->cannot('view bank')" />
+                    </x-menu-sub>
                 </x-menu-sub>
 
                 <x-menu-sub title="Setup" icon="o-cog-6-tooth">
