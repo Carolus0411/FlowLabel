@@ -6,10 +6,9 @@ use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Spatie\SimpleExcel\SimpleExcelReader;
 use Mary\Traits\Toast;
-use App\Models\Bank;
 use App\Models\Currency;
 use App\Models\Coa;
-use App\Models\BankAccount;
+use App\Models\CashAccount;
 
 new class extends Component {
     use Toast, WithFileUploads;
@@ -18,7 +17,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('import bank-account');
+        Gate::authorize('import cash-account');
     }
 
     public function save()
@@ -45,44 +44,42 @@ new class extends Component {
                         }
 
                         if (!empty($row['id'])) {
-                            BankAccount::where('id', $row['id'])->delete();
+                            CashAccount::where('id', $row['id'])->delete();
                         }
 
-                        $bank = Bank::where('id', $row['bank_id'])->first();
                         $currency = Currency::where('id', $row['currency_id'])->first();
                         $coa = Coa::where('code', $row['coa_code'])->first();
 
                         $data['name'] = $row['name'];
-                        $data['bank_id'] = $bank->id ?? '';
                         $data['currency_id'] = $currency->id ?? '';
                         $data['coa_code'] = $coa->code ?? '';
                         $data['is_active'] = $row['is_active'];
 
-                        BankAccount::create($data);
+                        CashAccount::create($data);
                     }
 
                 });
             }
 
             DB::commit();
-            $this->success('Success','Bank account successfully imported.', redirectTo: route('bank-account.index'));
+            $this->success('Success','Cash account successfully imported.', redirectTo: route('cash-account.index'));
         }
         catch (Exception $e)
         {
             DB::rollBack();
             logger()->error($e->getMessage());
-            $this->error('Error','Bank account failed to import.', redirectTo: route('bank-account.index'));
+            $this->error('Error','Cash account failed to import.', redirectTo: route('cash-account.index'));
         }
     }
 }; ?>
 
 <div>
-    <x-header title="Import Bank Account" separator />
+    <x-header title="Import Cash Account" separator />
     <x-card>
         <x-form wire:submit="save">
             <x-file wire:model="file" label="File" hint="xlsx or csv" wire:target="save" wire:loading.attr="disabled" />
             <x-slot:actions>
-                <x-button label="Cancel" link="{{ route('bank-account.index') }}" wire:target="save" wire:loading.attr="disabled" />
+                <x-button label="Cancel" link="{{ route('cash-account.index') }}" wire:target="save" wire:loading.attr="disabled" />
                 <x-button label="Import" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
             </x-slot:actions>
         </x-form>

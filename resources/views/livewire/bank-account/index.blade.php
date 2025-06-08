@@ -24,7 +24,6 @@ new class extends Component {
     public int $filterCount = 0;
     public bool $drawer = false;
     public array $sortBy = ['column' => 'name', 'direction' => 'asc'];
-    public array $activeList;
 
     public function mount(): void
     {

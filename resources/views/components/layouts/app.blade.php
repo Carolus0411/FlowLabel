@@ -93,6 +93,7 @@
                     <x-menu-sub title="Cash And Bank">
                         <x-menu-item title="Bank" link="{{ route('bank.index') }}" :hidden="auth()->user()->cannot('view bank')" />
                         <x-menu-item title="Bank Account" link="{{ route('bank-account.index') }}" :hidden="auth()->user()->cannot('view bank-account')" />
+                        <x-menu-item title="Cash Account" link="{{ route('cash-account.index') }}" :hidden="auth()->user()->cannot('view cash-account')" />
                     </x-menu-sub>
                 </x-menu-sub>
 

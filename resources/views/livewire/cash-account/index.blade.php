@@ -7,18 +7,18 @@ use Livewire\Volt\Component;
 use Livewire\Attributes\Session;
 use Livewire\WithPagination;
 use Mary\Traits\Toast;
-use App\Models\Bank;
+use App\Models\CashAccount;
 
 new class extends Component {
     use Toast, WithPagination;
 
-    #[Session(key: 'bank_per_page')]
+    #[Session(key: 'cashaccount_per_page')]
     public int $perPage = 10;
 
-    #[Session(key: 'bank_name')]
+    #[Session(key: 'cashaccount_name')]
     public string $name = '';
 
-    #[Session(key: 'bank_active')]
+    #[Session(key: 'cashaccount_active')]
     public string $is_active = '';
 
     public int $filterCount = 0;
@@ -27,7 +27,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('view bank');
+        Gate::authorize('view cash-account');
         $this->updateFilterCount();
     }
 
@@ -35,15 +35,18 @@ new class extends Component {
     {
         return [
             ['key' => 'name', 'label' => 'Name'],
+            ['key' => 'currency.code', 'label' => 'Currency', 'sortable' => false],
+            ['key' => 'coa.code', 'label' => 'Coa', 'sortable' => false],
             ['key' => 'is_active', 'label' => 'Active', 'class' => 'lg:w-[120px]'],
             ['key' => 'created_at', 'label' => 'Created At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
             ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
         ];
     }
 
-    public function banks(): LengthAwarePaginator
+    public function cashAccounts(): LengthAwarePaginator
     {
-        return Bank::query()
+        return CashAccount::query()
+        ->with(['currency','coa'])
         ->orderBy(...array_values($this->sortBy))
         ->filterLike('name', $this->name)
         ->active($this->is_active)
@@ -54,7 +57,7 @@ new class extends Component {
     {
         return [
             'headers' => $this->headers(),
-            'banks' => $this->banks(),
+            'cashAccounts' => $this->cashAccounts(),
         ];
     }
 
@@ -93,66 +96,68 @@ new class extends Component {
         $this->filterCount = $count;
     }
 
-    public function delete(Bank $bank): void
+    public function delete(CashAccount $cashAccount): void
     {
-        Gate::authorize('delete bank');
-        $bank->delete();
-        $this->success('Bank has been deleted.');
+        Gate::authorize('delete cash-account');
+        $cashAccount->delete();
+        $this->success('Cash account has been deleted.');
     }
 
     public function export()
     {
-        Gate::authorize('export bank');
+        Gate::authorize('export cash-account');
 
-        $bank = Bank::orderBy('id','asc');
-        $writer = SimpleExcelWriter::streamDownload('Bank.xlsx');
-        foreach ( $bank->lazy() as $bank ) {
+        $cashAccount = CashAccount::orderBy('id','asc');
+        $writer = SimpleExcelWriter::streamDownload('CashAccount.xlsx');
+        foreach ( $cashAccount->lazy() as $cashAccount ) {
             $writer->addRow([
-                'id' => $bank->id ?? '',
-                'name' => $bank->name ?? '',
-                'is_active' => $bank->is_active ?? '',
+                'id' => $cashAccount->id ?? '',
+                'name' => $cashAccount->name ?? '',
+                'currency_id' => $cashAccount->currency_id ?? '',
+                'coa_code' => $cashAccount->coa_code ?? '',
+                'is_active' => $cashAccount->is_active ?? '',
             ]);
         }
         return response()->streamDownload(function() use ($writer){
             $writer->close();
-        }, 'Bank.xlsx');
+        }, 'CashAccount.xlsx');
     }
 }; ?>
 
 <div>
     {{-- HEADER --}}
-    <x-header title="Bank" separator progress-indicator>
+    <x-header title="Cash Account" separator progress-indicator>
         <x-slot:actions>
-            @can('export bank')
+            @can('export cash-account')
             <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
             @endcan
-            @can('import bank')
-            <x-button label="Import" link="{{ route('bank.import') }}" icon="o-arrow-up-tray" />
+            @can('import cash-account')
+            <x-button label="Import" link="{{ route('cash-account.import') }}" icon="o-arrow-up-tray" />
             @endcan
             <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
-            @can('create bank')
-            <x-button label="Create" link="{{ route('bank.create') }}" icon="o-plus" class="btn-primary" />
+            @can('create cash-account')
+            <x-button label="Create" link="{{ route('cash-account.create') }}" icon="o-plus" class="btn-primary" />
             @endcan
         </x-slot:actions>
     </x-header>
 
     {{-- TABLE --}}
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
-        <x-table :headers="$headers" :rows="$banks" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text>
-            @scope('cell_is_active', $bank)
-            @if ($bank->is_active)
+        <x-table :headers="$headers" :rows="$cashAccounts" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text>
+            @scope('cell_is_active', $cashAccount)
+            @if ($cashAccount->is_active)
             <x-badge value="Active" class="text-xs uppercase badge-success badge-soft" />
             @else
             <x-badge value="Inactive" class="text-xs uppercase badge-error badge-soft" />
             @endif
             @endscope
-            @scope('actions', $bank)
+            @scope('actions', $cashAccount)
             <div class="flex gap-1.5">
-                @can('delete bank')
-                <x-button wire:click="delete({{ $bank->id }})" spinner="delete({{ $bank->id }})" wire:confirm="Are you sure you want to delete this row?" icon="o-trash" class="btn btn-sm" />
+                @can('delete cash-account')
+                <x-button wire:click="delete({{ $cashAccount->id }})" spinner="delete({{ $cashAccount->id }})" wire:confirm="Are you sure you want to delete this row?" icon="o-trash" class="btn btn-sm" />
                 @endcan
-                @can('update bank')
-                <x-button link="{{ route('bank.edit', $bank->id) }}" icon="o-pencil-square" class="btn btn-sm" />
+                @can('update cash-account')
+                <x-button link="{{ route('cash-account.edit', $cashAccount->id) }}" icon="o-pencil-square" class="btn btn-sm" />
                 @endcan
             </div>
             @endscope
