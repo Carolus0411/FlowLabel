@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cash_detail', function (Blueprint $table) {
+        Schema::create('cash_book_detail', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cash_id')->index()->default(0);
+            $table->foreignId('cash_book_id')->index()->default(0);
             $table->string('coa_code',20)->index();
             $table->foreignId('currency_id')->index()->default(0);
             $table->decimal('currency_rate', 12, 2)->default(0);
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cash_detail');
+        Schema::dropIfExists('cash_book_detail');
     }
 };

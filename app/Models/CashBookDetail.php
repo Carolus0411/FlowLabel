@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Filterable;
 
-class CashDetail extends Model
+class CashBookDetail extends Model
 {
     use Filterable;
 
-    protected $table = 'cash';
+    protected $table = 'cash_book_detail';
     protected $guarded = [];
 
     public function coa(): BelongsTo

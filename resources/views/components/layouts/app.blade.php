@@ -78,6 +78,10 @@
                     <x-menu-item title="Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales invoice')" />
                 </x-menu-sub>
 
+                <x-menu-sub title="Cash And Bank" icon="o-banknotes">
+                    <x-menu-item title="Cash Book" link="{{ route('cash-book.index') }}" :hidden="auth()->user()->cannot('view cash-book')" />
+                </x-menu-sub>
+
                 <x-menu-sub title="General Ledger" icon="o-clipboard-document-list">
                     <x-menu-item title="Journal" link="{{ route('journal.index') }}" :hidden="auth()->user()->cannot('view journal')" />
                 </x-menu-sub>
