@@ -79,7 +79,8 @@
                 </x-menu-sub>
 
                 <x-menu-sub title="Cash And Bank" icon="o-banknotes">
-                    <x-menu-item title="Cash Book" link="{{ route('cash-book.index') }}" :hidden="auth()->user()->cannot('view cash-book')" />
+                    {{-- <x-menu-item title="Cash Book" link="{{ route('cash-book.index') }}" : hidden="auth()->user()->cannot('view cash-book')" /> --}}
+                    <x-menu-item title="Cash In" link="{{ route('cash-in.index') }}" :hidden="auth()->user()->cannot('view cash-in')" />
                 </x-menu-sub>
 
                 <x-menu-sub title="General Ledger" icon="o-clipboard-document-list">
