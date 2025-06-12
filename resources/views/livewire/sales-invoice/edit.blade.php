@@ -321,7 +321,7 @@ new class extends Component {
                     </tr>
                     </thead>
                     <tbody>
-                    @forelse ($salesInvoice->logs()->with('user')->latest()->limit(10)->get() as $log)
+                    @forelse ($salesInvoice->logs()->with('user')->latest()->limit(5)->get() as $log)
                     <tr>
                         <td>{{ $log->user->name }}</td>
                         <td>{{ $log->action }}</td>

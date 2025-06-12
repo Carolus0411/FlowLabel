@@ -11,6 +11,7 @@ use App\Models\CashAccount;
 new class extends Component {
     use Toast;
 
+    public $code = '';
     public $name = '';
     public $currency_id = '';
     public $coa_code = '';
@@ -29,6 +30,7 @@ new class extends Component {
     public function save(): void
     {
         $data = $this->validate([
+            'code' => 'required|unique:App\Models\CashAccount,code',
             'name' => 'required',
             'currency_id' => 'required',
             'coa_code' => 'required',
@@ -73,6 +75,7 @@ new class extends Component {
     <x-form wire:submit="save">
         <x-card>
             <div class="space-y-4">
+                <x-input label="Code" wire:model="code" />
                 <x-input label="Name" wire:model="name" />
                 <x-choices
                     label="Currency"

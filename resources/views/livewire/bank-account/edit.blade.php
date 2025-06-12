@@ -14,6 +14,7 @@ new class extends Component {
 
     public BankAccount $bankAccount;
 
+    public $code = '';
     public $name = '';
     public $bank_id = '';
     public $currency_id = '';
@@ -36,6 +37,7 @@ new class extends Component {
     public function save(): void
     {
         $data = $this->validate([
+            'code' => 'required|unique:App\Models\BankAccount,code,'.$this->bankAccount->id,
             'name' => 'required',
             'bank_id' => 'required',
             'currency_id' => 'required',
@@ -92,6 +94,7 @@ new class extends Component {
     <x-form wire:submit="save">
         <x-card>
             <div class="space-y-4">
+                <x-input label="Code" wire:model="code" />
                 <x-input label="Name" wire:model="name" />
                 <x-choices
                     label="Bank"

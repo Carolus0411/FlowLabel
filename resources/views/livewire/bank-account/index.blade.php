@@ -15,6 +15,9 @@ new class extends Component {
     #[Session(key: 'bankaccount_per_page')]
     public int $perPage = 10;
 
+    #[Session(key: 'bankaccount_code')]
+    public string $code = '';
+
     #[Session(key: 'bankaccount_name')]
     public string $name = '';
 
@@ -34,6 +37,7 @@ new class extends Component {
     public function headers(): array
     {
         return [
+            ['key' => 'code', 'label' => 'Code'],
             ['key' => 'name', 'label' => 'Name'],
             ['key' => 'bank.name', 'label' => 'Bank', 'sortable' => false],
             ['key' => 'currency.code', 'label' => 'Currency', 'sortable' => false],
@@ -49,6 +53,7 @@ new class extends Component {
         return BankAccount::query()
         ->with(['bank','currency','coa'])
         ->orderBy(...array_values($this->sortBy))
+        ->filterLike('code', $this->code)
         ->filterLike('name', $this->name)
         ->active($this->is_active)
         ->paginate($this->perPage);
@@ -88,6 +93,9 @@ new class extends Component {
     public function updateFilterCount(): void
     {
         $count = 0;
+        if (!empty($this->code)) {
+            $count++;
+        }
         if (!empty($this->name)) {
             $count++;
         }
@@ -113,6 +121,7 @@ new class extends Component {
         foreach ( $bankAccount->lazy() as $bankAccount ) {
             $writer->addRow([
                 'id' => $bankAccount->id ?? '',
+                'code' => $bankAccount->code ?? '',
                 'name' => $bankAccount->name ?? '',
                 'bank_id' => $bankAccount->bank_id ?? '',
                 'currency_id' => $bankAccount->currency_id ?? '',
@@ -170,6 +179,7 @@ new class extends Component {
     <x-drawer wire:model="drawer" title="Filters" right separator with-close-button class="lg:w-1/3">
         <x-form wire:submit="search">
             <div class="grid gap-4">
+                <x-input label="Code" wire:model="code" />
                 <x-input label="Name" wire:model="name" />
                 <x-select label="Active" wire:model="is_active" :options="\App\Enums\ActiveStatus::toSelect()" placeholder="-- All --" />
             </div>

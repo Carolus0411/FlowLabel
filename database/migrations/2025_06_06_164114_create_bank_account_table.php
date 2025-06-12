@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('bank_account', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->index();
+            $table->string('code')->unique();
+            $table->string('name');
             $table->foreignId('bank_id')->index()->nullable();
             $table->foreignId('currency_id')->index()->nullable();
             $table->string('coa_code', 20)->index();

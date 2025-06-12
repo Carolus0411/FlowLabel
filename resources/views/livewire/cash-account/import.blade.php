@@ -50,6 +50,7 @@ new class extends Component {
                         $currency = Currency::where('id', $row['currency_id'])->first();
                         $coa = Coa::where('code', $row['coa_code'])->first();
 
+                        $data['code'] = $row['code'];
                         $data['name'] = $row['name'];
                         $data['currency_id'] = $currency->id ?? '';
                         $data['coa_code'] = $coa->code ?? '';
