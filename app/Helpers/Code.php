@@ -41,7 +41,7 @@ class Code {
     {
         $date = $date ? $date : date('Y-m-d');
         $time = strtotime($date);
-        $prefix = $code . '/'.date('Y', $time).'/'.date('m', $time).'/';
+        $prefix = $code . '/'.date('y', $time).'/'.date('m', $time).'/';
         AutoCode::updateOrCreate(
             ['prefix' => $prefix],
         )->increment('num');

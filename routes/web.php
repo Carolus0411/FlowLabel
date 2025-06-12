@@ -62,6 +62,11 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/cash-in/{cashIn}/edit', 'cash-in.edit')->name('cash-in.edit');
     Volt::route('/cash-in/import', 'cash-in.import')->name('cash-in.import');
 
+    Volt::route('/cash-out', 'cash-out.index')->name('cash-out.index');
+    Volt::route('/cash-out/create', 'cash-out.create')->name('cash-out.create');
+    Volt::route('/cash-out/{cashOut}/edit', 'cash-out.edit')->name('cash-out.edit');
+    Volt::route('/cash-out/import', 'cash-out.import')->name('cash-out.import');
+
     Volt::route('/coa', 'coa.index')->name('coa.index');
     Volt::route('/coa/create', 'coa.create')->name('coa.create');
     Volt::route('/coa/{coa}/edit', 'coa.edit')->name('coa.edit');
@@ -109,6 +114,7 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
 
     Volt::route('/settings/general', 'setting.general')->name('setting.general');
     Volt::route('/settings/account-mapping', 'setting.account-mapping')->name('setting.account-mapping');
+    Volt::route('/settings/code', 'setting.code')->name('setting.code');
 
     Route::get('/logout', function () {
         auth()->logout();

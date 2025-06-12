@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('cash_out_detail', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cash_in_id')->index()->default(0);
+            $table->foreignId('cash_out_id')->index()->default(0);
             $table->string('coa_code',20)->index();
             $table->foreignId('currency_id')->index()->default(0);
             $table->decimal('currency_rate', 12, 2)->default(0);

@@ -8,21 +8,21 @@ use Livewire\Attributes\Session;
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use Mary\Traits\Toast;
-use App\Models\CashIn;
+use App\Models\CashOut;
 
 new class extends Component {
     use Toast, WithPagination;
 
-    #[Session(key: 'cashin_per_page')]
+    #[Session(key: 'cashout_per_page')]
     public int $perPage = 10;
 
-    #[Session(key: 'cashin_date1')]
+    #[Session(key: 'cashout_date1')]
     public string $date1 = '';
 
-    #[Session(key: 'cashin_date2')]
+    #[Session(key: 'cashout_date2')]
     public string $date2 = '';
 
-    #[Session(key: 'cashin_code')]
+    #[Session(key: 'cashout_code')]
     public $code = '';
 
     public int $filterCount = 0;
@@ -32,7 +32,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('view cash-in');
+        Gate::authorize('view cash-out');
 
         if (empty($this->date1)) {
             $this->date1 = date('Y-m-01');
@@ -58,18 +58,18 @@ new class extends Component {
 
     public function create(): void
     {
-        $cashIn = CashIn::create([
+        $cashOut = CashOut::create([
             'code' => uniqid(),
             'date' => Carbon::now(),
             'status' => 'open',
         ]);
 
-        $this->redirectRoute('cash-in.edit', $cashIn->id);
+        $this->redirectRoute('cash-out.edit', $cashOut->id);
     }
 
-    public function cashIns(): LengthAwarePaginator
+    public function cashOuts(): LengthAwarePaginator
     {
-        return cashIn::stored()
+        return CashOut::stored()
             ->whereDateBetween('DATE(date)', $this->date1, $this->date2)
             ->with(['contact'])
             ->orderBy(...array_values($this->sortBy))
@@ -81,7 +81,7 @@ new class extends Component {
     {
         return [
             'headers' => $this->headers(),
-            'cashIns' => $this->cashIns(),
+            'cashOuts' => $this->cashOuts(),
         ];
     }
 
@@ -130,36 +130,36 @@ new class extends Component {
 
     public function export()
     {
-        Gate::authorize('export cash-in');
+        Gate::authorize('export cash-out');
 
-        $cashIn = cashIn::stored()
+        $cashOut = cashOut::stored()
             ->whereDateBetween('DATE(date)', $this->date1, $this->date2)
             ->orderBy('id','asc');
-        $writer = SimpleExcelWriter::streamDownload('CashIn.xlsx');
-        foreach ( $cashIn->lazy() as $cashIn ) {
+        $writer = SimpleExcelWriter::streamDownload('CashOut.xlsx');
+        foreach ( $cashOut->lazy() as $cashOut ) {
             $writer->addRow([
-                'id' => $cashIn->id,
-                'code' => $cashIn->code,
-                'date' => $cashIn->date,
-                'note' => $cashIn->note,
-                'cash_account_id' => $cashIn->cash_account_id,
-                'contact_id' => $cashIn->contact_id,
-                'total_amount' => $cashIn->total_amount,
-                'status' => $cashIn->status,
-                'saved' => $cashIn->saved,
-                'created_by' => $cashIn->created_by,
-                'updated_by' => $cashIn->updated_by,
+                'id' => $cashOut->id,
+                'code' => $cashOut->code,
+                'date' => $cashOut->date,
+                'note' => $cashOut->note,
+                'cash_account_id' => $cashOut->cash_account_id,
+                'contact_id' => $cashOut->contact_id,
+                'total_amount' => $cashOut->total_amount,
+                'status' => $cashOut->status,
+                'saved' => $cashOut->saved,
+                'created_by' => $cashOut->created_by,
+                'updated_by' => $cashOut->updated_by,
             ]);
         }
         return response()->streamDownload(function() use ($writer){
             $writer->close();
-        }, 'CashIn.xlsx');
+        }, 'CashOut.xlsx');
     }
 }; ?>
 
 <div>
     {{-- HEADER --}}
-    <x-header title="Cash In" separator progress-indicator>
+    <x-header title="Cash Out" separator progress-indicator>
         <x-slot:subtitle class="flex items-center gap-1">
             <div>Date :</div>
             <div class="bg-base-300 px-2 py-0 rounded-lg text-base-600">{{ \App\Helpers\Cast::date($date1) }}</div>
@@ -167,14 +167,14 @@ new class extends Component {
             <div class="bg-base-300 px-2 py-0 rounded-lg">{{ \App\Helpers\Cast::date($date2) }}</div>
         </x-slot:subtitle>
         <x-slot:actions>
-            @can('export cash-in')
+            @can('export cash-out')
             <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
             @endcan
-            @can('import cash-in')
-            <x-button label="Import" link="{{ route('cash-in.import') }}" icon="o-arrow-up-tray" />
+            @can('import cash-out')
+            <x-button label="Import" link="{{ route('cash-out.import') }}" icon="o-arrow-up-tray" />
             @endcan
             <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
-            @can('create cash-in')
+            @can('create cash-out')
             <x-button label="Create" wire:click="create" spinner="create" icon="o-plus" class="btn-primary" />
             @endcan
         </x-slot:actions>
@@ -184,23 +184,23 @@ new class extends Component {
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table
             :headers="$headers"
-            :rows="$cashIns"
+            :rows="$cashOuts"
             :sort-by="$sortBy"
             with-pagination
             per-page="perPage"
             show-empty-text
-            :link="route('cash-in.edit', ['cashIn' => '[id]'])"
+            :link="route('cash-out.edit', ['cashOut' => '[id]'])"
         >
-            @scope('cell_act', $cashIn)
+            @scope('cell_act', $cashOut)
             <x-dropdown class="btn-xs btn-soft">
-                <x-menu-item title="Edit" link="{{ route('cash-in.edit', $cashIn->id) }}" icon="o-pencil-square" />
-                <x-menu-item title="Show Journal" wire:click="showJournal('{{ $cashIn->code }}')" icon="o-magnifying-glass" />
+                <x-menu-item title="Edit" link="{{ route('cash-out.edit', $cashOut->id) }}" icon="o-pencil-square" />
+                <x-menu-item title="Show Journal" wire:click="showJournal('{{ $cashOut->code }}')" icon="o-magnifying-glass" />
             </x-dropdown>
             @endscope
-            @scope('cell_status', $cashIn)
-            @if ($cashIn->status == 'close')
+            @scope('cell_status', $cashOut)
+            @if ($cashOut->status == 'close')
             <x-badge value="Closed" class="text-xs badge-success" />
-            @elseif ($cashIn->status == 'void')
+            @elseif ($cashOut->status == 'void')
             <x-badge value="Void" class="text-xs badge-error" />
             @else
             <x-badge value="Open" class="text-xs badge-primary" />
@@ -226,5 +226,5 @@ new class extends Component {
         </x-form>
     </x-drawer>
 
-    <livewire:journal.modal :ref_id="$journalCode" ref_name="CashIn">
+    <livewire:journal.modal :ref_id="$journalCode" ref_name="CashOut">
 </div>

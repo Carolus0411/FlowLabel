@@ -37,7 +37,7 @@ class Cast {
         return $num;
     }
 
-    public static function date( $str, $format = 'd-m-Y' )
+    public static function date( $str, $format = 'd/m/y' )
     {
         if(in_array($str, [null,"","0000-00-00","1900-01-01"])) return '';
         return Carbon::parse($str)->format($format);

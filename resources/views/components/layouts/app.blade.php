@@ -81,6 +81,7 @@
                 <x-menu-sub title="Cash And Bank" icon="o-banknotes">
                     {{-- <x-menu-item title="Cash Book" link="{{ route('cash-book.index') }}" : hidden="auth()->user()->cannot('view cash-book')" /> --}}
                     <x-menu-item title="Cash In" link="{{ route('cash-in.index') }}" :hidden="auth()->user()->cannot('view cash-in')" />
+                    <x-menu-item title="Cash Out" link="{{ route('cash-out.index') }}" :hidden="auth()->user()->cannot('view cash-out')" />
                 </x-menu-sub>
 
                 <x-menu-sub title="General Ledger" icon="o-clipboard-document-list">
@@ -103,9 +104,10 @@
                 </x-menu-sub>
 
                 <x-menu-sub title="Setup" icon="o-cog-6-tooth">
-                    <x-menu-item title="Settings" link="{{ route('setting.general') }}" :hidden="auth()->user()->cannot('view general setting')" />
-                    <x-menu-item title="Account Mapping" link="{{ route('setting.account-mapping') }}" :hidden="auth()->user()->cannot('view account mapping')" />
-                    <x-menu-item title="Send Test Mail" link="{{ route('mail.test') }}" :hidden="auth()->user()->cannot('send test mail')" />
+                    <x-menu-item title="Settings" link="{{ route('setting.general') }}" :hidden="auth()->user()->cannot('view general-setting')" />
+                    <x-menu-item title="Account Mapping" link="{{ route('setting.account-mapping') }}" :hidden="auth()->user()->cannot('view account-mapping')" />
+                    <x-menu-item title="Code" link="{{ route('setting.code') }}" :hidden="auth()->user()->cannot('view setting-code')" />
+                    <x-menu-item title="Send Test Mail" link="{{ route('mail.test') }}" :hidden="auth()->user()->cannot('send test-mail')" />
                 </x-menu-sub>
 
                 <x-menu-sub title="Users" icon="o-users">

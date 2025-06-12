@@ -9,12 +9,12 @@ use App\Helpers\Cast;
 use App\Helpers\Code;
 use App\Models\Contact;
 use App\Models\CashAccount;
-use App\Models\CashIn;
+use App\Models\CashOut;
 
 new class extends Component {
     use Toast;
 
-    public CashIn $cashIn;
+    public CashOut $cashOut;
 
     public $code = '';
     public $date = '';
@@ -33,15 +33,15 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('update cash-in');
-        $this->fill($this->cashIn);
+        Gate::authorize('update cash-out');
+        $this->fill($this->cashOut);
         $this->searchCashAccount();
         $this->searchContact();
     }
 
     public function with(): array
     {
-        $this->open = $this->cashIn->status == 'open';
+        $this->open = $this->cashOut->status == 'open';
         $this->cash_account_id = $this->cash_account_id ?? '';
         $this->contact_id = $this->contact_id ?? '';
 
@@ -78,12 +78,12 @@ new class extends Component {
             'note' => 'nullable',
             'cash_account_id' => 'required',
             'contact_id' => 'required',
-            'details' => new \App\Rules\CashInDetailCheck($this->cashIn),
+            'details' => new \App\Rules\CashOutDetailCheck($this->cashOut),
         ]);
 
         unset($data['details']);
 
-        if ($this->cashIn->saved == '0') {
+        if ($this->cashOut->saved == '0') {
             $cashAccount = CashAccount::find($this->cash_account_id);
             $prefix = settings('cash_in_code') . $cashAccount->code;
             $code = Code::auto($prefix);
@@ -93,9 +93,9 @@ new class extends Component {
 
         $data['total_amount'] = Cast::number($this->total_amount);
 
-        $this->cashIn->update($data);
+        $this->cashOut->update($data);
 
-        $this->success('Cash successfully updated.', redirectTo: route('cash-in.index'));
+        $this->success('Cash successfully updated.', redirectTo: route('cash-out.index'));
     }
 
     #[On('detail-updated')]
@@ -103,7 +103,7 @@ new class extends Component {
     {
         $this->total_amount = Cast::money($data['total_amount'] ?? 0);
 
-        $this->cashIn->update([
+        $this->cashOut->update([
             'total_amount' => Cast::number($data['total_amount'] ?? 0)
         ]);
     }
@@ -113,37 +113,37 @@ new class extends Component {
 
     }
 
-    public function delete(CashIn $cashIn): void
+    public function delete(CashOut $cashOut): void
     {
-        Gate::authorize('delete cash-in');
-        $cashIn->details()->delete();
-        $cashIn->delete();
-        $this->success('Cash successfully deleted.', redirectTo: route('cash-in.index'));
+        Gate::authorize('delete cash-out');
+        $cashOut->details()->delete();
+        $cashOut->delete();
+        $this->success('Cash successfully deleted.', redirectTo: route('cash-out.index'));
     }
 
     public function close(): void
     {
-        Gate::authorize('close cash-in');
-        $this->cashIn->update([
+        Gate::authorize('close cash-out');
+        $this->cashOut->update([
             'status' => 'close'
         ]);
 
-        \App\Events\CashInClosed::dispatch($this->cashIn);
+        \App\Events\CashOutClosed::dispatch($this->cashOut);
 
         $this->closeConfirm = false;
-        $this->success('Cash successfully closed.', redirectTo: route('cash-in.index'));
+        $this->success('Cash successfully closed.', redirectTo: route('cash-out.index'));
     }
 
-    public function void(CashIn $cashIn): void
+    public function void(CashOut $cashOut): void
     {
-        Gate::authorize('void cash-in');
-        $cashIn->update([
+        Gate::authorize('void cash-out');
+        $cashOut->update([
             'status' => 'void'
         ]);
 
-        \App\Events\CashInVoided::dispatch($this->cashIn);
+        \App\Events\CashOutVoided::dispatch($this->cashOut);
 
-        $this->success('Cash successfully voided.', redirectTo: route('cash-in.index'));
+        $this->success('Cash successfully voided.', redirectTo: route('cash-out.index'));
     }
 }; ?>
 
@@ -160,10 +160,10 @@ new class extends Component {
         <x-header separator>
             <x-slot:title>
                 <div class="flex items-center gap-4">
-                    <span>Update Cash In</span>
-                    @if ($cashIn->status == 'close')
+                    <span>Update Cash Out</span>
+                    @if ($cashOut->status == 'close')
                     <x-badge value="Close" class="badge-success uppercase" />
-                    @elseif ($cashIn->status == 'void')
+                    @elseif ($cashOut->status == 'void')
                     <x-badge value="Void" class="badge-error uppercase" />
                     @else
                     <x-badge value="Open" class="badge-primary uppercase" />
@@ -171,8 +171,8 @@ new class extends Component {
                 </div>
             </x-slot:title>
             <x-slot:actions>
-                <x-button label="Back" link="{{ route('cash-in.index') }}" icon="o-arrow-uturn-left" />
-                @if ($cashIn->status == 'open' AND $cashIn->saved == '1')
+                <x-button label="Back" link="{{ route('cash-out.index') }}" icon="o-arrow-uturn-left" />
+                @if ($cashOut->status == 'open' AND $cashOut->saved == '1')
                 <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
                 @if ($open)
@@ -225,10 +225,10 @@ new class extends Component {
         @enderror
 
         <div class="overflow-x-auto">
-            <livewire:cash-in.detail :id="$cashIn->id" />
+            <livewire:cash-out.detail :id="$cashOut->id" />
         </div>
 
-        @if ($cashIn->saved == '1')
+        @if ($cashOut->saved == '1')
         <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
             <x-card>
                 <div class="space-y-4">
@@ -242,7 +242,7 @@ new class extends Component {
                     </tr>
                     </thead>
                     <tbody>
-                    @forelse ($cashIn->logs()->with('user')->latest()->limit(5)->get() as $log)
+                    @forelse ($cashOut->logs()->with('user')->latest()->limit(5)->get() as $log)
                     <tr>
                         <td>{{ $log->user->name }}</td>
                         <td>{{ $log->action }}</td>
@@ -259,8 +259,8 @@ new class extends Component {
                 <div class="space-y-4">
                     <h2 class="text-lg font-semibold">Danger Zone</h2>
 
-                    @can('void cash-in')
-                    @if ($cashIn->status != 'void')
+                    @can('void cash-out')
+                    @if ($cashOut->status != 'void')
                     <div class="text-xs">
                         <p>You can cancel a transaction without destroying it with void.</p>
                     </div>
@@ -268,8 +268,8 @@ new class extends Component {
                         <x-button
                             label="Void"
                             icon="o-archive-box-x-mark"
-                            wire:click="void('{{ $cashIn->id }}')"
-                            spinner="void('{{ $cashIn->id }}')"
+                            wire:click="void('{{ $cashOut->id }}')"
+                            spinner="void('{{ $cashOut->id }}')"
                             wire:confirm="Are you sure you want to void this?"
                             class="btn-error btn-soft"
                         />
@@ -277,7 +277,7 @@ new class extends Component {
                     @endif
                     @endcan
 
-                    @can('delete cash-in')
+                    @can('delete cash-out')
                     <div class="divider"></div>
                     <div class="text-xs">
                         <p>Once you delete, there is no going back. Please be certain.</p>
@@ -286,7 +286,7 @@ new class extends Component {
                         <x-button
                             label="Delete Permanently"
                             icon="o-trash"
-                            wire:click="delete('{{ $cashIn->id }}')"
+                            wire:click="delete('{{ $cashOut->id }}')"
                             spinner="save"
                             wire:confirm="Are you sure you want to delete this?"
                             class="btn-error btn-soft"

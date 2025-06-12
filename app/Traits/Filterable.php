@@ -110,4 +110,10 @@ trait Filterable
             );
         }
     }
+
+    #[Scope]
+    public function whereDateBetween(Builder $query, string $column, string $startDate, string $endDate)
+    {
+        $query->whereBetween(DB::raw($column), [$startDate, $endDate]);
+    }
 }
