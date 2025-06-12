@@ -111,6 +111,7 @@ new class extends Component {
         $this->reset(['code']);
         $this->resetPage();
         $this->updateFilterCount();
+        $this->drawer = false;
     }
 
     public function updateFilterCount(): void
@@ -160,11 +161,8 @@ new class extends Component {
 <div>
     {{-- HEADER --}}
     <x-header title="Cash Out" separator progress-indicator>
-        <x-slot:subtitle class="flex items-center gap-1">
-            <div>Date :</div>
-            <div class="bg-base-300 px-2 py-0 rounded-lg text-base-600">{{ \App\Helpers\Cast::date($date1) }}</div>
-            <div>-</div>
-            <div class="bg-base-300 px-2 py-0 rounded-lg">{{ \App\Helpers\Cast::date($date2) }}</div>
+        <x-slot:subtitle>
+            <x-subtitle-date :date1="$date1" :date2="$date2" />
         </x-slot:subtitle>
         <x-slot:actions>
             @can('export cash-out')

@@ -85,7 +85,7 @@ new class extends Component {
 
         if ($this->cashOut->saved == '0') {
             $cashAccount = CashAccount::find($this->cash_account_id);
-            $prefix = settings('cash_in_code') . $cashAccount->code;
+            $prefix = settings('cash_out_code') . $cashAccount->code;
             $code = Code::auto($prefix);
             $data['code'] = $code;
             $data['saved'] = 1;

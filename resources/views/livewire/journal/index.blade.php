@@ -16,6 +16,12 @@ new class extends Component {
     #[Session(key: 'journal_per_page')]
     public int $perPage = 10;
 
+    #[Session(key: 'journal_date1')]
+    public string $date1 = '';
+
+    #[Session(key: 'journal_date2')]
+    public string $date2 = '';
+
     #[Session(key: 'journal_code')]
     public string $code = '';
 
@@ -26,6 +32,12 @@ new class extends Component {
     public function mount(): void
     {
         Gate::authorize('view journal');
+
+        if (empty($this->date1)) {
+            $this->date1 = date('Y-m-01');
+            $this->date2 = date('Y-m-t');
+        }
+
         $this->updateFilterCount();
     }
 
@@ -40,7 +52,8 @@ new class extends Component {
             ['key' => 'credit_total', 'label' => 'Credit Total', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
             ['key' => 'ref_name', 'label' => 'Ref Name'],
             ['key' => 'ref_id', 'label' => 'Ref ID'],
-            ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
+            ['key' => 'updated_at', 'label' => 'Updated At', 'format' => ['date', 'd-M-y, H:i']],
+            ['key' => 'updatedBy.name', 'label' => 'Updated By'],
         ];
     }
 
@@ -58,7 +71,7 @@ new class extends Component {
     public function journals(): LengthAwarePaginator
     {
         return Journal::stored()
-            ->with(['contact'])
+            ->with(['contact','updatedBy'])
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
             ->paginate($this->perPage);
@@ -83,16 +96,22 @@ new class extends Component {
     public function search(): void
     {
         $data = $this->validate([
+            'date1' => 'required|date',
+            'date2' => 'required|date|after_or_equal:date1',
             'code' => 'nullable',
         ]);
     }
 
     public function clear(): void
     {
+        $this->date1 = date('Y-m-01');
+        $this->date2 = date('Y-m-t');
+
         $this->success('Filters cleared.');
-        $this->reset();
+        $this->reset(['code']);
         $this->resetPage();
         $this->updateFilterCount();
+        $this->drawer = false;
     }
 
     public function updateFilterCount(): void
@@ -108,7 +127,9 @@ new class extends Component {
     {
         Gate::authorize('export journal');
 
-        $journal = Journal::orderBy('id','asc');
+        $journal = Journal::stored()
+            ->whereDateBetween('DATE(date)', $this->date1, $this->date2)
+            ->orderBy('id','asc');
         $writer = SimpleExcelWriter::streamDownload('Journal.xlsx');
         foreach ( $journal->lazy() as $journal ) {
             $writer->addRow([
@@ -136,6 +157,9 @@ new class extends Component {
 <div>
     {{-- HEADER --}}
     <x-header title="Journal" separator progress-indicator>
+        <x-slot:subtitle>
+            <x-subtitle-date :date1="$date1" :date2="$date2" />
+        </x-slot:subtitle>
         <x-slot:actions>
             @can('export journal')
             <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
@@ -179,6 +203,10 @@ new class extends Component {
     <x-drawer wire:model="drawer" title="Filters" right separator with-close-button class="lg:w-1/3">
         <x-form wire:submit="search">
             <div class="grid gap-4">
+                <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
+                    <x-datetime label="Start Date" wire:model="date1" />
+                    <x-datetime label="End Date" wire:model="date2" />
+                </div>
                 <x-input label="Code" wire:model="code" />
             </div>
             <x-slot:actions>

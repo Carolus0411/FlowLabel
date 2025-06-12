@@ -39,7 +39,7 @@ new class extends Component {
 }; ?>
 
 <div>
-    <x-header title="General Setting" separator>
+    <x-header title="Code Setting" separator>
         {{-- <x-slot:actions>
             <x-button label="Back" link="{{ route('brand.index') }}" icon="o-arrow-uturn-left" />
         </x-slot:actions> --}}
