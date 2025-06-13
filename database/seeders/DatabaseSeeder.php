@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call(UserSeeder::class);
+        $this->call(SettingSeeder::class);
         $this->call(PermissionSeeder::class);
         $this->call(PpnSeeder::class);
         $this->call(PphSeeder::class);
@@ -30,6 +31,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CoaSeeder::class);
         $this->call(ServiceChargeSeeder::class);
         $this->call(BankSeeder::class);
-        $this->call(SettingSeeder::class);
+        $this->call(BankAccountSeeder::class);
+        $this->call(CashAccountSeeder::class);
     }
 }
