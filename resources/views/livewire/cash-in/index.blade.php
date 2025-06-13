@@ -159,7 +159,6 @@ new class extends Component {
         }, 'CashIn.xlsx');
     }
 }; ?>
-
 <div>
     {{-- HEADER --}}
     <x-header title="Cash In" separator progress-indicator>

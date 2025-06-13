@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\DB;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Reactive;
-use App\Models\Shipping;
+// use App\Models\Shipping;
 
 new class extends Component {
 
