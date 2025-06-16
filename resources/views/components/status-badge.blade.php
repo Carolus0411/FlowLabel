@@ -1,5 +1,5 @@
 @props([ 'status' ])
-<div {{ $boxClass ?? '' }}>
+<div class="flex items-center {{ $boxClass ?? '' }}">
     @if ($status == 'close')
     <x-badge value="Closed" {{ $attributes->merge(['class' => 'text-xs badge-success']) }} />
     @elseif ($status == 'open')

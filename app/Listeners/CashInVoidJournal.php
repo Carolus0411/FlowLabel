@@ -27,6 +27,10 @@ class CashInVoidJournal
 
             $cashIn = $cashInVoided->cashIn;
 
+            $cashIn->update([
+                'status' => 'void'
+            ]);
+
             $journal = Journal::where('ref_name', class_basename($cashIn))
                 ->where('ref_id', $cashIn->code)
                 ->first();

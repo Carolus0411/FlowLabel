@@ -1,18 +1,18 @@
 <?php
 
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Collection;
 use Livewire\Volt\Component;
 use Livewire\Attributes\On;
 use Mary\Traits\Toast;
+use App\Traits\ContactChoice;
+use App\Traits\CashAccountChoice;
 use App\Helpers\Cast;
 use App\Helpers\Code;
-use App\Models\Contact;
 use App\Models\CashAccount;
 use App\Models\CashIn;
 
 new class extends Component {
-    use Toast;
+    use Toast, ContactChoice, CashAccountChoice;
 
     public CashIn $cashIn;
 
@@ -26,17 +26,12 @@ new class extends Component {
 
     public $open = true;
     public $closeConfirm = false;
-
     public $details;
-    public Collection $contacts;
-    public Collection $cashAccounts;
 
     public function mount(): void
     {
         Gate::authorize('update cash-in');
         $this->fill($this->cashIn);
-        $this->searchCashAccount();
-        $this->searchContact();
     }
 
     public function with(): array
@@ -46,28 +41,6 @@ new class extends Component {
         $this->contact_id = $this->contact_id ?? '';
 
         return [];
-    }
-
-    public function searchCashAccount(string $value = ''): void
-    {
-        $selected = CashAccount::where('id', intval($this->cash_account_id))->get();
-        $this->cashAccounts = CashAccount::query()
-            ->filterLike('name', $value)
-            ->isActive()
-            ->take(20)
-            ->get()
-            ->merge($selected);
-    }
-
-    public function searchContact(string $value = ''): void
-    {
-        $selected = Contact::where('id', intval($this->contact_id))->get();
-        $this->contacts = Contact::query()
-            ->filterLike('name', $value)
-            ->isActive()
-            ->take(20)
-            ->get()
-            ->merge($selected);
     }
 
     public function save($close = false): void
@@ -138,9 +111,6 @@ new class extends Component {
     public function void(CashIn $cashIn): void
     {
         Gate::authorize('void cash-in');
-        $cashIn->update([
-            'status' => 'void'
-        ]);
 
         \App\Events\CashInVoided::dispatch($this->cashIn);
 
@@ -160,15 +130,9 @@ new class extends Component {
     <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0 pt-3">
         <x-header separator>
             <x-slot:title>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center-safe gap-4">
                     <span>Update Cash In</span>
-                    @if ($cashIn->status == 'close')
-                    <x-badge value="Close" class="badge-success uppercase" />
-                    @elseif ($cashIn->status == 'void')
-                    <x-badge value="Void" class="badge-error uppercase" />
-                    @else
-                    <x-badge value="Open" class="badge-primary uppercase" />
-                    @endif
+                    <x-status-badge :status="$cashIn->status" class="uppercase !text-sm" />
                 </div>
             </x-slot:title>
             <x-slot:actions>
@@ -193,7 +157,7 @@ new class extends Component {
                         <x-choices
                             label="Account"
                             wire:model="cash_account_id"
-                            :options="$cashAccounts"
+                            :options="$cashAccountChoice"
                             search-function="searchCashAccount"
                             option-label="name"
                             single
@@ -204,7 +168,7 @@ new class extends Component {
                         <x-choices
                             label="Contact"
                             wire:model="contact_id"
-                            :options="$contacts"
+                            :options="$contactChoice"
                             search-function="searchContact"
                             option-label="name"
                             single
