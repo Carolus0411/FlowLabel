@@ -70,8 +70,10 @@ new class extends Component {
             ->merge($selected);
     }
 
-    public function save(): void
+    public function save($close = false): void
     {
+        $this->closeConfirm = false;
+
         $data = $this->validate([
             'code' => 'required',
             'date' => 'required',
@@ -91,10 +93,14 @@ new class extends Component {
             $data['saved'] = 1;
         }
 
-        $total_amount = $this->cashOut->details()->sum('amount');
+        $total_amount = $this->cashIn->details()->sum('amount');
         $data['total_amount'] = Cast::number($total_amount);
 
         $this->cashIn->update($data);
+
+        if ($close) {
+            $this->close();
+        }
 
         $this->success('Cash successfully updated.', redirectTo: route('cash-in.index'));
     }
@@ -125,10 +131,8 @@ new class extends Component {
             'status' => 'close'
         ]);
 
-        \App\Events\CashInClosed::dispatch($this->cashIn);
-
         $this->closeConfirm = false;
-        $this->success('Cash successfully closed.', redirectTo: route('cash-in.index'));
+        \App\Events\CashInClosed::dispatch($this->cashIn);
     }
 
     public function void(CashIn $cashIn): void
@@ -304,7 +308,8 @@ new class extends Component {
         <x-slot:actions>
             <div class="flex items-center gap-4">
                 <x-button label="Cancel" icon="o-x-mark" @click="$wire.closeConfirm = false" class="" />
-                <x-button label="Yes, I am sure" icon="o-check" wire:click="close" spinner="close" class="" />
+                <x-button label="Yes, I am sure" icon="o-check" wire:click="save(true)" spinner="save(true)" class="" />
+                {{-- <x-button label="Yes, I am sure" icon="o-check" wire:click="close" spinner="close" class="" /> --}}
             </div>
         </x-slot:actions>
     </x-modal>

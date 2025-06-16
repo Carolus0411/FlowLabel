@@ -70,8 +70,10 @@ new class extends Component {
             ->merge($selected);
     }
 
-    public function save(): void
+    public function save($close = false): void
     {
+        $this->closeConfirm = false;
+
         $data = $this->validate([
             'code' => 'required',
             'date' => 'required',
@@ -95,6 +97,10 @@ new class extends Component {
         $data['total_amount'] = Cast::number($total_amount);
 
         $this->cashOut->update($data);
+
+        if ($close) {
+            $this->close();
+        }
 
         $this->success('Cash successfully updated.', redirectTo: route('cash-out.index'));
     }
@@ -125,10 +131,9 @@ new class extends Component {
             'status' => 'close'
         ]);
 
+        $this->closeConfirm = false;
         \App\Events\CashOutClosed::dispatch($this->cashOut);
 
-        $this->closeConfirm = false;
-        $this->success('Cash successfully closed.', redirectTo: route('cash-out.index'));
     }
 
     public function void(CashOut $cashOut): void
