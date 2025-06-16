@@ -25,6 +25,9 @@ new class extends Component {
     #[Session(key: 'cashout_code')]
     public $code = '';
 
+    #[Session(key: 'cashout_status')]
+    public $status = '';
+
     public int $filterCount = 0;
     public bool $drawer = false;
     public array $sortBy = ['column' => 'id', 'direction' => 'desc'];
@@ -74,6 +77,7 @@ new class extends Component {
             ->with(['contact'])
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
+            ->filterWhere('status', $this->status)
             ->paginate($this->perPage);
     }
 
@@ -108,7 +112,7 @@ new class extends Component {
         $this->date2 = date('Y-m-t');
 
         $this->success('Filters cleared.');
-        $this->reset(['code']);
+        $this->reset(['code','status']);
         $this->resetPage();
         $this->updateFilterCount();
         $this->drawer = false;
@@ -117,9 +121,8 @@ new class extends Component {
     public function updateFilterCount(): void
     {
         $count = 0;
-        if (!empty($this->code)) {
-            $count++;
-        }
+        if (!empty($this->code)) $count++;
+        if (!empty($this->status)) $count++;
         $this->filterCount = $count;
     }
 
@@ -196,33 +199,20 @@ new class extends Component {
             </x-dropdown>
             @endscope
             @scope('cell_status', $cashOut)
-            @if ($cashOut->status == 'close')
-            <x-badge value="Closed" class="text-xs badge-success" />
-            @elseif ($cashOut->status == 'void')
-            <x-badge value="Void" class="text-xs badge-error" />
-            @else
-            <x-badge value="Open" class="text-xs badge-primary" />
-            @endif
+            <x-status-badge :status="$cashOut->status" />
             @endscope
         </x-table>
     </x-card>
 
     {{-- FILTER DRAWER --}}
-    <x-drawer wire:model="drawer" title="Filters" right separator with-close-button class="lg:w-1/3">
-        <x-form wire:submit="search">
-            <div class="grid gap-4">
-                <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
-                    <x-datetime label="Start Date" wire:model="date1" />
-                    <x-datetime label="End Date" wire:model="date2" />
-                </div>
-                <x-input label="Code" wire:model="code" />
-            </div>
-            <x-slot:actions>
-                <x-button label="Reset" icon="o-x-mark" wire:click="clear" spinner="clear" />
-                <x-button label="Search" icon="o-magnifying-glass" spinner="search" type="submit" class="btn-primary" />
-            </x-slot:actions>
-        </x-form>
-    </x-drawer>
+    <x-search-drawer>
+        <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
+            <x-datetime label="Start Date" wire:model="date1" />
+            <x-datetime label="End Date" wire:model="date2" />
+        </div>
+        <x-input label="Code" wire:model="code" />
+        <x-select label="Status" wire:model="status" :options="\App\Enums\Status::toSelect()" placeholder="-- All --" />
+    </x-search-drawer>
 
     <livewire:journal.modal :ref_id="$journalCode" ref_name="CashOut">
 </div>

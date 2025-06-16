@@ -91,7 +91,8 @@ new class extends Component {
             $data['saved'] = 1;
         }
 
-        $data['total_amount'] = Cast::number($this->total_amount);
+        $total_amount = $this->cashOut->details()->sum('amount');
+        $data['total_amount'] = Cast::number($total_amount);
 
         $this->cashOut->update($data);
 
@@ -102,10 +103,6 @@ new class extends Component {
     public function detailUpdated(array $data = [])
     {
         $this->total_amount = Cast::money($data['total_amount'] ?? 0);
-
-        $this->cashOut->update([
-            'total_amount' => Cast::number($data['total_amount'] ?? 0)
-        ]);
     }
 
     public function updated($property, $value): void
