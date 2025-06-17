@@ -145,46 +145,6 @@ new class extends Component {
                     searchable
                     placeholder="-- Select --"
                 />
-                {{-- <x-choices-offline
-                    label="Account Receivable"
-                    :options="\App\Models\Coa::query()->isActive()->get()"
-                    wire:model="account_receivable_code"
-                    option-value="code"
-                    option-label="full_name"
-                    single
-                    searchable
-                    placeholder="-- Select --"
-                /> --}}
-                {{-- <x-choices-offline
-                    label="Account Payable"
-                    :options="\App\Models\Coa::query()->isActive()->get()"
-                    wire:model="account_payable_code"
-                    option-value="code"
-                    option-label="full_name"
-                    single
-                    searchable
-                    placeholder="-- Select --"
-                /> --}}
-                {{-- <x-choices-offline
-                    label="Vat Out"
-                    :options="\App\Models\Coa::query()->isActive()->get()"
-                    wire:model="vat_out_code"
-                    option-value="code"
-                    option-label="full_name"
-                    single
-                    searchable
-                    placeholder="-- Select --"
-                /> --}}
-                {{-- <x-choices-offline
-                    label="Stamp"
-                    :options="\App\Models\Coa::query()->isActive()->get()"
-                    wire:model="stamp_code"
-                    option-value="code"
-                    option-label="full_name"
-                    single
-                    searchable
-                    placeholder="-- Select --"
-                /> --}}
             </div>
         </x-card>
         <x-slot:actions>
