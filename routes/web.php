@@ -115,6 +115,7 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/settings/general', 'setting.general')->name('setting.general');
     Volt::route('/settings/account-mapping', 'setting.account-mapping')->name('setting.account-mapping');
     Volt::route('/settings/code', 'setting.code')->name('setting.code');
+    Volt::route('/settings/draft', 'setting.draft')->name('setting.draft');
 
     Route::get('/logout', function () {
         auth()->logout();
