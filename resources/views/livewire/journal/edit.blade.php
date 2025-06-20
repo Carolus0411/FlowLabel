@@ -1,17 +1,18 @@
 <?php
 
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Collection;
+// use Illuminate\Support\Collection;
 use Livewire\Volt\Component;
 use Livewire\Attributes\On;
 use Mary\Traits\Toast;
+use App\Traits\ContactChoice;
 use App\Helpers\Cast;
 use App\Helpers\Code;
 use App\Models\Contact;
 use App\Models\Journal;
 
 new class extends Component {
-    use Toast;
+    use Toast, ContactChoice;
 
     public Journal $journal;
 
@@ -32,13 +33,11 @@ new class extends Component {
     public $validityMessage = '';
 
     public $details;
-    public Collection $contacts;
 
     public function mount(): void
     {
         Gate::authorize('update journal');
         $this->fill($this->journal);
-        $this->searchContact();
         $this->validity();
     }
 
@@ -46,19 +45,7 @@ new class extends Component {
     {
         $this->open = $this->journal->status == 'open';
         $this->contact_id = $this->contact_id ?? '';
-
         return [];
-    }
-
-    public function searchContact(string $value = ''): void
-    {
-        $selected = Contact::where('id', intval($this->contact_id))->get();
-        $this->contacts = Contact::query()
-            ->filterLike('name', $value)
-            ->isActive()
-            ->take(20)
-            ->get()
-            ->merge($selected);
     }
 
     public function save($close = false): void
@@ -187,7 +174,7 @@ new class extends Component {
                         <x-choices
                             label="Contact"
                             wire:model="contact_id"
-                            :options="$contacts"
+                            :options="$contactChoice"
                             search-function="searchContact"
                             option-label="name"
                             single
