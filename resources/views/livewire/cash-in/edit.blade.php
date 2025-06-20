@@ -100,10 +100,6 @@ new class extends Component {
     public function close(): void
     {
         Gate::authorize('close cash-in');
-        $this->cashIn->update([
-            'status' => 'close'
-        ]);
-
         $this->closeConfirm = false;
         \App\Events\CashInClosed::dispatch($this->cashIn);
     }
@@ -111,9 +107,7 @@ new class extends Component {
     public function void(CashIn $cashIn): void
     {
         Gate::authorize('void cash-in');
-
         \App\Events\CashInVoided::dispatch($this->cashIn);
-
         $this->success('Cash successfully voided.', redirectTo: route('cash-in.index'));
     }
 }; ?>
@@ -162,6 +156,7 @@ new class extends Component {
                             option-label="name"
                             single
                             searchable
+                            clearable
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
@@ -173,6 +168,7 @@ new class extends Component {
                             option-label="name"
                             single
                             searchable
+                            clearable
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />

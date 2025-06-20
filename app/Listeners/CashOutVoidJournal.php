@@ -27,6 +27,10 @@ class CashOutVoidJournal
 
             $cashOut = $cashOutVoided->cashOut;
 
+            $cashOut->update([
+                'status' => 'void'
+            ]);
+
             $journal = Journal::where('ref_name', class_basename($cashOut))
                 ->where('ref_id', $cashOut->code)
                 ->first();

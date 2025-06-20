@@ -14,9 +14,9 @@ trait CashAccountChoice
         $this->searchCashAccount();
     }
 
-    public function searchCashAccount(string $value = '', string $key = 'cash_account_id'): void
+    public function searchCashAccount(string $value = ''): void
     {
-        $selected = CashAccount::where('id', intval($this->{$key} ?? ''))->get();
+        $selected = CashAccount::where('id', intval($this->cash_account_id ?? ''))->get();
         $this->cashAccountChoice = CashAccount::query()
             ->filterLike('name', $value)
             ->isActive()

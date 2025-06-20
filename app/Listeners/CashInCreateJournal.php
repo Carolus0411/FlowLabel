@@ -33,6 +33,11 @@ class CashInCreateJournal
 
             $code = Code::auto('JV', $cashIn->date);
 
+            // cash in status
+            $cashIn->update([
+                'status' => 'close'
+            ]);
+
             // Journal header
             $journal = Journal::create([
                 'code' => $code,

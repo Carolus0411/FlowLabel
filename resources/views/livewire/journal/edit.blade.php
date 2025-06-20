@@ -61,8 +61,10 @@ new class extends Component {
             ->merge($selected);
     }
 
-    public function save(): void
+    public function save($close = false): void
     {
+        $this->closeConfirm = false;
+
         $data = $this->validate([
             'code' => 'required',
             'date' => 'required',
@@ -81,12 +83,16 @@ new class extends Component {
             $this->journal->details()->update(['code' => $code]);
         }
 
+        $this->validity();
         $data['debit_total'] = Cast::number($this->debit_total);
         $data['credit_total'] = Cast::number($this->credit_total);
 
         $this->journal->update($data);
 
-        $this->validity();
+        if ($close) {
+            $this->close();
+        }
+
         $this->success('Journal successfully updated.', redirectTo: route('journal.index'));
     }
 
@@ -155,13 +161,7 @@ new class extends Component {
             <x-slot:title>
                 <div class="flex items-center gap-4">
                     <span>Update Journal</span>
-                    @if ($journal->status == 'close')
-                    <x-badge value="Close" class="badge-success uppercase" />
-                    @elseif ($journal->status == 'void')
-                    <x-badge value="Void" class="badge-error uppercase" />
-                    @else
-                    <x-badge value="Open" class="badge-primary uppercase" />
-                    @endif
+                    <x-status-badge :status="$journal->status" class="uppercase !text-sm" />
                 </div>
             </x-slot:title>
             <x-slot:actions>
@@ -192,6 +192,7 @@ new class extends Component {
                             option-label="name"
                             single
                             searchable
+                            clearable
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
@@ -282,7 +283,7 @@ new class extends Component {
         <x-slot:actions>
             <div class="flex items-center gap-4">
                 <x-button label="Cancel" icon="o-x-mark" @click="$wire.closeConfirm = false" class="" />
-                <x-button label="Yes, I am sure" icon="o-check" wire:click="close" spinner="close" class="" />
+                <x-button label="Yes, I am sure" icon="o-check" wire:click="save(true)" spinner="save(true)" class="" />
             </div>
         </x-slot:actions>
     </x-modal>

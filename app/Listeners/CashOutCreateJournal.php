@@ -33,6 +33,11 @@ class CashOutCreateJournal
 
             $code = Code::auto('JV', $cashOut->date);
 
+            // cash out status
+            $cashOut->update([
+                'status' => 'close'
+            ]);
+
             // Journal header
             $journal = Journal::create([
                 'code' => $code,

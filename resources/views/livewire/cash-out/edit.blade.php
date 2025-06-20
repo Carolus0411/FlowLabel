@@ -100,10 +100,6 @@ new class extends Component {
     public function close(): void
     {
         Gate::authorize('close cash-out');
-        $this->cashOut->update([
-            'status' => 'close'
-        ]);
-
         $this->closeConfirm = false;
         \App\Events\CashOutClosed::dispatch($this->cashOut);
 
@@ -112,12 +108,7 @@ new class extends Component {
     public function void(CashOut $cashOut): void
     {
         Gate::authorize('void cash-out');
-        $cashOut->update([
-            'status' => 'void'
-        ]);
-
         \App\Events\CashOutVoided::dispatch($this->cashOut);
-
         $this->success('Cash successfully voided.', redirectTo: route('cash-out.index'));
     }
 }; ?>
@@ -166,6 +157,7 @@ new class extends Component {
                             option-label="name"
                             single
                             searchable
+                            clearable
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
@@ -177,6 +169,7 @@ new class extends Component {
                             option-label="name"
                             single
                             searchable
+                            clearable
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
@@ -276,7 +269,7 @@ new class extends Component {
         <x-slot:actions>
             <div class="flex items-center gap-4">
                 <x-button label="Cancel" icon="o-x-mark" @click="$wire.closeConfirm = false" class="" />
-                <x-button label="Yes, I am sure" icon="o-check" wire:click="close" spinner="close" class="" />
+                <x-button label="Yes, I am sure" icon="o-check" wire:click="save(true)" spinner="save(true)" class="" />
             </div>
         </x-slot:actions>
     </x-modal>

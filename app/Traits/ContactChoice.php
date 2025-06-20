@@ -14,9 +14,9 @@ trait ContactChoice
         $this->searchContact();
     }
 
-    public function searchContact(string $value = '', string $key = 'contact_id'): void
+    public function searchContact(string $value = ''): void
     {
-        $selected = Contact::where('id', intval($this->{$key} ?? ''))->get();
+        $selected = Contact::where('id', intval($this->contact_id ?? ''))->get();
         $this->contactChoice = Contact::query()
             ->filterLike('name', $value)
             ->isActive()
