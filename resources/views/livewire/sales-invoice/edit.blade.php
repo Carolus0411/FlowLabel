@@ -90,8 +90,10 @@ new class extends Component {
             ->merge($selected);
     }
 
-    public function save(): void
+    public function save($close = false): void
     {
+        $this->closeConfirm = false;
+
         $data = $this->validate([
             'code' => 'required',
             'invoice_date' => 'required',
@@ -124,6 +126,10 @@ new class extends Component {
         $data['invoice_amount'] = Cast::number($this->invoice_amount);
 
         $this->salesInvoice->update($data);
+
+        if ($close) {
+            $this->close();
+        }
 
         $this->success('Invoice successfully updated.', redirectTo: route('sales-invoice.index'));
     }
@@ -184,14 +190,7 @@ new class extends Component {
     public function close(): void
     {
         Gate::authorize('close sales invoice');
-        $this->salesInvoice->update([
-            'status' => 'close'
-        ]);
-
         \App\Events\SalesInvoiceClosed::dispatch($this->salesInvoice);
-
-        $this->closeConfirm = false;
-        $this->success('Invoice successfully closed.', redirectTo: route('sales-invoice.index'));
     }
 }; ?>
 
@@ -209,23 +208,10 @@ new class extends Component {
             <x-slot:title>
                 <div class="flex items-center gap-4">
                     <span>Update Sales Invoice</span>
-                    @if ($salesInvoice->status == 'close')
-                    <x-badge value="Close" class="badge-success uppercase" />
-                    @elseif ($salesInvoice->status == 'void')
-                    <x-badge value="Void" class="badge-error uppercase" />
-                    @else
-                    <x-badge value="Open" class="badge-primary uppercase" />
-                    @endif
+                    <x-status-badge :status="$salesInvoice->status" class="uppercase !text-sm" />
                 </div>
             </x-slot:title>
             <x-slot:actions>
-                {{-- @if ($salesInvoice->status == 'close')
-                <x-badge value="Open" class="badge-success" />
-                @elseif ($salesInvoice->status == 'void')
-                <x-badge value="Open" class="badge-error" />
-                @else
-                <x-badge value="Open" class="badge-xl text-base badge-primary badge-soft" />
-                @endif --}}
                 <x-button label="Back" link="{{ route('sales-invoice.index') }}" icon="o-arrow-uturn-left" />
                 @if ($salesInvoice->saved == '1' AND $salesInvoice->status == 'open')
                 <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
@@ -256,6 +242,7 @@ new class extends Component {
                             option-label="name"
                             single
                             searchable
+                            clearable
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
@@ -270,6 +257,7 @@ new class extends Component {
                             option-label="name"
                             single
                             searchable
+                            clearable
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
@@ -281,6 +269,7 @@ new class extends Component {
                             option-label="name"
                             single
                             searchable
+                            clearable
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
@@ -381,7 +370,7 @@ new class extends Component {
         <x-slot:actions>
             <div class="flex items-center gap-4">
                 <x-button label="Cancel" icon="o-x-mark" @click="$wire.closeConfirm = false" class="" />
-                <x-button label="Yes, I am sure" icon="o-check" wire:click="close" spinner="close" class="" />
+                <x-button label="Yes, I am sure" icon="o-check" wire:click="save(true)" spinner="save(true)" class="" />
             </div>
         </x-slot:actions>
     </x-modal>

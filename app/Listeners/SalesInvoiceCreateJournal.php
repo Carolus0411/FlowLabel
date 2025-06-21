@@ -9,7 +9,7 @@ use App\Helpers\Code;
 use App\Models\Coa;
 use App\Models\Journal;
 
-class SalesInvoiceJournal
+class SalesInvoiceCreateJournal
 {
     /**
      * Create the event listener.
@@ -28,6 +28,10 @@ class SalesInvoiceJournal
         $salesInvoice->load(['details.serviceCharge','details.serviceCharge.coaSelling']);
 
         $code = Code::auto('JV', $salesInvoice->invoice_date);
+
+        $salesInvoice->update([
+            'status' => 'close'
+        ]);
 
         // Journal header
         $journal = Journal::create([
