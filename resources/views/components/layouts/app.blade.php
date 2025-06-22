@@ -86,6 +86,7 @@
 
                 <x-menu-sub title="General Ledger" icon="o-clipboard-document-list">
                     <x-menu-item title="Journal" link="{{ route('journal.index') }}" :hidden="auth()->user()->cannot('view journal')" />
+                    <x-menu-item title="Opening Balance" link="{{ route('opening-balance.index') }}" :hidden="auth()->user()->cannot('view opening-balance')" />
                 </x-menu-sub>
 
                 <x-menu-sub title="Master" icon="o-circle-stack">

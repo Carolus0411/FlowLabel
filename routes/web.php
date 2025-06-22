@@ -93,6 +93,7 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/journal/create', 'journal.create')->name('journal.create');
     Volt::route('/journal/{journal}/edit', 'journal.edit')->name('journal.edit');
     Volt::route('/journal/import', 'journal.import')->name('journal.import');
+    Volt::route('/opening-balance', 'opening-balance.index')->name('opening-balance.index');
 
     Volt::route('/users', 'users.index')->name('users.index');
     Volt::route('/users/create', 'users.create')->name('users.create');
