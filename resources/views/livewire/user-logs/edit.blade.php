@@ -18,7 +18,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('update user logs');
+        Gate::authorize('update user-logs');
         $this->fill($this->userLog);
         $this->user_name = $this->userLog->user->name;
         $this->date = $this->userLog->created_at->format('Y-m-d H:i:s');

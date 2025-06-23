@@ -6,7 +6,7 @@ use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 use Spatie\SimpleExcel\SimpleExcelReader;
 use Mary\Traits\Toast;
-use App\Models\Contact;
+use App\Models\SalesInvoice;
 
 new class extends Component {
     use Toast, WithFileUploads;
@@ -15,7 +15,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('import contact');
+        Gate::authorize('import sales-invoice');
     }
 
     public function save()
@@ -42,37 +42,36 @@ new class extends Component {
                         }
 
                         if (!empty($row['id'])) {
-                            Contact::where('id', $row['id'])->delete();
+                            SalesInvoice::where('id', $row['id'])->delete();
                         }
 
-                        $data['name'] = $row['name'];
-                        $data['is_active'] = $row['is_active'];
+                        $data['code'] = $row['code'];
 
-                        Contact::create($data);
+                        SalesInvoice::create($data);
                     }
 
                 });
             }
 
             DB::commit();
-            $this->success('Success','Contact successfully imported.', redirectTo: route('contact.index'));
+            $this->success('Success','Sales invoice successfully imported.', redirectTo: route('sales-invoice.index'));
         }
         catch (Exception $e)
         {
             DB::rollBack();
             logger()->error($e->getMessage());
-            $this->error('Error','Contact failed to import.', redirectTo: route('contact.index'));
+            $this->error('Error','Sales invoice failed to import.', redirectTo: route('sales-invoice.index'));
         }
     }
 }; ?>
 
 <div>
-    <x-header title="Import Contact" separator />
+    <x-header title="Import Sales Invoice" separator />
     <x-card>
         <x-form wire:submit="save">
             <x-file wire:model="file" label="File" hint="xlsx or csv" wire:target="save" wire:loading.attr="disabled" />
             <x-slot:actions>
-                <x-button label="Cancel" link="{{ route('contact.index') }}" wire:target="save" wire:loading.attr="disabled" />
+                <x-button label="Cancel" link="{{ route('sales-invoice.index') }}" wire:target="save" wire:loading.attr="disabled" />
                 <x-button label="Import" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
             </x-slot:actions>
         </x-form>

@@ -23,7 +23,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('create servicecharge');
+        Gate::authorize('create service-charge');
         $this->searchBuyingCoa();
         $this->searchSellingCoa();
     }

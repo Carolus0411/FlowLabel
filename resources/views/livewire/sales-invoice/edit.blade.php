@@ -43,7 +43,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('update sales invoice');
+        Gate::authorize('update sales-invoice');
         $this->fill($this->salesInvoice);
         $this->searchContact();
         $this->searchPpn();
@@ -169,7 +169,7 @@ new class extends Component {
 
     public function delete(SalesInvoice $salesInvoice): void
     {
-        Gate::authorize('delete sales invoice');
+        Gate::authorize('delete sales-invoice');
         $salesInvoice->details()->delete();
         $salesInvoice->delete();
         $this->success('Invoice successfully deleted.', redirectTo: route('sales-invoice.index'));
@@ -177,7 +177,7 @@ new class extends Component {
 
     public function void(SalesInvoice $salesInvoice): void
     {
-        Gate::authorize('void sales invoice');
+        Gate::authorize('void sales-invoice');
         $salesInvoice->update([
             'status' => 'void'
         ]);
@@ -189,7 +189,7 @@ new class extends Component {
 
     public function close(): void
     {
-        Gate::authorize('close sales invoice');
+        Gate::authorize('close sales-invoice');
         \App\Events\SalesInvoiceClosed::dispatch($this->salesInvoice);
     }
 }; ?>

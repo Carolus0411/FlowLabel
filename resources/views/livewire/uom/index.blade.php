@@ -24,17 +24,11 @@ new class extends Component {
     public int $filterCount = 0;
     public bool $drawer = false;
     public array $sortBy = ['column' => 'code', 'direction' => 'asc'];
-    public array $activeList;
 
     public function mount(): void
     {
         Gate::authorize('view uom');
         $this->updateFilterCount();
-
-        $this->activeList = [
-            ['id' => 'active', 'name' => 'Active'],
-            ['id' => 'inactive', 'name' => 'Inactive']
-        ];
     }
 
     public function headers(): array
@@ -91,12 +85,8 @@ new class extends Component {
     public function updateFilterCount(): void
     {
         $count = 0;
-        if (!empty($this->name)) {
-            $count++;
-        }
-        if (!empty($this->is_active)) {
-            $count++;
-        }
+        if (!empty($this->name)) $count++;
+        if (!empty($this->is_active)) $count++;
         $this->filterCount = $count;
     }
 
@@ -148,11 +138,7 @@ new class extends Component {
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$currencies" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text>
             @scope('cell_is_active', $uom)
-            @if ($uom->is_active)
-            <x-badge value="Active" class="text-xs uppercase badge-success badge-soft" />
-            @else
-            <x-badge value="Inactive" class="text-xs uppercase badge-error badge-soft" />
-            @endif
+            <x-active-badge :status="$uom->is_active" />
             @endscope
             @scope('actions', $uom)
             <div class="flex gap-1.5">
@@ -168,16 +154,8 @@ new class extends Component {
     </x-card>
 
     {{-- FILTER DRAWER --}}
-    <x-drawer wire:model="drawer" title="Filters" right separator with-close-button class="lg:w-1/3">
-        <x-form wire:submit="search">
-            <div class="grid gap-4">
-                <x-input label="Name" wire:model="name" />
-                <x-select label="Active" wire:model="is_active" :options="$activeList" placeholder="-- All --" />
-            </div>
-            <x-slot:actions>
-                <x-button label="Reset" icon="o-x-mark" wire:click="clear" spinner="clear" />
-                <x-button label="Search" icon="o-magnifying-glass" spinner="search" type="submit" class="btn-primary" />
-            </x-slot:actions>
-        </x-form>
-    </x-drawer>
+    <x-search-drawer>
+        <x-input label="Name" wire:model="name" />
+        <x-select label="Active" wire:model="is_active" :options="\App\Enums\ActiveStatus::toSelect()" placeholder="-- All --" />
+    </x-search-drawer>
 </div>

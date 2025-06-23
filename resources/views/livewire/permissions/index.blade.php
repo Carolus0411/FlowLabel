@@ -87,9 +87,7 @@ new class extends Component {
     public function updateFilterCount(): void
     {
         $count = 0;
-        if (!empty($this->name)) {
-            $count++;
-        }
+        if (!empty($this->name)) $count++;
         $this->filterCount = $count;
     }
 
@@ -131,7 +129,7 @@ new class extends Component {
         </x-slot:actions>
     </x-header>
 
-    {{-- TABLE  --}}
+    {{-- TABLE --}}
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$permissions" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text>
             @scope('actions', $permission)

@@ -15,26 +15,35 @@ new class extends Component {
     #[Session(key: 'userlog_per_page')]
     public int $perPage = 10;
 
-    #[Session(key: 'userlog_name')]
-    public string $name = '';
+    #[Session(key: 'userlog_date1')]
+    public $date1 = '';
 
-    #[Session(key: 'userlog_active')]
-    public string $is_active = '';
+    #[Session(key: 'userlog_date2')]
+    public $date2 = '';
+
+    #[Session(key: 'userlog_resource')]
+    public string $resource = '';
+
+    #[Session(key: 'userlog_action')]
+    public string $action = '';
+
+    #[Session(key: 'userlog_ref_id')]
+    public string $ref_id = '';
 
     public int $filterCount = 0;
     public bool $drawer = false;
     public array $sortBy = ['column' => 'id', 'direction' => 'desc'];
-    public array $activeList;
 
     public function mount(): void
     {
-        Gate::authorize('view user logs');
-        $this->updateFilterCount();
+        Gate::authorize('view user-logs');
 
-        $this->activeList = [
-            ['id' => 'active', 'name' => 'Active'],
-            ['id' => 'inactive', 'name' => 'Inactive']
-        ];
+        if (empty($this->date1)) {
+            $this->date1 = date('Y-m-01');
+            $this->date2 = date('Y-m-t');
+        }
+
+        $this->updateFilterCount();
     }
 
     public function headers(): array
@@ -43,19 +52,20 @@ new class extends Component {
             ['key' => 'action', 'label' => 'Action'],
             ['key' => 'resource', 'label' => 'Resource'],
             ['key' => 'ref_id', 'label' => 'Ref. ID'],
-            ['key' => 'user_name', 'label' => 'User'],
+            ['key' => 'user.name', 'label' => 'User', 'sortable' => false],
             ['key' => 'created_at', 'label' => 'Created At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
-            // ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
         ];
     }
 
     public function userLogs(): LengthAwarePaginator
     {
         return UserLog::query()
-        ->withAggregate('user','name')
+        ->whereDateBetween('DATE(created_at)', $this->date1, $this->date2)
+        ->with('user:id,name')
         ->orderBy(...array_values($this->sortBy))
-        ->filterLike('user.name', $this->name)
-        ->active($this->is_active)
+        ->filterLike('resource', $this->resource)
+        ->filterWhere('action', $this->action)
+        ->filterWhere('ref_id', $this->ref_id)
         ->paginate($this->perPage);
     }
 
@@ -78,14 +88,18 @@ new class extends Component {
     public function search(): void
     {
         $data = $this->validate([
-            'name' => 'nullable',
+            'date1' => 'required|date',
+            'date2' => 'required|date',
         ]);
     }
 
     public function clear(): void
     {
+        $this->date1 = date('Y-m-01');
+        $this->date2 = date('Y-m-t');
+
         $this->success('Filters cleared.');
-        $this->reset();
+        $this->reset(['resource','action','ref_id']);
         $this->resetPage();
         $this->updateFilterCount();
     }
@@ -93,15 +107,15 @@ new class extends Component {
     public function updateFilterCount(): void
     {
         $count = 0;
-        if (!empty($this->name)) {
-            $count++;
-        }
+        if (!empty($this->resource)) $count++;
+        if (!empty($this->action)) $count++;
+        if (!empty($this->ref_id)) $count++;
         $this->filterCount = $count;
     }
 
     public function delete(UserLog $userlog): void
     {
-        Gate::authorize('delete user logs');
+        Gate::authorize('delete user-logs');
         $userlog->delete();
         $this->success('Log has been deleted.');
     }
@@ -110,17 +124,19 @@ new class extends Component {
     {
         Gate::authorize('export user logs');
 
-        $userLogs = UserLog::with(['coaBuying','coaSelling'])->orderBy('id','asc')->get();
+        $userLogs = UserLog::query()
+        ->whereDateBetween('DATE(created_at)', $this->date1, $this->date2)
+        ->with(['user:id,name'])
+        ->orderBy('id','asc')
+        ->get();
         $writer = SimpleExcelWriter::streamDownload('User logs.xlsx');
         foreach ( $userLogs->lazy() as $userLog ) {
             $writer->addRow([
                 'id' => $userLog->id ?? '',
-                'code' => $userLog->code ?? '',
-                'name' => $userLog->name ?? '',
-                'type' => $userLog->type ?? '',
-                'coa_buying' => $userLog->coaBuying->code,
-                'coa_selling' => $userLog->coaSelling->code,
-                'is_active' => $userLog->is_active ?? '',
+                'resource' => $userLog->resource ?? '',
+                'action' => $userLog->action ?? '',
+                'ref_id' => $userLog->ref_id ?? '',
+                'data' => $userLog->data ?? '',
             ]);
         }
         return response()->streamDownload(function() use ($writer){
@@ -133,6 +149,9 @@ new class extends Component {
     {{-- HEADER --}}
     <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0.5 pt-3">
     <x-header title="User logs" separator progress-indicator>
+        <x-slot:subtitle>
+            <x-subtitle-date :date1="$date1" :date2="$date2" />
+        </x-slot:subtitle>
         <x-slot:actions>
             @can('export user logs')
             <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
@@ -176,15 +195,13 @@ new class extends Component {
     </x-card>
 
     {{-- FILTER DRAWER --}}
-    <x-drawer wire:model="drawer" title="Filters" right separator with-close-button class="lg:w-1/3">
-        <x-form wire:submit="search">
-            <div class="grid gap-4">
-                <x-input label="Resource" wire:model="resource" />
-            </div>
-            <x-slot:actions>
-                <x-button label="Reset" icon="o-x-mark" wire:click="clear" spinner="clear" />
-                <x-button label="Search" icon="o-magnifying-glass" spinner="search" type="submit" class="btn-primary" />
-            </x-slot:actions>
-        </x-form>
-    </x-drawer>
+    <x-search-drawer>
+        <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
+            <x-datetime label="Start Date" wire:model="date1" />
+            <x-datetime label="End Date" wire:model="date2" />
+        </div>
+        <x-input label="Resource" wire:model="resource" />
+        <x-input label="Action" wire:model="action" />
+        <x-input label="Ref ID" wire:model="ref_id" />
+    </x-search-drawer>
 </div>

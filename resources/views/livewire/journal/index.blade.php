@@ -25,6 +25,9 @@ new class extends Component {
     #[Session(key: 'journal_code')]
     public string $code = '';
 
+    #[Session(key: 'journal_status')]
+    public string $status = '';
+
     public int $filterCount = 0;
     public bool $drawer = false;
     public array $sortBy = ['column' => 'id', 'direction' => 'desc'];
@@ -71,9 +74,11 @@ new class extends Component {
     public function journals(): LengthAwarePaginator
     {
         return Journal::stored()
+            ->whereDateBetween('DATE(date)', $this->date1, $this->date2)
             ->with(['contact','updatedBy'])
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
+            ->filterWhere('status', $this->status)
             ->paginate($this->perPage);
     }
 
@@ -108,7 +113,7 @@ new class extends Component {
         $this->date2 = date('Y-m-t');
 
         $this->success('Filters cleared.');
-        $this->reset(['code']);
+        $this->reset(['code','status']);
         $this->resetPage();
         $this->updateFilterCount();
         $this->drawer = false;
@@ -117,9 +122,8 @@ new class extends Component {
     public function updateFilterCount(): void
     {
         $count = 0;
-        if (!empty($this->code)) {
-            $count++;
-        }
+        if (!empty($this->code)) $count++;
+        if (!empty($this->status)) $count++;
         $this->filterCount = $count;
     }
 
@@ -178,13 +182,7 @@ new class extends Component {
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$journals" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text :link="route('journal.edit', ['journal' => '[id]'])">
             @scope('cell_status', $journal)
-            @if ($journal->status == 'close')
-            <x-badge value="Closed" class="text-xs badge-success" />
-            @elseif ($journal->status == 'void')
-            <x-badge value="Void" class="text-xs badge-error" />
-            @else
-            <x-badge value="Open" class="text-xs badge-primary" />
-            @endif
+            <x-status-badge :status="$journal->status" />
             @endscope
             {{-- @scope('actions', $journal)
             <div class="flex gap-1.5">
@@ -200,19 +198,12 @@ new class extends Component {
     </x-card>
 
     {{-- FILTER DRAWER --}}
-    <x-drawer wire:model="drawer" title="Filters" right separator with-close-button class="lg:w-1/3">
-        <x-form wire:submit="search">
-            <div class="grid gap-4">
-                <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
-                    <x-datetime label="Start Date" wire:model="date1" />
-                    <x-datetime label="End Date" wire:model="date2" />
-                </div>
-                <x-input label="Code" wire:model="code" />
-            </div>
-            <x-slot:actions>
-                <x-button label="Reset" icon="o-x-mark" wire:click="clear" spinner="clear" />
-                <x-button label="Search" icon="o-magnifying-glass" spinner="search" type="submit" class="btn-primary" />
-            </x-slot:actions>
-        </x-form>
-    </x-drawer>
+    <x-search-drawer>
+        <x-grid>
+            <x-datetime label="Start Date" wire:model="date1" />
+            <x-datetime label="End Date" wire:model="date2" />
+            <x-input label="Code" wire:model="code" />
+            <x-select label="Status" wire:model="status" :options="\App\Enums\Status::toSelect()" placeholder="-- All --" />
+        </x-grid>
+    </x-search-drawer>
 </div>

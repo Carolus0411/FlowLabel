@@ -25,7 +25,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('update service charge');
+        Gate::authorize('update service-charge');
         $this->fill($this->serviceCharge);
 
         $this->searchBuyingCoa();

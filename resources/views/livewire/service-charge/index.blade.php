@@ -24,17 +24,11 @@ new class extends Component {
     public int $filterCount = 0;
     public bool $drawer = false;
     public array $sortBy = ['column' => 'code', 'direction' => 'asc'];
-    public array $activeList;
 
     public function mount(): void
     {
-        Gate::authorize('view service charge');
+        Gate::authorize('view service-charge');
         $this->updateFilterCount();
-
-        $this->activeList = [
-            ['id' => 'active', 'name' => 'Active'],
-            ['id' => 'inactive', 'name' => 'Inactive']
-        ];
     }
 
     public function headers(): array
@@ -93,25 +87,21 @@ new class extends Component {
     public function updateFilterCount(): void
     {
         $count = 0;
-        if (!empty($this->name)) {
-            $count++;
-        }
-        if (!empty($this->is_active)) {
-            $count++;
-        }
+        if (!empty($this->name)) $count++;
+        if (!empty($this->is_active)) $count++;
         $this->filterCount = $count;
     }
 
     public function delete(ServiceCharge $servicecharge): void
     {
-        Gate::authorize('delete servicecharge');
+        Gate::authorize('delete service-charge');
         $servicecharge->delete();
         $this->success('ServiceCharge has been deleted.');
     }
 
     public function export()
     {
-        Gate::authorize('export servicecharge');
+        Gate::authorize('export service-charge');
 
         $serviceCharges = ServiceCharge::with(['coaBuying','coaSelling'])->orderBy('id','asc')->get();
         $writer = SimpleExcelWriter::streamDownload('Service Charge.xlsx');
@@ -138,14 +128,14 @@ new class extends Component {
     <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0.5 pt-3">
     <x-header title="Service Charge" separator progress-indicator>
         <x-slot:actions>
-            @can('export service charge')
+            @can('export service-charge')
             <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
             @endcan
-            @can('import service charge')
+            @can('import service-charge')
             <x-button label="Import" link="{{ route('service-charge.import') }}" icon="o-arrow-up-tray" />
             @endcan
             <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
-            @can('create service charge')
+            @can('create service-charge')
             <x-button label="Create" link="{{ route('service-charge.create') }}" icon="o-plus" class="btn-primary" />
             @endcan
         </x-slot:actions>
@@ -156,18 +146,14 @@ new class extends Component {
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$serviceCharges" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text>
             @scope('cell_is_active', $serviceCharge)
-            @if ($serviceCharge->is_active)
-            <x-badge value="Active" class="text-xs uppercase badge-success badge-soft" />
-            @else
-            <x-badge value="Inactive" class="text-xs uppercase badge-error badge-soft" />
-            @endif
+            <x-active-badge :status="$serviceCharge->is_active" />
             @endscope
             @scope('actions', $serviceCharge)
             <div class="flex gap-1.5">
-                @can('delete service charge')
+                @can('delete service-charge')
                 <x-button wire:click="delete({{ $serviceCharge->id }})" spinner="delete({{ $serviceCharge->id }})" wire:confirm="Are you sure you want to delete this row?" icon="o-trash" class="btn btn-sm" />
                 @endcan
-                @can('update service charge')
+                @can('update service-charge')
                 <x-button link="{{ route('service-charge.edit', $serviceCharge->id) }}" icon="o-pencil-square" class="btn btn-sm" />
                 @endcan
             </div>
@@ -176,16 +162,8 @@ new class extends Component {
     </x-card>
 
     {{-- FILTER DRAWER --}}
-    <x-drawer wire:model="drawer" title="Filters" right separator with-close-button class="lg:w-1/3">
-        <x-form wire:submit="search">
-            <div class="grid gap-4">
-                <x-input label="Name" wire:model="name" />
-                <x-select label="Active" wire:model="is_active" :options="$activeList" placeholder="-- All --" />
-            </div>
-            <x-slot:actions>
-                <x-button label="Reset" icon="o-x-mark" wire:click="clear" spinner="clear" />
-                <x-button label="Search" icon="o-magnifying-glass" spinner="search" type="submit" class="btn-primary" />
-            </x-slot:actions>
-        </x-form>
-    </x-drawer>
+    <x-search-drawer>
+        <x-input label="Name" wire:model="name" />
+        <x-select label="Active" wire:model="is_active" :options="\App\Enums\ActiveStatus::toSelect()" placeholder="-- All --" />
+    </x-search-drawer>
 </div>

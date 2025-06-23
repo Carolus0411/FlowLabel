@@ -16,7 +16,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('import service charge');
+        Gate::authorize('import service-charge');
     }
 
     public function save()

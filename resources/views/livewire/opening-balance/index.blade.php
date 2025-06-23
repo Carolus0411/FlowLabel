@@ -162,7 +162,7 @@ new class extends Component {
         <x-slot:actions>
             {{-- <x-button label="Back" link="{{ route('brand.index') }}" icon="o-arrow-uturn-left" /> --}}
             <x-input label="" wire:model.live.debounce="year" readonly />
-            <x-button label="Update" wire:click="update" spinner="update" />
+            {{-- <x-button label="Update" wire: click="update" spinner="update" /> --}}
         </x-slot:actions>
     </x-header>
 
