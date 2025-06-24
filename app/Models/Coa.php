@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,13 @@ class Coa extends Model
 
     protected $table = 'coa';
     protected $guarded = [];
+
+    public function journalDetails(): HasMany
+    {
+        return $this->hasMany(JournalDetail::class,'coa_code','code')
+        ->where('status', 'close')
+        ->orderBy('date','asc');
+    }
 
     protected static function booted(): void
     {

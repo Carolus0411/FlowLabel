@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
+    {{-- MonthSelectPlugin  --}}
+    <script src="https://unpkg.com/flatpickr/dist/plugins/monthSelect/index.js"></script>
+    <link href="https://unpkg.com/flatpickr/dist/plugins/monthSelect/style.css" rel="stylesheet">
+
     {{-- Cropper.js --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
@@ -87,6 +91,12 @@
                 <x-menu-sub title="General Ledger" icon="o-clipboard-document-list">
                     <x-menu-item title="Journal" link="{{ route('journal.index') }}" :hidden="auth()->user()->cannot('view journal')" />
                     <x-menu-item title="Opening Balance" link="{{ route('opening-balance.index') }}" :hidden="auth()->user()->cannot('view opening-balance')" />
+                </x-menu-sub>
+
+                <x-menu-sub title="Report" icon="o-chart-pie">
+                    <x-menu-sub title="Financial">
+                        <x-menu-item title="General Ledger" link="{{ route('report.general-ledger') }}" :hidden="auth()->user()->cannot('view general-ledger-report')" />
+                    </x-menu-sub>
                 </x-menu-sub>
 
                 <x-menu-sub title="Master" icon="o-circle-stack">

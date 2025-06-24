@@ -25,6 +25,12 @@ new class extends Component {
     #[Session(key: 'journal_code')]
     public string $code = '';
 
+    #[Session(key: 'journal_ref_name')]
+    public string $ref_name = '';
+
+    #[Session(key: 'journal_ref_id')]
+    public string $ref_id = '';
+
     #[Session(key: 'journal_status')]
     public string $status = '';
 
@@ -79,6 +85,8 @@ new class extends Component {
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
             ->filterWhere('status', $this->status)
+            ->filterWhere('ref_name', $this->ref_name)
+            ->filterLike('ref_id', $this->ref_id)
             ->paginate($this->perPage);
     }
 
@@ -113,7 +121,7 @@ new class extends Component {
         $this->date2 = date('Y-m-t');
 
         $this->success('Filters cleared.');
-        $this->reset(['code','status']);
+        $this->reset(['code','status','ref_name','ref_id']);
         $this->resetPage();
         $this->updateFilterCount();
         $this->drawer = false;
@@ -123,6 +131,8 @@ new class extends Component {
     {
         $count = 0;
         if (!empty($this->code)) $count++;
+        if (!empty($this->ref_name)) $count++;
+        if (!empty($this->ref_id)) $count++;
         if (!empty($this->status)) $count++;
         $this->filterCount = $count;
     }
@@ -204,6 +214,8 @@ new class extends Component {
             <x-datetime label="End Date" wire:model="date2" />
             <x-input label="Code" wire:model="code" />
             <x-select label="Status" wire:model="status" :options="\App\Enums\Status::toSelect()" placeholder="-- All --" />
+            <x-input label="Ref Name" wire:model="ref_name" />
+            <x-input label="Ref ID" wire:model="ref_id" />
         </x-grid>
     </x-search-drawer>
 </div>

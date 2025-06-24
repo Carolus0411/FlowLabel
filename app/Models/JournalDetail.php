@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use App\Traits\Filterable;
@@ -47,5 +48,11 @@ class JournalDetail extends Model
         return $query
         ->where('journal.status', 'close')
         ->leftJoin('journal','journal.code','=','journal_detail.code');
+    }
+
+    #[Scope]
+    protected function closed(Builder $query): void
+    {
+        $query->where('status', 'close');
     }
 }
