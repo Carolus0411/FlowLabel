@@ -26,7 +26,7 @@ new class extends Component {
     public function save()
     {
         $valid = $this->validate([
-            'file' => 'required|mimes:xlsx|max:2048',
+            'file' => 'required|mimes:xlsx|max:20480',
         ]);
 
         $target = $this->file->path();
@@ -43,7 +43,7 @@ new class extends Component {
                     if ($this->mode == 'header') {
                         Journal::insert([
                             'code' => $row['code'],
-                            'date' => $row['date'],
+                            'date' => $row['date']->format('Y-m-d'),
                             'note' => $row['note'],
                             'debit_total' => Cast::number($row['debit']),
                             'credit_total' => Cast::number($row['credit']),
@@ -70,21 +70,31 @@ new class extends Component {
                             $amount = Cast::number($row['amount']) * -1;
                         }
 
-                        $journal = Journal::select(['date','status'])->where('code', $row['code'])->first();
+                        $journal = Journal::select(['id','date','status'])->where('code', $row['code'])->first();
 
-                        JournalDetail::create([
-                            'code' => $row['code'],
-                            'coa_code' => $row['coa_code'],
-                            'description' => $row['description'],
-                            'dc' => $row['dc'],
-                            'debit' => $debit,
-                            'credit' => $credit,
-                            'amount' => $amount,
-                            'date' => $journal->date,
-                            'status' => $journal->status,
-                            'created_at' => Carbon::now(),
-                            'updated_at' => Carbon::now(),
-                        ]);
+                        if (!empty($journal->id))
+                        {
+                            $type = match($row['type']) {
+                                'Umum' => 'general',
+                                'Adj' => 'adjustment',
+                                default => $row['type'],
+                            };
+
+                            JournalDetail::create([
+                                'code' => $row['code'],
+                                'coa_code' => $row['coa_code'],
+                                'description' => $row['description'],
+                                'dc' => $row['dc'],
+                                'debit' => $debit,
+                                'credit' => $credit,
+                                'amount' => $amount,
+                                'date' => $journal->date,
+                                'status' => $journal->status,
+                                'type' => $type,
+                                'created_at' => Carbon::now(),
+                                'updated_at' => Carbon::now(),
+                            ]);
+                        }
                     }
 
                 });

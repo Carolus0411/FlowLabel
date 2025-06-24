@@ -147,10 +147,10 @@ $configMonth = [
                 <td class="font-semibold w-[100px]">{{ $coa->code }}</td>
                 <td>{{ $coa->name }}</td>
 
-                <td class="text-right">{{ \App\Helpers\Cast::money($beginning) }}</td>
-                <td class="text-right">{{ \App\Helpers\Cast::money($transDebit) }}</td>
-                <td class="text-right">{{ \App\Helpers\Cast::money($transCredit) }}</td>
-                <td class="text-right">{{ \App\Helpers\Cast::money($ending) }}</td>
+                <td class="text-right">{{ Cast::money($beginning) }}</td>
+                <td class="text-right">{{ Cast::money($transDebit) }}</td>
+                <td class="text-right">{{ Cast::money($transCredit) }}</td>
+                <td class="text-right">{{ Cast::money($ending) }}</td>
             </tr>
 
             @empty

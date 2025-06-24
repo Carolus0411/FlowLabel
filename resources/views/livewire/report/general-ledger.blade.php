@@ -131,9 +131,9 @@ $configMonth = [
                 <tr class="hover:bg-base-200 font-semibold">
                     <td colspan="3"></td>
                     <td>Beginning Balance</td>
-                    <td class="text-right">{{ \App\Helpers\Cast::money($beginningDebit) }}</td>
-                    <td class="text-right">{{ \App\Helpers\Cast::money($beginningCredit) }}</td>
-                    <td class="text-right">{{ \App\Helpers\Cast::money($balance) }}</td>
+                    <td class="text-right">{{ Cast::money($beginningDebit) }}</td>
+                    <td class="text-right">{{ Cast::money($beginningCredit) }}</td>
+                    <td class="text-right">{{ Cast::money($balance) }}</td>
                 </tr>
 
                 @php
@@ -149,9 +149,9 @@ $configMonth = [
                     <td>{{ $journalDetail->code }}</td>
                     <td>{{ $journalDetail->journal->ref_id ?? '' }}</td>
                     <td><div class="lg:max-w-[200px] truncate">{{ $journalDetail->description }}</div></td>
-                    <td class="text-right">{{ \App\Helpers\Cast::money($journalDetail->debit) }}</td>
-                    <td class="text-right">{{ \App\Helpers\Cast::money($journalDetail->credit) }}</td>
-                    <td class="text-right">{{ \App\Helpers\Cast::money($balance) }}</td>
+                    <td class="text-right">{{ Cast::money($journalDetail->debit) }}</td>
+                    <td class="text-right">{{ Cast::money($journalDetail->credit) }}</td>
+                    <td class="text-right">{{ Cast::money($balance) }}</td>
                 </tr>
                 @empty
                 <tr class="hover:!bg-slate-100 dark:hover:!bg-slate-800">
@@ -173,9 +173,9 @@ $configMonth = [
                     <td></td>
                     <td></td>
                     @if ($trialBalance->endingDebit > $trialBalance->endingCredit)
-                    <td class="text-right">{{ \App\Helpers\Cast::money($trialBalance->endingDebit) }}</td>
+                    <td class="text-right">{{ Cast::money($trialBalance->endingDebit) }}</td>
                     @else
-                    <td class="text-right">{{ \App\Helpers\Cast::money($trialBalance->endingCredit) }}</td>
+                    <td class="text-right">{{ Cast::money($trialBalance->endingCredit) }}</td>
                     @endif
                 </tr>
 

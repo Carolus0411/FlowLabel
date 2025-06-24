@@ -12,134 +12,59 @@ class TrialBalance {
 
     public static function leftBalance( $code, $period1, $period2 )
     {
-        $period = config('settings.accounting_period');
+        $period = settings('active_period');
 
-        $coa = Coa::where('code', $code)->first();
-
-        $beginningDebit = BeginningBalance::debit($coa->code);
-        $beginningCredit = BeginningBalance::credit($coa->code);
+        $beginningDebit = BeginningBalance::debit($code);
+        $beginningCredit = BeginningBalance::credit($code);
 
         $journal = JournalDetail::query()
         ->closed()
+        ->where('type', 'general')
         ->where('coa_code', 'like', $code . '%')
         ->where('year', '=', $period)
         ->where('month', '<', $period1)
         ->selectRaw(' SUM(debit) as transDebit, SUM(credit) as transCredit ')
         ->first();
 
-        $balance = $debit = $credit = 0;
-
         $beginning = bcsub($beginningDebit, $beginningCredit, 2);
-
-        if ($coa->normal_balance == 'D') {
-
-            $balance = bcsub($beginningDebit, $beginningCredit, 2);
-            $trans = bcsub($journal->transDebit, $journal->transCredit, 2);
-            $balance = bcadd($balance, $trans, 2);
-
-            if ($balance > 0) {
-                $debit = $balance;
-                $credit = 0;
-            } else {
-                $debit = 0;
-                $credit = abs($balance);
-            }
-
-        } else {
-
-            $balance = bcsub($beginningCredit, $beginningDebit, 2);
-            $trans = bcsub($journal->transCredit, $journal->transDebit, 2);
-            $balance = bcadd($balance, $trans, 2);
-
-            if ($balance > 0) {
-                $debit = 0;
-                $credit = $balance;
-            } else {
-                $debit = abs($balance);
-                $credit = 0;
-            }
-        }
-
-        $ending = bcsub($debit, $credit, 2);
+        $trans = bcsub($journal->transDebit, $journal->transCredit, 2);
+        $ending = bcadd($beginning, $trans, 2);
 
         return (object) [
-            'beginningDebit' => $beginningDebit,
-            'beginningCredit' => $beginningCredit,
             'beginning' => $beginning,
             'transDebit' => $journal->transDebit,
             'transCredit' => $journal->transCredit,
-            'endingDebit' => $debit,
-            'endingCredit' => $credit,
             'ending' => $ending
         ];
     }
 
-    public static function get( $code, $period1, $period2, $type = 'general', $cumulative = true )
+    public static function get( $code, $period1, $period2, $cumulative = true )
     {
         $coa = Coa::where('code', $code)->first();
 
         if ($cumulative) {
             $leftBalance = self::leftBalance( $code, $period1, $period2 );
-            $beginningDebit = $leftBalance->endingDebit;
-            $beginningCredit = $leftBalance->endingCredit;
+            $beginning = $leftBalance->ending;
         } else {
-            $beginningDebit = 0;
-            $beginningCredit = 0;
+            $beginning = 0;
         }
-
 
         $journal = JournalDetail::query()
         ->closed()
-        ->where('type', $type)
+        ->where('type', 'general')
         ->where('coa_code', 'like', $code . '%')
         ->where('month', '>=', $period1)
         ->where('month', '<=', $period2)
         ->selectRaw(' SUM(debit) as transDebit, SUM(credit) as transCredit ')
         ->first();
 
-        $balance = $debit = $credit = 0;
-
-        $beginning = bcsub($beginningDebit, $beginningCredit, 2);
-
-        if ($coa->normal_balance == 'D') {
-
-            $balance = bcsub($beginningDebit, $beginningCredit, 2);
-            $trans = bcsub($journal->transDebit, $journal->transCredit, 2);
-            $balance = bcadd($balance, $trans, 2);
-
-            if ($balance > 0) {
-                $debit = $balance;
-                $credit = 0;
-            } else {
-                $debit = 0;
-                $credit = abs($balance);
-            }
-
-        } else {
-
-            $balance = bcsub($beginningCredit, $beginningDebit, 2);
-            $trans = bcsub($journal->transCredit, $journal->transDebit, 2);
-            $balance = bcadd($balance, $trans, 2);
-
-            if ($balance > 0) {
-                $debit = 0;
-                $credit = $balance;
-            } else {
-                $debit = abs($balance);
-                $credit = 0;
-            }
-        }
-
-        $ending = bcsub($debit, $credit, 2);
+        $trans = bcsub($journal->transDebit, $journal->transCredit, 2);
+        $ending = bcadd($beginning, $trans, 2);
 
         return (object) [
-            'beginningDebit' => $beginningDebit,
-            'beginningCredit' => $beginningCredit,
             'beginning' => $beginning,
             'transDebit' => $journal->transDebit,
             'transCredit' => $journal->transCredit,
-            'endingDebit' => $debit,
-            'endingCredit' => $credit,
             'ending' => $ending
         ];
     }
