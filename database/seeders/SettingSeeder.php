@@ -12,6 +12,9 @@ class SettingSeeder extends Seeder
     public function run(): void
     {
         settings([
+            'opening_balance_period' => '2023',
+            'active_period' => '2024',
+
             'account_receivable_code' => '104-001',
             'account_payable_code' => '201-001',
             'vat_out_code' => '203-008',

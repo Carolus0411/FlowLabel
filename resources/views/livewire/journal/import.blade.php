@@ -1,21 +1,26 @@
 <?php
 
+use Spatie\SimpleExcel\SimpleExcelReader;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
-use Livewire\Volt\Component;
+use Illuminate\Support\Carbon;
 use Livewire\WithFileUploads;
-use Spatie\SimpleExcel\SimpleExcelReader;
+use Livewire\Volt\Component;
 use Mary\Traits\Toast;
-use App\Models\Contact;
+use App\Helpers\Cast;
+use App\Models\Journal;
+use App\Models\JournalDetail;
 
 new class extends Component {
     use Toast, WithFileUploads;
 
     public $file;
+    public $mode = 'header';
+    public $message = '';
 
     public function mount(): void
     {
-        Gate::authorize('import contact');
+        Gate::authorize('import journal');
     }
 
     public function save()
@@ -35,44 +40,81 @@ new class extends Component {
                 $rows = SimpleExcelReader::create($target)->getRows();
                 $rows->each(function(array $row) {
 
-                    if ( !empty($row['name']) )
-                    {
-                        if (!empty($row['id'])) {
-                            $data['id'] = $row['id'];
+                    if ($this->mode == 'header') {
+                        Journal::insert([
+                            'code' => $row['code'],
+                            'date' => $row['date'],
+                            'note' => $row['note'],
+                            'debit_total' => Cast::number($row['debit']),
+                            'credit_total' => Cast::number($row['credit']),
+                            'ref_id' => $row['ref_id'],
+                            'type' => $row['type'],
+                            'status' => 'close',
+                            'saved' => '1',
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ]);
+                    }
+
+                    if ($this->mode == 'detail') {
+
+                        $debit = $credit = 0;
+
+                        if ($row['dc'] == 'D') {
+                            $debit = Cast::number($row['amount']);
+                            $credit = 0;
+                            $amount = Cast::number($row['amount']);
+                        } else {
+                            $debit = 0;
+                            $credit = Cast::number($row['amount']);
+                            $amount = Cast::number($row['amount']) * -1;
                         }
 
-                        if (!empty($row['id'])) {
-                            Contact::where('id', $row['id'])->delete();
-                        }
+                        $journal = Journal::select(['date','status'])->where('code', $row['code'])->first();
 
-                        $data['name'] = $row['name'];
-                        $data['is_active'] = $row['is_active'];
-
-                        Contact::create($data);
+                        JournalDetail::create([
+                            'code' => $row['code'],
+                            'coa_code' => $row['coa_code'],
+                            'description' => $row['description'],
+                            'dc' => $row['dc'],
+                            'debit' => $debit,
+                            'credit' => $credit,
+                            'amount' => $amount,
+                            'date' => $journal->date,
+                            'status' => $journal->status,
+                            'created_at' => Carbon::now(),
+                            'updated_at' => Carbon::now(),
+                        ]);
                     }
 
                 });
             }
 
             DB::commit();
-            $this->success('Success','Contact successfully imported.', redirectTo: route('contact.index'));
+            $this->success('Success','Journal successfully imported.', redirectTo: route('journal.import'));
         }
         catch (Exception $e)
         {
             DB::rollBack();
             logger()->error($e->getMessage());
-            $this->error('Error','Contact failed to import.', redirectTo: route('contact.index'));
+            $this->error('Error','Journal failed to import.', redirectTo: route('journal.import'));
         }
     }
 }; ?>
-
+@php
+$modes = [
+    ['id' => 'header', 'name' => 'Header'],
+    ['id' => 'detail', 'name' => 'Detail'],
+];
+@endphp
 <div>
-    <x-header title="Import Contact" separator />
+    <x-header title="Import Journal" separator />
     <x-card>
         <x-form wire:submit="save">
             <x-file wire:model="file" label="File" hint="xlsx or csv" wire:target="save" wire:loading.attr="disabled" />
+            <x-radio label="Mode" :options="$modes" wire:model="mode" />
             <x-slot:actions>
-                <x-button label="Cancel" link="{{ route('contact.index') }}" wire:target="save" wire:loading.attr="disabled" />
+                <x-button label="Cancel" link="{{ route('journal.index') }}" wire:target="save" wire:loading.attr="disabled" />
                 <x-button label="Import" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
             </x-slot:actions>
         </x-form>

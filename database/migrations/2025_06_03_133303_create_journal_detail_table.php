@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('code', 20)->index();
             $table->string('coa_code', 20)->index();
+            $table->string('type')->index()->nullable();
             $table->string('description', 200)->nullable();
             $table->string('dc', 20);
             $table->decimal('debit', 12, 2);

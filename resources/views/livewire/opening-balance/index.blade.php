@@ -138,7 +138,6 @@ new class extends Component {
         }
     }
 }; ?>
-
 <div
     x-data="{
         selected : $wire.entangle('selected'),
@@ -160,7 +159,9 @@ new class extends Component {
 >
     <x-header title="Opening Balance" separator>
         <x-slot:actions>
-            {{-- <x-button label="Back" link="{{ route('brand.index') }}" icon="o-arrow-uturn-left" /> --}}
+            @can('import opening-balance')
+            <x-button label="Import" link="{{ route('opening-balance.import') }}" icon="o-arrow-up-tray" />
+            @endcan
             <x-input label="" wire:model.live.debounce="year" readonly />
             {{-- <x-button label="Update" wire: click="update" spinner="update" /> --}}
         </x-slot:actions>

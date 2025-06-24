@@ -96,6 +96,7 @@
                 <x-menu-sub title="Report" icon="o-chart-pie">
                     <x-menu-sub title="Financial">
                         <x-menu-item title="General Ledger" link="{{ route('report.general-ledger') }}" :hidden="auth()->user()->cannot('view general-ledger-report')" />
+                        <x-menu-item title="Trial Balance" link="{{ route('report.trial-balance') }}" :hidden="auth()->user()->cannot('view trial-balance')" />
                     </x-menu-sub>
                 </x-menu-sub>
 

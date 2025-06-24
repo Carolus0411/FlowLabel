@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Session;
 use Livewire\Volt\Component;
+use Illuminate\Support\Str;
 use Mary\Traits\Toast;
 use App\Helpers\Cast;
 use App\Traits\CoaChoice;
@@ -25,7 +26,7 @@ new class extends Component {
 
     public function mount(): void
     {
-        Gate::authorize('view general-ledger-report');
+        Gate::authorize('view general-ledger');
 
         if (empty($this->date1)) {
             $this->date1 = date('Y-m-01');
@@ -89,7 +90,7 @@ $configMonth = [
 ];
 @endphp
 <div>
-    <x-header title="General Ledger Report" subtitle="Period : {{ \App\Helpers\Cast::monthForHuman($period1).' - '.\App\Helpers\Cast::monthForHuman($period2) }}" separator>
+    <x-header title="General Ledger" subtitle="Period : {{ \App\Helpers\Cast::monthForHuman($period1).' - '.\App\Helpers\Cast::monthForHuman($period2) }}" separator>
         {{-- <x-slot:subtitle>
             <x-subtitle-date :date1="$date1" :date2="$date2" />
         </x-slot:subtitle> --}}
@@ -147,7 +148,7 @@ $configMonth = [
                     <td>{{ \Illuminate\Support\Carbon::parse($journalDetail->date)->format('d/m/y') }}</td>
                     <td>{{ $journalDetail->code }}</td>
                     <td>{{ $journalDetail->journal->ref_id ?? '' }}</td>
-                    <td>{{ $journalDetail->description }}</td>
+                    <td><div class="lg:max-w-[200px] truncate">{{ $journalDetail->description }}</div></td>
                     <td class="text-right">{{ \App\Helpers\Cast::money($journalDetail->debit) }}</td>
                     <td class="text-right">{{ \App\Helpers\Cast::money($journalDetail->credit) }}</td>
                     <td class="text-right">{{ \App\Helpers\Cast::money($balance) }}</td>

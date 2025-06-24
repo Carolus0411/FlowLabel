@@ -74,7 +74,7 @@ class TrialBalance {
         ];
     }
 
-    public static function get( $code, $period1, $period2, $cumulative = true )
+    public static function get( $code, $period1, $period2, $type = 'general', $cumulative = true )
     {
         $coa = Coa::where('code', $code)->first();
 
@@ -90,6 +90,7 @@ class TrialBalance {
 
         $journal = JournalDetail::query()
         ->closed()
+        ->where('type', $type)
         ->where('coa_code', 'like', $code . '%')
         ->where('month', '>=', $period1)
         ->where('month', '<=', $period2)

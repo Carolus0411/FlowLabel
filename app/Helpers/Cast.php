@@ -10,7 +10,7 @@ class Cast {
     {
         if(empty($num)) return 0;
         $num = @trim(@rtrim(@ltrim($num)));
-        return floatval(preg_replace('#[^0-9\.]#i', '', $num));
+        return floatval(preg_replace('#[^0-9\.\-]#i', '', $num));
     }
 
     public static function currency( $num, $decimal = 2 )

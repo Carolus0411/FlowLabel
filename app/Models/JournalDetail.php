@@ -23,6 +23,7 @@ class JournalDetail extends Model
             $model->month = Carbon::parse($model->date)->format('Ym');
             $model->amount = $model->dc == 'D' ? $model->debit : ($model->credit * -1);
             $model->status = $model->status ?? $model->journal->status;
+            $model->type = $model->type ?? $model->journal->type;
         });
 
         static::updating(function (Model $model) {
@@ -30,6 +31,7 @@ class JournalDetail extends Model
             $model->month = Carbon::parse($model->date)->format('Ym');
             $model->amount = $model->dc == 'D' ? $model->debit : ($model->credit * -1);
             $model->status = $model->status ?? $model->journal->status;
+            $model->type = $model->type ?? $model->journal->type;
         });
     }
 
