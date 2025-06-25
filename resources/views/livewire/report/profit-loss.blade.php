@@ -96,7 +96,7 @@ new class extends Component {
                 "code" : "3",
                 "name" : "Sales Revenue Total",
                 "type" : "total",
-                "formula" : "2"
+                "formula" : "$2"
             },
             {
                 "code" : "4",
@@ -120,8 +120,59 @@ new class extends Component {
                         "code" : "521",
                         "name" : "Cost Of Handling",
                         "op" : "-"
+                    },
+                    {
+                        "code" : "522",
+                        "name" : "Cost Of Freight",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "523",
+                        "name" : "Cost Of Document Fee",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "525",
+                        "name" : "Cost Of Trucking",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "526",
+                        "name" : "Cost Of Logistic",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "527",
+                        "name" : "Cost Of Transfer Edi",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "528",
+                        "name" : "Cost Of Insurance",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "529",
+                        "name" : "Other Cost",
+                        "op" : "-"
                     }
                 ]
+            },
+            {
+                "code" : "7",
+                "name" : "Cost Of Sales Total",
+                "type" : "total",
+                "formula" : "$6"
+            },
+            {
+                "code" : "8",
+                "type" : "newline"
+            },
+            {
+                "code" : "9",
+                "name" : "Gross Profit",
+                "type" : "total",
+                "formula" : "$2+$6"
             }
         ]';
 
@@ -261,7 +312,7 @@ $configMonth = [
                     @endforeach
                     @php
                     $code = $data['code'];
-                    $_VARS[$code] = $total;
+                    $_VARS['$'.$code] = $total;
                     @endphp
                 @endif
 
@@ -270,6 +321,7 @@ $configMonth = [
                 @php
                 $formula = str_replace(array_keys($_VARS), array_values($_VARS), $data['formula']);
                 $total = @eval('return ' . $formula.';');
+                // @dump($data['formula'] .' | '. $formula)
                 @endphp
                 <tr class="hover:bg-base-200">
                     <td>&nbsp;</td>
