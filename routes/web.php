@@ -99,6 +99,7 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
 
     Volt::route('/report/general-ledger', 'report.general-ledger')->name('report.general-ledger');
     Volt::route('/report/trial-balance', 'report.trial-balance')->name('report.trial-balance');
+    Volt::route('/report/profit-loss', 'report.profit-loss')->name('report.profit-loss');
 
     Volt::route('/users', 'users.index')->name('users.index');
     Volt::route('/users/create', 'users.create')->name('users.create');

@@ -97,6 +97,7 @@
                     <x-menu-sub title="Financial">
                         <x-menu-item title="General Ledger" link="{{ route('report.general-ledger') }}" :hidden="auth()->user()->cannot('view general-ledger-report')" />
                         <x-menu-item title="Trial Balance" link="{{ route('report.trial-balance') }}" :hidden="auth()->user()->cannot('view trial-balance')" />
+                        <x-menu-item title="Profit Loss" link="{{ route('report.profit-loss') }}" :hidden="auth()->user()->cannot('view profit-loss')" />
                     </x-menu-sub>
                 </x-menu-sub>
 

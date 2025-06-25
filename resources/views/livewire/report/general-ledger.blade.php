@@ -124,15 +124,13 @@ $configMonth = [
                 @php
                 $balance = 0;
                 $leftBalance = \App\Helpers\TrialBalance::leftBalance( $coa->code, $period1, $period2 );
-                $beginningDebit = $leftBalance->endingDebit;
-                $beginningCredit = $leftBalance->endingCredit;
-                $balance = $beginningDebit - $beginningCredit;
+                $balance = $leftBalance->ending;
                 @endphp
                 <tr class="hover:bg-base-200 font-semibold">
                     <td colspan="3"></td>
                     <td>Beginning Balance</td>
-                    <td class="text-right">{{ Cast::money($beginningDebit) }}</td>
-                    <td class="text-right">{{ Cast::money($beginningCredit) }}</td>
+                    <td class="text-right"></td>
+                    <td class="text-right"></td>
                     <td class="text-right">{{ Cast::money($balance) }}</td>
                 </tr>
 
@@ -172,11 +170,7 @@ $configMonth = [
                     <td>Ending Balance</td>
                     <td></td>
                     <td></td>
-                    @if ($trialBalance->endingDebit > $trialBalance->endingCredit)
-                    <td class="text-right">{{ Cast::money($trialBalance->endingDebit) }}</td>
-                    @else
-                    <td class="text-right">{{ Cast::money($trialBalance->endingCredit) }}</td>
-                    @endif
+                    <td class="text-right">{{ Cast::money($trialBalance->ending) }}</td>
                 </tr>
 
             </tr>

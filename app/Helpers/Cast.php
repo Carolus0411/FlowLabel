@@ -27,6 +27,14 @@ class Cast {
         return number_format($num, $decimal, '.', ',');
     }
 
+    public static function money2( $num, $decimal = 2 )
+    {
+        if(empty($num)) $num = 0;
+        $num = self::number($num);
+        if ($num >= 0) return number_format($num, $decimal, '.', ',');
+        else return '('. str_replace('-', '', number_format($num, $decimal, '.', ',')) .')';
+    }
+
     public static function nn( $num )
     {
         if (empty($num)) $num = 0;
