@@ -173,6 +173,26 @@ new class extends Component {
                 "name" : "Gross Profit",
                 "type" : "total",
                 "formula" : "$2+$6"
+            },
+            {
+                "code" : "10",
+                "type" : "newline"
+            },
+            {
+                "code" : "11",
+                "name" : "General & Admin Expenses",
+                "type" : "title"
+            },
+            {
+                "code" : "12",
+                "type" : "group",
+                "detail" : [
+                    {
+                        "code" : "529",
+                        "name" : "Other Cost",
+                        "op" : "-"
+                    }
+                ]
             }
         ]';
 
