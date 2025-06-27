@@ -188,11 +188,163 @@ new class extends Component {
                 "type" : "group",
                 "detail" : [
                     {
-                        "code" : "529",
-                        "name" : "Other Cost",
+                        "code" : "611",
+                        "name" : "Sales And Marketing Exp",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "621",
+                        "name" : "Payroll & Related",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "622",
+                        "name" : "Utilities Expenses",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "623",
+                        "name" : "Local Transportation",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "624",
+                        "name" : "Travelling Expense",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "625",
+                        "name" : "Repair & Maintenance",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "631",
+                        "name" : "Printing & Stationery",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "632",
+                        "name" : "Office Expense",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "633",
+                        "name" : "Legal Fee",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "634",
+                        "name" : "Professional Fee & Service",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "635",
+                        "name" : "Employee Development",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "636",
+                        "name" : "Insurance",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "637",
+                        "name" : "Rental Expense",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "650",
+                        "name" : "Reimb Expenses",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "651",
+                        "name" : "Bank Charges",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "661",
+                        "name" : "Depreciation & Amortization",
                         "op" : "-"
                     }
                 ]
+            },
+            {
+                "code" : "13",
+                "name" : "General & Admin Expenses",
+                "type" : "total",
+                "formula" : "$12"
+            },
+            {
+                "code" : "14",
+                "type" : "newline"
+            },
+            {
+                "code" : "15",
+                "name" : "Operational Profit (Loss)",
+                "type" : "total",
+                "formula" : "$9+$13"
+            },
+            {
+                "code" : "16",
+                "type" : "newline"
+            },
+            {
+                "code" : "17",
+                "name" : "Other incomes / Other Expenses",
+                "type" : "title"
+            },
+            {
+                "code" : "18",
+                "type" : "group",
+                "detail" : [
+                    {
+                        "code" : "711",
+                        "name" : "Interest Income",
+                        "op" : "+"
+                    },
+                    {
+                        "code" : "712",
+                        "name" : "Gain/Loss On Exchange Rate",
+                        "op" : "+"
+                    },
+                    {
+                        "code" : "713",
+                        "name" : "Gain/Loss On Sale Of Assets/Investment",
+                        "op" : "+"
+                    },
+                    {
+                        "code" : "714",
+                        "name" : "Gain/Loss On Payment Difference",
+                        "op" : "+"
+                    },
+                    {
+                        "code" : "715",
+                        "name" : "Other Income",
+                        "op" : "+"
+                    },
+                    {
+                        "code" : "717",
+                        "name" : "Interest Expenses",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "718",
+                        "name" : "Tax Expenses",
+                        "op" : "-"
+                    },
+                    {
+                        "code" : "719",
+                        "name" : "Other Expenses",
+                        "op" : "-"
+                    }
+                ]
+            },
+            {
+                "code" : "19",
+                "name" : "",
+                "type" : "total",
+                "formula" : "$18"
             }
         ]';
 
@@ -229,17 +381,22 @@ new class extends Component {
 
     public function getCoa()
     {
-        return Coa::query()
-        ->with('journalDetails')
+        $coas = Coa::query()
         ->isActive()
-        ->orderBy('code')
         ->get();
+
+        $tmp = [];
+        foreach ($coas as $coa) {
+            $tmp[$coa->code] = $coa;
+        }
+
+        return $tmp;
     }
 
     public function with(): array
     {
         return [
-            'coas' => $this->getCoa(),
+            'coa' => $this->getCoa(),
         ];
     }
 
@@ -288,7 +445,7 @@ $configMonth = [
     }"
 >
     <x-header
-        title="Trial Balance" subtitle="Period : {{ \App\Helpers\Cast::monthForHuman($period1).' - '.\App\Helpers\Cast::monthForHuman($period2) }}"
+        title="Profit (Loss)" subtitle="Period : {{ \App\Helpers\Cast::monthForHuman($period1).' - '.\App\Helpers\Cast::monthForHuman($period2) }}"
         separator
         progress-indicator
     >
@@ -320,8 +477,20 @@ $configMonth = [
                     @php
                     $balance = TrialBalance::get($detail['code'], $period1, $period2);
                     $ending = $balance->ending ?? 0;
-                    if ($detail['op'] == '+') $ending = abs($ending);
-                    if ($detail['op'] == '-') $ending = abs($ending) * -1;
+
+                    $gainloss = false;
+                    if (in_array($detail['code'], ['712','713','714'])) {
+                        if ($ending > 0) {
+                            $ending = $ending * -1;
+                            $gainloss = true;
+                        }
+                    }
+
+                    if (!$gainloss) {
+                        if ($detail['op'] == '+') $ending = abs($ending);
+                        if ($detail['op'] == '-') $ending = abs($ending) * -1;
+                    }
+
                     $total = $total + $ending;
                     @endphp
                     <tr class="hover:bg-base-200">
@@ -341,7 +510,8 @@ $configMonth = [
                 @php
                 $formula = str_replace(array_keys($_VARS), array_values($_VARS), $data['formula']);
                 $total = @eval('return ' . $formula.';');
-                // @dump($data['formula'] .' | '. $formula)
+                $code = $data['code'];
+                $_VARS['$'.$code] = $total;
                 @endphp
                 <tr class="hover:bg-base-200">
                     <td>&nbsp;</td>

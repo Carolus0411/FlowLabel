@@ -133,8 +133,9 @@ new class extends Component {
         $this->validityMessage = '';
 
         if ( bccomp($this->sumDebit,$this->sumCredit,2) ) {
+            $diff = bcsub($this->sumDebit, $this->sumCredit, 2);
             $this->validityStatus = false;
-            $this->validityMessage = 'Debit and Credit must be same';
+            $this->validityMessage = 'Debit and Credit must be same. Difference : ' . Cast::money($diff);
         }
     }
 }; ?>

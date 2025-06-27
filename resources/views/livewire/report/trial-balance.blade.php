@@ -118,6 +118,7 @@ $configMonth = [
                 <th class="text-right"><span class="text-slate-400 font-normal">Transaction</span><br>Debit</th>
                 <th class="text-right"><span class="text-slate-400 font-normal">Transaction</span><br>Credit</th>
                 <th class="text-right"><span class="text-slate-400 font-normal">Ending</span><br>Balance</th>
+                <th class="">Status</th>
             </tr>
             </thead>
             <tbody>
@@ -137,6 +138,11 @@ $configMonth = [
             $transCredit = $balance->transCredit;
             $ending = $balance->ending;
 
+            $status = '<span class="text-success">correct</span>';
+            if (!TrialBalance::pole($coa->normal_balance, $ending)){
+                $status = '<span class="text-error">invalid pole</span>';
+            }
+
             $sumBeginning = bcadd($sumBeginning, $beginning, 2);
             $sumTransDebit = bcadd($sumTransDebit, $transDebit, 2);
             $sumTransCredit = bcadd($sumTransCredit, $transCredit, 2);
@@ -151,6 +157,7 @@ $configMonth = [
                 <td class="text-right">{{ Cast::money($transDebit) }}</td>
                 <td class="text-right">{{ Cast::money($transCredit) }}</td>
                 <td class="text-right">{{ Cast::money($ending) }}</td>
+                <td>{!! $status !!}</td>
             </tr>
 
             @empty
@@ -167,6 +174,7 @@ $configMonth = [
                 <th class="text-right font-semibold">{{ Cast::money($sumTransDebit) }}</th>
                 <th class="text-right font-semibold">{{ Cast::money($sumTransCredit) }}</th>
                 <th class="text-right font-semibold">{{ Cast::money($sumEnding) }}</th>
+                <th></th>
             </tr>
             </tfoot>
             </table>
