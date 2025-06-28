@@ -76,29 +76,33 @@ class TrialBalance {
         ];
     }
 
-    public static function pole( $normal_balance, $amount )
+    public static function currentYearProfit( $period )
     {
-        if ($normal_balance == 'D')
+        $coas = Coa::where('report_type', 'PL')->isActive()->get();
+
+        $ending = 0;
+        foreach ($coas as $coa)
         {
-            if ($amount < 0)
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
+            $leftBalance = self::leftBalance($coa->code, $period, $period);
+            $balance = $leftBalance->ending ?? 0;
+            $ending = $ending + $balance;
         }
-        else if ($normal_balance == 'C')
+
+        return $ending;
+    }
+
+    public static function currentMonthProfit( $period )
+    {
+        $coas = Coa::where('report_type', 'PL')->isActive()->get();
+
+        $ending = 0;
+        foreach ($coas as $coa)
         {
-            if ($amount > 0)
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
+            $get = self::get($coa->code, $period, $period, FALSE);
+            $balance = $get->ending ?? 0;
+            $ending = $ending + $balance;
         }
+
+        return $ending;
     }
 }

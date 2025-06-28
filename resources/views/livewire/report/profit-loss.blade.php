@@ -463,7 +463,7 @@ $configMonth = [
 
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <div class="overflow-x-auto">
-            <table class="table table-sm w-auto lg:min-w-xl">
+            <table class="table table-sm w-auto lg:min-w-2xl">
             <thead>
             <tr>
                 <th>Code</th>
