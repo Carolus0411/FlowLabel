@@ -12,16 +12,17 @@ class TrialBalance {
 
     public static function leftBalance( $code, $period1, $period2 )
     {
+        $year = substr($period1, 0, 4);
         $period = settings('active_period');
 
-        $beginningDebit = BeginningBalance::debit($code);
-        $beginningCredit = BeginningBalance::credit($code);
+        $beginningDebit = BeginningBalance::debit($year, $code);
+        $beginningCredit = BeginningBalance::credit($year, $code);
 
         $journal = JournalDetail::query()
         ->closed()
         // ->where('type', 'general')
         ->where('coa_code', 'like', $code . '%')
-        ->where('year', '=', $period)
+        ->where('year', '=', $year)
         ->where('month', '<', $period1)
         ->selectRaw(' SUM(debit) as transDebit, SUM(credit) as transCredit ')
         ->first();
@@ -38,9 +39,9 @@ class TrialBalance {
         ];
     }
 
-    public static function get( $code, $period1, $period2, $cumulative = true, $pole = false )
+    public static function get( $code, $period1, $period2, $cumulative = true)
     {
-        $period = settings('active_period');
+        $year = substr($period1, 0, 4);
         $coa = Coa::where('code', $code)->first();
 
         if ($cumulative) {
@@ -54,7 +55,7 @@ class TrialBalance {
         ->closed()
         // ->where('type', 'general')
         ->where('coa_code', 'like', $code . '%')
-        ->where('year', '=', $period)
+        ->where('year', '=', $year)
         ->where('month', '>=', $period1)
         ->where('month', '<=', $period2)
         ->selectRaw(' SUM(debit) as transDebit, SUM(credit) as transCredit ')

@@ -6,31 +6,27 @@ use App\Models\Balance;
 
 class BeginningBalance {
 
-    public static function debit( $code )
+    public static function debit( $year, $code )
     {
-        $period = settings('active_period');
-        $year = intval($period) - 1;
+        $year = intval($year) - 1;
         return Balance::where('coa_code', $code)->where('year', $year)->sum('debit');
     }
 
-    public static function credit( $code )
+    public static function credit( $year, $code )
     {
-        $period = settings('active_period');
-        $year = intval($period) - 1;
+        $year = intval($year) - 1;
         return Balance::where('coa_code', $code)->where('year', $year)->sum('credit');
     }
 
-    public static function sumDebit()
+    public static function sumDebit( $year )
     {
-        $period = settings('active_period');
-        $year = intval($period) - 1;
+        $year = intval($year) - 1;
         return Balance::where('year', $year)->sum('debit');
     }
 
-    public static function sumCredit()
+    public static function sumCredit( $year )
     {
-        $period = settings('active_period');
-        $year = intval($period) - 1;
+        $year = intval($year) - 1;
         return Balance::where('year', $year)->sum('credit');
     }
 }

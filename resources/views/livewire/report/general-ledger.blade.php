@@ -62,8 +62,8 @@ new class extends Component {
     public function search(): void
     {
         $data = $this->validate([
-            'period1' => 'required',
-            'period2' => 'required',
+            'period1' => ['required'],
+            'period2' => ['required'], // new \App\Rules\SameYear($this->period1)
         ]);
     }
 

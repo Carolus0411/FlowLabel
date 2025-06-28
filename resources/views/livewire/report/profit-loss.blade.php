@@ -12,6 +12,9 @@ use App\Models\Balance;
 new class extends Component {
     use Toast;
 
+    #[Session(key: 'pl_period')]
+    public $period = '';
+
     #[Session(key: 'pl_period1')]
     public $period1 = '';
 
@@ -25,6 +28,10 @@ new class extends Component {
     public function mount(): void
     {
         Gate::authorize('view profit-loss');
+
+        if (empty($this->period)) {
+            $this->period = date('Ym');
+        }
 
         if (empty($this->period1)) {
             $this->period1 = date('Ym');
@@ -82,7 +89,7 @@ new class extends Component {
                     },
                     {
                         "code" : "428",
-                        "name" : "Sales Transfer Edi",
+                        "name" : "Sales Insurance",
                         "op" : "+"
                     },
                     {
@@ -96,7 +103,7 @@ new class extends Component {
                 "code" : "3",
                 "name" : "Sales Revenue Total",
                 "type" : "total",
-                "formula" : "$2"
+                "formula" : "{2}"
             },
             {
                 "code" : "4",
@@ -162,7 +169,7 @@ new class extends Component {
                 "code" : "7",
                 "name" : "Cost Of Sales Total",
                 "type" : "total",
-                "formula" : "$6"
+                "formula" : "{6}"
             },
             {
                 "code" : "8",
@@ -172,7 +179,7 @@ new class extends Component {
                 "code" : "9",
                 "name" : "Gross Profit",
                 "type" : "total",
-                "formula" : "$2+$6"
+                "formula" : "{2}+{6}"
             },
             {
                 "code" : "10",
@@ -273,7 +280,7 @@ new class extends Component {
                 "code" : "13",
                 "name" : "General & Admin Expenses",
                 "type" : "total",
-                "formula" : "$12"
+                "formula" : "{12}"
             },
             {
                 "code" : "14",
@@ -283,7 +290,7 @@ new class extends Component {
                 "code" : "15",
                 "name" : "Operational Profit (Loss)",
                 "type" : "total",
-                "formula" : "$9+$13"
+                "formula" : "{9}+{13}"
             },
             {
                 "code" : "16",
@@ -344,37 +351,39 @@ new class extends Component {
                 "code" : "19",
                 "name" : "",
                 "type" : "total",
-                "formula" : "$18"
+                "formula" : "{18}"
+            },
+            {
+                "code" : "20",
+                "type" : "newline"
+            },
+            {
+                "code" : "21",
+                "name" : "Profit (Loss) Before Tax",
+                "type" : "total",
+                "formula" : "{15}+{19}"
+            },
+            {
+                "code" : "22",
+                "type" : "group",
+                "detail" : [
+                    {
+                        "code" : "811",
+                        "name" : "Income Summary"
+                    },
+                    {
+                        "code" : "812",
+                        "name" : "Current Income Tax"
+                    }
+                ]
+            },
+            {
+                "code" : "23",
+                "name" : "Profit (Loss) After Tax",
+                "type" : "total",
+                "formula" : "{21}+{22}"
             }
         ]';
-
-        // $this->scheme = [
-        //     [
-        //         'code' => '1',
-        //         'name' => 'Sales Revenue',
-        //         'type' => 'title',
-        //     ],
-        //     [
-        //         'code' => '2',
-        //         'type' => 'group',
-        //         'detail' => [
-        //             ['code' => '411', 'name' => 'Sales Warehouse', 'op' => '+'],
-        //             ['code' => '421', 'name' => 'Sales Handling', 'op' => '+'],
-        //             ['code' => '422', 'name' => 'Sales Freight', 'op' => '+'],
-        //             ['code' => '423', 'name' => 'Sales Document Fee', 'op' => '+'],
-        //             ['code' => '425', 'name' => 'Sales Trucking', 'op' => '+'],
-        //             ['code' => '426', 'name' => 'Sales Logistic', 'op' => '+'],
-        //             ['code' => '427', 'name' => 'Sales Transfer Edi', 'op' => '+'],
-        //         ]
-        //     ],
-        //     [
-        //         'code' => '3',
-        //         'name' => 'Total Sales Revenue',
-        //         'type' => 'total',
-        //         'formula' => '2',
-        //     ],
-        //     ['type' => 'newline']
-        // ];
 
         $this->scheme = json_decode($scheme, TRUE);
     }
@@ -403,8 +412,7 @@ new class extends Component {
     public function search(): void
     {
         $data = $this->validate([
-            'period1' => 'required',
-            'period2' => 'required',
+            'period' => 'required',
         ]);
 
         $this->drawer = false;
@@ -412,8 +420,7 @@ new class extends Component {
 
     public function clear(): void
     {
-        $this->period1 = date('Ym');
-        $this->period2 = date('Ym');
+        $this->period = date('Ym');
 
         $this->success('Filters cleared.');
         $this->reset(['coa_code']);
@@ -445,7 +452,7 @@ $configMonth = [
     }"
 >
     <x-header
-        title="Profit (Loss)" subtitle="Period : {{ \App\Helpers\Cast::monthForHuman($period1).' - '.\App\Helpers\Cast::monthForHuman($period2) }}"
+        title="Profit (Loss)" subtitle="Period : {{ Cast::monthForHuman($period) }}"
         separator
         progress-indicator
     >
@@ -456,7 +463,15 @@ $configMonth = [
 
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <div class="overflow-x-auto">
-            <table class="table table-sm">
+            <table class="table table-sm w-auto lg:min-w-xl">
+            <thead>
+            <tr>
+                <th>Code</th>
+                <th>Description</th>
+                <th class="text-right">{{ Cast::monthForHuman($period) }}</th>
+                <th class="text-right">Cumulative</th>
+            </tr>
+            </thead>
             <tbody>
 
             @foreach ($scheme as $data)
@@ -472,36 +487,44 @@ $configMonth = [
                 @if ($data['type'] == 'group')
                     @php
                     $total = 0;
+                    $cmTotal = 0;
                     @endphp
                     @foreach ($data['detail'] as $detail)
                     @php
-                    $balance = TrialBalance::get($detail['code'], $period1, $period2);
+                    $balance = TrialBalance::get($detail['code'], $period, $period, false);
                     $ending = $balance->ending ?? 0;
+                    $ending = $ending * -1;
 
-                    $gainloss = false;
-                    if (in_array($detail['code'], ['712','713','714'])) {
-                        if ($ending > 0) {
-                            $ending = $ending * -1;
-                            $gainloss = true;
-                        }
-                    }
+                    $cmBalance = TrialBalance::get($detail['code'], $period, $period);
+                    $cmEnding = $cmBalance->ending ?? 0;
+                    $cmEnding = $cmEnding * -1;
 
-                    if (!$gainloss) {
-                        if ($detail['op'] == '+') $ending = abs($ending);
-                        if ($detail['op'] == '-') $ending = abs($ending) * -1;
-                    }
+                    // $gainloss = false;
+                    // if (in_array($detail['code'], ['712','713','714'])) {
+                    //     if ($ending > 0) {
+                    //         $ending = $ending * -1;
+                    //         $gainloss = true;
+                    //     }
+                    // }
+                    // if (!$gainloss) {
+                    //     if ($detail['op'] == '+') $ending = abs($ending);
+                    //     if ($detail['op'] == '-') $ending = abs($ending) * -1;
+                    // }
 
                     $total = $total + $ending;
+                    $cmTotal = $cmTotal + $cmEnding;
                     @endphp
                     <tr class="hover:bg-base-200">
                         <td class="lg:w-[100px]">{{ $detail['code'] }}</td>
                         <td>{{ $detail['name'] }}</td>
                         <td class="w-[150px] text-right">{{ Cast::money2($ending) }}</td>
+                        <td class="w-[150px] text-right">{{ Cast::money2($cmEnding) }}</td>
                     </tr>
                     @endforeach
                     @php
                     $code = $data['code'];
-                    $_VARS['$'.$code] = $total;
+                    $_VARS['{'.$code.'}'] = $total;
+                    $_CML['{'.$code.'}'] = $cmTotal;
                     @endphp
                 @endif
 
@@ -511,12 +534,18 @@ $configMonth = [
                 $formula = str_replace(array_keys($_VARS), array_values($_VARS), $data['formula']);
                 $total = @eval('return ' . $formula.';');
                 $code = $data['code'];
-                $_VARS['$'.$code] = $total;
+                $_VARS['{'.$code.'}'] = $total;
+
+                $formula = str_replace(array_keys($_CML), array_values($_CML), $data['formula']);
+                $cmTotal = @eval('return ' . $formula.';');
+                $code = $data['code'];
+                $_CML['{'.$code.'}'] = $cmTotal;
                 @endphp
                 <tr class="hover:bg-base-200">
                     <td>&nbsp;</td>
                     <td>{{ $data['name'] }}</td>
                     <td class="w-[150px] text-right">{{ Cast::money2($total) }}</td>
+                    <td class="w-[150px] text-right">{{ Cast::money2($cmTotal) }}</td>
                 </tr>
                 @endif
 
@@ -536,9 +565,10 @@ $configMonth = [
 
     {{-- FILTER DRAWER --}}
     <x-search-drawer>
-        <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
+        {{-- <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
             <x-datepicker label="" wire:model="period1" icon-right="o-calendar" :config="$configMonth" class="cursor-pointer" />
             <x-datepicker label="" wire:model="period2" icon-right="o-calendar" :config="$configMonth" class="cursor-pointer" />
-        </div>
+        </div> --}}
+        <x-datepicker label="" wire:model="period" icon-right="o-calendar" :config="$configMonth" class="cursor-pointer" />
     </x-search-drawer>
 </div>
