@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cash_in_detail', function (Blueprint $table) {
+        Schema::create('sales_settlement_detail', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cash_in_id')->index()->default(0);
-            $table->string('coa_code', 20)->index();
+            $table->string('code')->unique();
+            $table->string('invoice_code')->index();
             $table->foreignId('currency_id')->index()->default(0);
             $table->decimal('currency_rate', 12, 2)->default(0);
             $table->decimal('foreign_amount', 12, 2)->default(0);
             $table->decimal('amount', 12, 2)->default(0);
-            $table->string('note')->nullable();
             $table->timestamps();
         });
     }
@@ -29,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cash_in_detail');
+        Schema::dropIfExists('sales_settlement_detail');
     }
 };

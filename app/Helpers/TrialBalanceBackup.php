@@ -105,30 +105,4 @@ class TrialBalance {
 
         return $ending;
     }
-
-    public static function pole( $normal_balance, $amount )
-    {
-        if ($normal_balance == 'D')
-        {
-            if ($amount < 0)
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-        else if ($normal_balance == 'C')
-        {
-            if ($amount > 0)
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-    }
 }
