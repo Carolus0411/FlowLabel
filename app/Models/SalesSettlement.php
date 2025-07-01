@@ -30,22 +30,12 @@ class SalesSettlement extends Model
 
     public function details(): HasMany
 	{
-		return $this->hasMany(SalesInvoiceDetail::class,'sales_invoice_id','id');
+		return $this->hasMany(SalesSettlementDetail::class,'code','code');
 	}
 
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class,'contact_id','id')->withDefault();
-    }
-
-    public function ppn(): BelongsTo
-    {
-        return $this->belongsTo(Ppn::class,'ppn_id','id')->withDefault();
-    }
-
-    public function pph(): BelongsTo
-    {
-        return $this->belongsTo(Pph::class,'pph_id','id')->withDefault();
     }
 
     public function createdBy(): BelongsTo

@@ -1,48 +1,66 @@
 <?php
 
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Reactive;
 use Livewire\Volt\Component;
 use Mary\Traits\Toast;
 use App\Helpers\Cast;
 use App\Rules\Number;
-use App\Models\Coa;
+use App\Models\ServiceCharge;
 use App\Models\SalesSettlement;
 use App\Models\SalesSettlementDetail;
 
 new class extends Component {
     use Toast;
 
-    public SalesSettlement $salessettlement;
+    public SalesSettlement $salesSettlement;
     public $selected;
 
     public string $mode = '';
     public bool $drawer = false;
     public bool $open = true;
 
-    public $coa_code = '';
-    public $description = '';
-    public bool $dc = false;
+    public $service_charge_id = '';
+    public $note = '';
+    public $uom_id = '';
+    public $currency_id = '';
+    public $currency_rate = 1;
+    public $qty = 0;
+    public $price = 0;
+    public $foreign_amount = 0;
     public $amount = 0;
+
+    #[Reactive]
+    public $transport = '';
+
+    #[Reactive]
+    public $service_type = '';
 
     public function mount( $id = '' ): void
     {
-        $this->salessettlement = SalesSettlement::find($id);
-        $this->open = $this->salessettlement->status == 'open';
+        $this->salesSettlement = SalesSettlement::find($id);
     }
 
     public function with(): array
     {
+        $this->open = $this->salesSettlement->status == 'open';
+
         return [
-            'details' => $this->salessettlement->details()->with(['coa'])->get()
+            'details' => $this->salesSettlement->details()->with(['serviceCharge','currency','uom'])->get()
         ];
     }
 
     public function clearForm(): void
     {
         $this->selected = null;
-        $this->coa_code = '';
-        $this->description = '';
-        $this->dc = false;
+        $this->service_charge_id = '';
+        $this->note = '';
+        $this->uom_id = '';
+        $this->currency_id = '';
+        $this->currency_rate = 1;
+        $this->qty = 0;
+        $this->price = 0;
+        $this->foreign_amount = 0;
         $this->amount = 0;
         $this->resetValidation();
     }
@@ -58,9 +76,6 @@ new class extends Component {
     {
         $this->clearForm();
 
-        $detail->dc = $detail->dc == 'C' ? true : false;
-        $detail->amount = abs($detail->amount);
-
         $this->fill($detail);
 
         $this->selected = $detail;
@@ -72,47 +87,53 @@ new class extends Component {
     public function save(): void
     {
         $data = $this->validate([
-            'coa_code' => 'required',
-            'description' => 'required',
-            'dc' => 'required',
-            'amount' => ['required', new Number],
+            'service_charge_id' => 'required',
+            'note' => 'required',
+            'uom_id' => 'required',
+            'currency_id' => 'required',
+            'currency_rate' => ['required', new Number],
+            'qty' => ['required', new Number],
+            'price' => ['required', new Number],
         ]);
 
-        $amount = Cast::number($this->amount);
+        $currency_rate = Cast::number($this->currency_rate);
+        $qty = Cast::number($this->qty);
+        $price = Cast::number($this->price);
 
-        if ($this->dc) {
-            $debit = 0;
-            $credit = $amount;
-        } else {
-            $debit = $amount;
-            $credit = 0;
-        }
+        $foreign_amount = $qty * $price;
+        $amount = $foreign_amount * $currency_rate;
 
         if ($this->mode == 'add')
         {
-            $this->salessettlement->details()->create([
-                'coa_code' => $this->coa_code,
-                'description' => $this->description,
-                'dc' => $this->dc ? 'C' : 'D',
-                'debit' => $debit,
-                'credit' => $credit,
-                'date' => $this->salessettlement->date,
+            $this->salesSettlement->details()->create([
+                'service_charge_id' => $this->service_charge_id,
+                'note' => $this->note,
+                'uom_id' => $this->uom_id,
+                'currency_id' => $this->currency_id,
+                'currency_rate' => $currency_rate,
+                'qty' => $qty,
+                'price' => $price,
+                'foreign_amount' => $foreign_amount,
+                'amount' => $amount,
             ]);
         }
 
         if ($this->mode == 'edit')
         {
             $this->selected->update([
-                'coa_code' => $this->coa_code,
-                'description' => $this->description,
-                'dc' => $this->dc ? 'C' : 'D',
-                'debit' => $debit,
-                'credit' => $credit,
-                'date' => $this->salessettlement->date,
+                'service_charge_id' => $this->service_charge_id,
+                'note' => $this->note,
+                'uom_id' => $this->uom_id,
+                'currency_id' => $this->currency_id,
+                'currency_rate' => $currency_rate,
+                'qty' => $qty,
+                'price' => $price,
+                'foreign_amount' => $foreign_amount,
+                'amount' => $amount,
             ]);
         }
 
-        $this->calculate();
+        $data = $this->calculate();
 
         $this->drawer = false;
         $this->success('Item has been created.');
@@ -120,12 +141,10 @@ new class extends Component {
 
     public function calculate(): void
     {
-        $debit_total = $this->salessettlement->details()->sum('debit');
-        $credit_total = $this->salessettlement->details()->sum('debit');
+        $dpp_amount = $this->salesSettlement->details()->sum('amount');
 
         $data = [
-            'debit_total' => $debit_total,
-            'credit_total' => $credit_total,
+            'dpp_amount' => $dpp_amount,
         ];
 
         $this->dispatch('detail-updated', data: $data);
@@ -142,21 +161,16 @@ new class extends Component {
 
     public function updated($property, $value): void
     {
-        // updated here ...
+        // if ($property == 'item_id') {
+        //     $item = Item::find($value);
+        //     $this->price = $item->selling_price ?? 0;
+        // }
     }
 }; ?>
 
 <div
-    x-data="{
-        drawer : $wire.entangle('drawer'),
-        dc : $wire.entangle('dc'),
-        dcLabel : '',
-        init : function() {
-            this.dcLabel = this.dc ? 'Credit' : 'Debit'
-            $watch('drawer', value => { mask() })
-            $watch('dc', value => { this.dcLabel = this.dc ? 'Credit' : 'Debit' })
-        }
-    }"
+    x-data="{ drawer : $wire.entangle('drawer') }"
+    x-init="$watch('drawer', value => { mask() })"
 >
     <x-card title="Details" separator progress-indicator>
         <x-slot:menu>
@@ -169,10 +183,14 @@ new class extends Component {
             <table class="table">
             <thead>
             <tr>
-                <th class="text-left">Account</th>
-                <th class="text-left">Description</th>
-                <th class="text-right lg:w-[9rem]">Debit</th>
-                <th class="text-right lg:w-[9rem]">Credit</th>
+                <th class="text-left">Service Charge</th>
+                <th class="text-right lg:w-[4rem]">Qty</th>
+                <th class="text-right lg:w-[4rem]">Unit</th>
+                <th class="text-right lg:w-[6rem]">Price</th>
+                <th class="text-right lg:w-[3rem]">Currency</th>
+                <th class="text-right lg:w-[6rem]">Rate</th>
+                <th class="text-right lg:w-[9rem]">FG Amount</th>
+                <th class="text-right lg:w-[9rem]">IDR Amount</th>
                 @if ($open)
                 <th class="lg:w-[4rem]"></th>
                 @endif
@@ -183,10 +201,14 @@ new class extends Component {
             @forelse ($details as $key => $detail)
             @if ($open)
             <tr wire:key="table-row-{{ $detail->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
-                <td wire:click="edit('{{ $detail->id }}')" class=""><b>{{ $detail->coa->code ?? '' }}</b>, {{ $detail->coa->name ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->description ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->debit, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->credit, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class=""><b>{{ $detail->serviceCharge->code ?? '' }}</b>, {{ $detail->serviceCharge->name ?? '' }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->uom->code ?? '' }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->price, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->currency->code ?? '' }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
                 <td>
                 <div class="flex items-center">
                     <x-button icon="o-x-mark" wire:click="delete('{{ $detail->id }}')" spinner="delete('{{ $detail->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
@@ -195,10 +217,14 @@ new class extends Component {
             </tr>
             @else
             <tr wire:key="table-row-{{ $detail->id }}" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
-                <td class=""><b>{{ $detail->coa->code ?? '' }}</b>, {{ $detail->coa->name ?? '' }}</td>
-                <td class="">{{ $detail->description }}</td>
-                <td class="text-right">{{ Cast::money($detail->debit, 2) }}</td>
-                <td class="text-right">{{ Cast::money($detail->credit, 2) }}</td>
+                <td class="">{{ $detail->serviceCharge->code ?? '' }}; {{ $detail->serviceCharge->name ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
+                <td class="">{{ $detail->uom->code ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($detail->price, 2) }}</td>
+                <td class="">{{ $detail->currency->code ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
             </tr>
             @endif
             @empty
@@ -218,22 +244,38 @@ new class extends Component {
         <x-form wire:submit="save">
             <div class="space-y-4">
                 <x-choices-offline
-                    label="Coa"
-                    :options="\App\Models\Coa::query()->isActive()->orderBy('code')->get()"
-                    wire:model="coa_code"
-                    option-value="code"
+                    label="Service Charge"
+                    :options="\App\Models\ServiceCharge::query()->whereIn('transport', [$transport,''])->whereIn('type', [$service_type,''])->isActive()->get()"
+                    wire:model="service_charge_id"
                     option-label="full_name"
                     single
                     searchable
                     placeholder="-- Select --"
                 />
-                <x-toggle label="D/C" wire:model="dc">
-                    <x-slot:label>
-                        <span x-text="dcLabel"></span>
-                    </x-slot:label>
-                </x-toggle>
-                <x-input label="Amount" wire:model="amount" class="money" />
-                <x-input label="Note" wire:model="description" />
+                <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
+                    <x-choices-offline
+                        label="Unit"
+                        :options="\App\Models\Uom::query()->isActive()->get()"
+                        wire:model="uom_id"
+                        option-label="code"
+                        single
+                        searchable
+                        placeholder="-- Select --"
+                    />
+                    <x-choices-offline
+                        label="Currency"
+                        :options="\App\Models\Currency::query()->isActive()->get()"
+                        wire:model="currency_id"
+                        option-label="code"
+                        single
+                        searchable
+                        placeholder="-- Select --"
+                    />
+                    <x-input label="Qty" wire:model="qty" class="money" />
+                    <x-input label="Price" wire:model="price" class="money" />
+                    <x-input label="Rate" wire:model="currency_rate" class="money" />
+                </div>
+                <x-input label="Note" wire:model="note" />
             </div>
             <x-slot:actions>
                 <x-button label="Save" icon="o-paper-airplane" type="submit" spinner="save" class="btn-primary" />

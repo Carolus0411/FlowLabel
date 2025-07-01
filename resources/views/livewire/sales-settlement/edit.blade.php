@@ -20,6 +20,7 @@ new class extends Component {
     public $note = '';
     public $contact_id = '';
     public $status = '';
+    public $source_amount = 0;
     public $total_amount = 0;
 
     public $open = true;
@@ -57,31 +58,29 @@ new class extends Component {
 
         unset($data['details']);
 
-        if ($this->salessettlement->saved == '0') {
+        if ($this->salesSettlement->saved == '0') {
             $code = Code::auto('JV');
             $data['code'] = $code;
             $data['saved'] = 1;
-            $this->salessettlement->details()->update(['code' => $code]);
+            $this->salesSettlement->details()->update(['code' => $code]);
         }
 
         $this->validity();
-        $data['debit_total'] = Cast::number($this->debit_total);
-        $data['credit_total'] = Cast::number($this->credit_total);
+        $data['total_amount'] = Cast::number($this->total_amount);
 
-        $this->salessettlement->update($data);
+        $this->salesSettlement->update($data);
 
         if ($close) {
             $this->close();
         }
 
-        $this->success('SalesSettlement successfully updated.', redirectTo: route('salessettlement.index'));
+        $this->success('Settlement successfully updated.', redirectTo: route('sales-settlement.index'));
     }
 
     #[On('detail-updated')]
     public function detailUpdated(array $data = [])
     {
-        $this->debit_total = Cast::money($data['debit_total'] ?? 0);
-        $this->credit_total = Cast::money($data['credit_total'] ?? 0);
+        $this->total_amount = Cast::money($data['total_amount'] ?? 0);
         $this->validity();
     }
 
@@ -90,30 +89,24 @@ new class extends Component {
 
     }
 
-    public function delete(SalesSettlement $salessettlement): void
+    public function delete(SalesSettlement $salesSettlement): void
     {
-        Gate::authorize('delete salessettlement');
-        $salessettlement->details()->delete();
-        $salessettlement->delete();
-        $this->success('SalesSettlement successfully deleted.', redirectTo: route('salessettlement.index'));
+        Gate::authorize('delete sales-settlement');
+        $salesSettlement->details()->delete();
+        $salesSettlement->delete();
+        $this->success('Settlement successfully deleted.', redirectTo: route('sales-settlement.index'));
     }
 
     public function validity(): void
     {
-        $this->debit_total = $this->salessettlement->details()->sum('debit');
-        $this->credit_total = $this->salessettlement->details()->sum('credit');
+        $this->total_amount = $this->salesSettlement->details()->sum('amount');
 
         $this->validityStatus = true;
         $this->validityMessage = '';
 
-        if (empty($this->debit_total) OR empty($this->credit_total)) {
+        if (empty($this->total_amount)) {
             $this->validityStatus = false;
-            $this->validityMessage = 'Debit or Credit cannot be zero';
-        }
-
-        if ($this->debit_total != $this->credit_total) {
-            $this->validityStatus = false;
-            $this->validityMessage = 'Debit and Credit must be same';
+            $this->validityMessage = 'Total amount cannot be zero';
         }
     }
 
@@ -124,7 +117,7 @@ new class extends Component {
         ]);
 
         $this->closeConfirm = false;
-        $this->success('SalesSettlement successfully closed.', redirectTo: route('salessettlement.index'));
+        $this->success('Settlement successfully closed.', redirectTo: route('sales-settlement.index'));
     }
 }; ?>
 
@@ -141,13 +134,13 @@ new class extends Component {
         <x-header separator>
             <x-slot:title>
                 <div class="flex items-center gap-4">
-                    <span>Update SalesSettlement</span>
-                    <x-status-badge :status="$salessettlement->status" class="uppercase !text-sm" />
+                    <span>Update Sales Settlement</span>
+                    <x-status-badge :status="$salesSettlement->status" class="uppercase !text-sm" />
                 </div>
             </x-slot:title>
             <x-slot:actions>
-                <x-button label="Back" link="{{ route('salessettlement.index') }}" icon="o-arrow-uturn-left" />
-                @if ($validityStatus AND $salessettlement->saved == '1' AND $salessettlement->status == 'open')
+                <x-button label="Back" link="{{ route('sales-settlement.index') }}" icon="o-arrow-uturn-left" />
+                @if ($validityStatus AND $salesSettlement->saved == '1' AND $salesSettlement->status == 'open')
                 <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
                 @if ($open)
@@ -164,7 +157,6 @@ new class extends Component {
                     <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-3 gap-4">
                         <x-input label="Code" wire:model="code" readonly class="bg-base-200" :disabled="!$open" />
                         <x-datetime label="Date" wire:model="date" :disabled="!$open" />
-                        <x-select label="Type" wire:model="type" :options="\App\Enums\SalesSettlementType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Contact"
                             wire:model="contact_id"
@@ -177,15 +169,13 @@ new class extends Component {
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
-                        <x-input label="Ref Name" wire:model="ref_name" readonly class="bg-base-200" />
-                        <x-input label="Ref ID" wire:model="ref_id" readonly class="bg-base-200" />
                         <x-input label="Note" wire:model="note" :disabled="!$open" />
                         <x-input label="Debit Total" wire:model="debit_total" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
                         <x-input label="Credit Total" wire:model="credit_total" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
                     </div>
                 </div>
                 {{-- <x-slot:actions>
-                    <x-button label="Cancel" link="{{ route('salessettlement.index') }}" />
+                    <x-button label="Cancel" link="{{ route('sales-settlement.index') }}" />
                     <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
                 </x-slot:actions> --}}
             </x-form>
@@ -204,10 +194,10 @@ new class extends Component {
         @endif
 
         <div class="overflow-x-auto">
-            <livewire:salessettlement.detail :id="$salessettlement->id" />
+            <livewire:sales-settlement.detail :id="$salesSettlement->id" />
         </div>
 
-        @if ($salessettlement->saved == '1')
+        @if ($salesSettlement->saved == '1')
         <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
             <x-card>
                 <div class="space-y-4">
@@ -221,7 +211,7 @@ new class extends Component {
                     </tr>
                     </thead>
                     <tbody>
-                    @forelse ($salessettlement->logs()->with('user')->latest()->limit(10)->get() as $log)
+                    @forelse ($salesSettlement->logs()->with('user')->latest()->limit(10)->get() as $log)
                     <tr>
                         <td>{{ $log->user->name }}</td>
                         <td>{{ $log->action }}</td>
@@ -244,7 +234,7 @@ new class extends Component {
                         <x-button
                             label="Delete Permanently"
                             icon="o-trash"
-                            wire:click="delete('{{ $salessettlement->id }}')"
+                            wire:click="delete('{{ $salesSettlement->id }}')"
                             spinner="save"
                             wire:confirm="Are you sure you want to delete this invoice?"
                             class="btn-error btn-soft"
@@ -259,7 +249,7 @@ new class extends Component {
 
     <x-modal wire:model="closeConfirm" title="Closing Confirmation" persistent>
         <div class="flex pb-2">
-            Are you sure you want to close this salessettlement?
+            Are you sure you want to close this settlement?
         </div>
         <x-slot:actions>
             <div class="flex items-center gap-4">

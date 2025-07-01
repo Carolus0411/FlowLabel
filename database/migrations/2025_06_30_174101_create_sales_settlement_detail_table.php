@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('sales_settlement_detail', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->string('sales_settlement_code')->index();
             $table->string('invoice_code')->index();
             $table->foreignId('currency_id')->index()->default(0);
             $table->decimal('currency_rate', 12, 2)->default(0);
