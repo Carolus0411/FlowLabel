@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sales_settlement_source', function (Blueprint $table) {
+        Schema::create('sales_settlement_prepaid', function (Blueprint $table) {
             $table->id();
-            $table->string('sales_settlement_code')->index();
             $table->string('source_type')->index();
-            $table->string('source_account_id')->index();
             $table->string('source_id')->index();
             $table->foreignId('currency_id')->index()->default(0);
             $table->decimal('currency_rate', 12, 2)->default(0);
@@ -30,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sales_settlement_source');
+        Schema::dropIfExists('sales_settlement_prepaid');
     }
 };
