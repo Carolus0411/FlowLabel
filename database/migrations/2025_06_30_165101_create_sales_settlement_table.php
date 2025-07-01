@@ -17,6 +17,7 @@ return new class extends Migration
             $table->date('date')->nullable();
             $table->foreignId('contact_id')->index()->nullable();
             $table->decimal('total_amount', 12, 2)->default(0);
+            $table->decimal('balance', 12, 2)->default(0);
             $table->string('note')->nullable();
             $table->integer('saved')->index()->default(0);
             $table->enum('status', ['open','close','void'])->index()->default('open');

@@ -29,6 +29,7 @@ return new class extends Migration
             $table->decimal('pph_amount', 10, 2)->default(0);
             $table->decimal('stamp_amount', 10, 2)->default(0);
             $table->decimal('invoice_amount', 12, 2)->default(0);
+            $table->decimal('balance_amount', 12, 2)->default(0);
             $table->integer('saved')->index()->default(0);
             $table->enum('status', ['open','close','void'])->index()->default('open');
             $table->enum('payment_status', ['unpaid','paid','outstanding'])->index()->default('unpaid');

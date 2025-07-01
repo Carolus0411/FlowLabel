@@ -28,6 +28,28 @@ class SalesInvoice extends Model
         $query->where('saved', 0);
     }
 
+    #[Scope]
+    protected function unpaid(Builder $query): void
+    {
+        $query->whereRaw('(balance_amount = invoice_amount)');
+    }
+
+    #[Scope]
+    protected function outstanding(Builder $query): void
+    {
+        $query->whereRaw('((balance_amount > 0) AND (balance_amount < invoice_amount))');
+        // $query->where(function (Builder $q) {
+        //     $q->where('balance_amount', '=', '0');
+        //     $q->orWhereRaw('((balance_amount > 0) AND (balance_amount < invoice_amount))');
+        // });
+    }
+
+    #[Scope]
+    protected function paid(Builder $query): void
+    {
+        $query->where('balance_amount', '=', '0');
+    }
+
     public function details(): HasMany
 	{
 		return $this->hasMany(SalesInvoiceDetail::class,'sales_invoice_id','id');
@@ -76,6 +98,7 @@ class SalesInvoice extends Model
 
         static::updating(function (Model $model) {
             $model->updated_by = auth()->user()->id;
+            $model->balance_amount = $model->invoice_amount;
         });
 
         static::updated(function (Model $model) {
