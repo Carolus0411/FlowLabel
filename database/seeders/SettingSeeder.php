@@ -19,6 +19,9 @@ class SettingSeeder extends Seeder
             'account_payable_code' => '201-001',
             'vat_out_code' => '203-008',
             'stamp_code' => '631-002',
+            'cash_account_code' => '101',
+            'bank_account_code' => '102',
+            'ar_prepaid_code' => '204-002',
 
             'cash_in_code' => 'BKM-',
             'cash_out_code' => 'BKK-',

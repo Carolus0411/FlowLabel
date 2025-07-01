@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->foreignId('bank_id')->index()->nullable();
             $table->foreignId('currency_id')->index()->nullable();
-            $table->string('coa_code', 20)->index();
+            $table->string('coa_code')->index();
             $table->boolean('is_active')->index();
             $table->timestamps();
         });

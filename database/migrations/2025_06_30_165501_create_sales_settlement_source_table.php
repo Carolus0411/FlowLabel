@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('sales_settlement_code')->index();
             $table->string('payment_method')->nullable();
             $table->string('coa_code')->index();
-            $table->string('cash_in_code')->index();
+            $table->string('ref_id')->index();
             $table->foreignId('currency_id')->index()->default(0);
             $table->decimal('currency_rate', 12, 2)->default(0);
             $table->decimal('foreign_amount', 12, 2)->default(0);

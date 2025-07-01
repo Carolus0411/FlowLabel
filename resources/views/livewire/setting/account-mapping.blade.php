@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Computed;
 use Illuminate\Support\Str;
 use Livewire\Volt\Component;
 use Mary\Traits\Toast;
@@ -10,84 +11,71 @@ use App\Models\Coa;
 new class extends Component {
     use Toast;
 
-    public $account_receivable_code = '';
-    public $account_payable_code = '';
-    public $vat_out_code = '';
-    public $stamp_code = '';
-
+    public $coa = [];
+    public $cols = [];
+    public $label = '';
+    public $key = '';
+    public $value = '';
+    public bool $drawer = false;
     public Collection $coaAR, $coaAP, $coaVatOut, $coaStamp;
 
     public function mount(): void
     {
         Gate::authorize('view account mapping');
 
-        $this->account_receivable_code = settings('account_receivable_code');
-        $this->account_payable_code = settings('account_payable_code');
-        $this->vat_out_code = settings('vat_out_code');
-        $this->stamp_code = settings('stamp_code');
+        // dd(array_diff(array_keys(get_class_vars(get_class($this))), array_keys(get_class_vars(get_parent_class($this)))));
 
-        $this->searchCoaAR();
-        $this->searchCoaAP();
-        $this->searchCoaVatOut();
-        $this->searchCoaStamp();
+        $this->cols = [
+            'account_receivable_code' => 'Account Receivable',
+            'account_payable_code' => 'Account Payable',
+            'vat_out_code' => 'VAT Out',
+            'stamp_code' => 'Stamp',
+            'cash_account_code' => 'Cash Account',
+            'bank_account_code' => 'Bank Account',
+            'ar_prepaid_code' => 'AR Prepaid',
+        ];
+
+        foreach (Coa::get() as $coa) {
+            $this->coa[$coa->code] = $coa->name;
+        }
+    }
+
+    #[Computed]
+    public function toggle()
+    {
+        return $this->key;
     }
 
     public function save(): void
     {
         $data = $this->validate([
-            'account_receivable_code' => 'required',
-            'account_payable_code' => 'required',
-            'vat_out_code' => 'required',
-            'stamp_code' => 'required',
+            'key' => 'required',
+            'value' => 'required',
         ]);
 
-        settings($data);
+        settings([
+            $this->key => $this->value
+        ]);
 
+        $this->drawer = false;
         $this->success('Account successfully updated.');
     }
 
-    public function searchCoaAR(string $value = ''): void
+    public function clearForm(): void
     {
-        $selected = Coa::where('code', $this->account_receivable_code)->get();
-        $this->coaAR = Coa::query()
-            ->filterLike('name', $value)
-            ->isActive()
-            ->take(20)
-            ->get()
-            ->merge($selected);
+        $this->label = '';
+        $this->key = '';
+        $this->value = '';
+        $this->resetValidation();
     }
 
-    public function searchCoaAP(string $value = ''): void
+    public function edit($label, $key): void
     {
-        $selected = Coa::where('code', $this->account_payable_code)->get();
-        $this->coaAP = Coa::query()
-            ->filterLike('name', $value)
-            ->isActive()
-            ->take(20)
-            ->get()
-            ->merge($selected);
-    }
-
-    public function searchCoaVatOut(string $value = ''): void
-    {
-        $selected = Coa::where('code', $this->vat_out_code)->get();
-        $this->coaVatOut = Coa::query()
-            ->filterLike('name', $value)
-            ->isActive()
-            ->take(20)
-            ->get()
-            ->merge($selected);
-    }
-
-    public function searchCoaStamp(string $value = ''): void
-    {
-        $selected = Coa::where('code', $this->stamp_code)->get();
-        $this->coaStamp = Coa::query()
-            ->filterLike('name', $value)
-            ->isActive()
-            ->take(20)
-            ->get()
-            ->merge($selected);
+        $this->clearForm();
+        $this->label = $label;
+        $this->key = $key;
+        $this->value = settings($key);
+        $this->drawer = true;
     }
 }; ?>
 
@@ -100,55 +88,50 @@ new class extends Component {
 
     <x-form wire:submit="save">
         <x-card>
-            <div class="space-y-4">
-                <x-choices
-                    label="Account Receivable"
-                    wire:model="account_receivable_code"
-                    :options="$coaAR"
-                    search-function="searchCoaAR"
-                    option-value="code"
-                    option-label="full_name"
-                    single
-                    searchable
-                    placeholder="-- Select --"
-                />
-                <x-choices
-                    label="Account Payable"
-                    wire:model="account_payable_code"
-                    :options="$coaAP"
-                    search-function="searchCoaAP"
-                    option-value="code"
-                    option-label="full_name"
-                    single
-                    searchable
-                    placeholder="-- Select --"
-                />
-                <x-choices
-                    label="Vat Out"
-                    wire:model="vat_out_code"
-                    :options="$coaVatOut"
-                    search-function="searchCoaVatOut"
-                    option-value="code"
-                    option-label="full_name"
-                    single
-                    searchable
-                    placeholder="-- Select --"
-                />
-                <x-choices
-                    label="Stamp"
-                    wire:model="stamp_code"
-                    :options="$coaStamp"
-                    search-function="searchCoaStamp"
-                    option-value="code"
-                    option-label="full_name"
-                    single
-                    searchable
-                    placeholder="-- Select --"
-                />
-            </div>
+            <table class="table table-zebra">
+            <tbody>
+            @foreach ($cols as $key => $label)
+            @php
+            $value = settings($key);
+            @endphp
+            <tr wire:key="{{ $key }}" wire:click="edit('{{ $label }}','{{ $key }}')" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
+                <td class="lg:w-[300px]">{{ $label }}</td>
+                <td>{{ $value }}{{ isset($coa[$value]) ? ', ' . $coa[$value] : '' }}</td>
+            </tr>
+            @endforeach
+            </tbody>
+            </table>
         </x-card>
         <x-slot:actions>
             <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
         </x-slot:actions>
     </x-form>
+
+    {{-- FORM --}}
+    <x-drawer wire:model="drawer" title="Create Item" right separator with-close-button class="lg:w-1/3">
+        <x-form wire:submit="save">
+            <div class="space-y-4">
+                <x-input label="Description" wire:model="label" readonly />
+                <x-input label="Key" wire:model="key" disabled />
+
+                @if (in_array($this->toggle, ['cash_account_code','bank_account_code']))
+                <x-textarea wire:model="value" rows="3" />
+                @else
+                <x-choices-offline
+                    label="Value"
+                    :options="\App\Models\Coa::query()->isActive()->orderBy('code')->get()"
+                    wire:model="value"
+                    option-value="code"
+                    option-label="full_name"
+                    single
+                    searchable
+                    placeholder="-- Select --"
+                />
+                @endif
+            </div>
+            <x-slot:actions>
+                <x-button label="Save" icon="o-paper-airplane" type="submit" spinner="save" class="btn-primary" />
+            </x-slot:actions>
+        </x-form>
+    </x-drawer>
 </div>

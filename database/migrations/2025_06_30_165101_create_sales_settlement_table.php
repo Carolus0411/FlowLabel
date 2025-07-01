@@ -16,9 +16,6 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->date('date')->nullable();
             $table->foreignId('contact_id')->index()->nullable();
-
-            $table->string('ref_id')->index();
-            $table->string('coa_code')->index();
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->string('note')->nullable();
             $table->integer('saved')->index()->default(0);

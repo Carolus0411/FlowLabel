@@ -79,7 +79,8 @@
                 <x-menu-item title="Home" icon="o-sparkles" link="{{ route('dashboard') }}" />
 
                 <x-menu-sub title="Sales" icon="o-shopping-cart">
-                    <x-menu-item title="Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales invoice')" />
+                    <x-menu-item title="Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales-invoice')" />
+                    <x-menu-item title="Settlement" link="{{ route('sales-settlement.index') }}" :hidden="auth()->user()->cannot('view sales-settlement')" />
                 </x-menu-sub>
 
                 <x-menu-sub title="Cash And Bank" icon="o-banknotes">

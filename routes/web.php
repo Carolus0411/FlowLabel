@@ -89,6 +89,11 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/sales-invoice/{salesInvoice}/edit', 'sales-invoice.edit')->name('sales-invoice.edit');
     Volt::route('/sales-invoice/import', 'sales-invoice.import')->name('sales-invoice.import');
 
+    Volt::route('/sales-settlement', 'sales-settlement.index')->name('sales-settlement.index');
+    Volt::route('/sales-settlement/create', 'sales-settlement.create')->name('sales-settlement.create');
+    Volt::route('/sales-settlement/{salesSettlement}/edit', 'sales-settlement.edit')->name('sales-settlement.edit');
+    Volt::route('/sales-settlement/import', 'sales-settlement.import')->name('sales-settlement.import');
+
     Volt::route('/journal', 'journal.index')->name('journal.index');
     Volt::route('/journal/create', 'journal.create')->name('journal.create');
     Volt::route('/journal/{journal}/edit', 'journal.edit')->name('journal.edit');
