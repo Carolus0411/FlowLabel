@@ -113,7 +113,7 @@ new class extends Component {
         unset($data['details']);
 
         if ($this->salesInvoice->saved == '0') {
-            $data['code'] = Code::auto('SINV');
+            $data['code'] = Code::auto($this->invoice_type);
             $data['saved'] = 1;
         }
 
@@ -232,7 +232,7 @@ new class extends Component {
                         <x-datetime label="Invoice Date" wire:model="invoice_date" :disabled="!$open" />
                         <x-datetime label="Due Date" wire:model="due_date" :disabled="!$open" />
                         <x-select label="Transport" wire:model.live="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" :disabled="!$open" />
-                        <x-select label="Service Type" wire:model.live="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
+                        <x-select label="Service Type" wire:model="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
                         <x-select label="Invoice Type" wire:model="invoice_type" :options="\App\Enums\InvoiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Customer"

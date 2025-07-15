@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('sales_settlement', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            $table->string('source_type')->index();
-            $table->string('source_account_id')->index();
-            $table->string('source_id')->index();
+            // $table->string('source_type')->index()->nulable();
+            // $table->string('source_account_id')->index()->nulable();
+            // $table->string('source_id')->index()->nulable();
             $table->date('date')->nullable();
             $table->foreignId('contact_id')->index()->nullable();
             $table->decimal('total_amount', 12, 2)->default(0);
