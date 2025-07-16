@@ -58,8 +58,8 @@ class CashOutCreateJournal
                 'coa_code' => $cashOut->cashAccount->coa->code,
                 'description' => $cashOut->note,
                 'dc' => 'D',
-                'debit' => $cashOut->total_amount,
-                'credit' => 0,
+                'debit' => 0,
+                'credit' => $cashOut->total_amount,
                 'date' => $cashOut->date,
             ]);
 
@@ -70,8 +70,8 @@ class CashOutCreateJournal
                     'coa_code' => $detail->coa->code,
                     'description' => $cashOut->note,
                     'dc' => 'C',
-                    'debit' => 0,
-                    'credit' => $detail->amount,
+                    'debit' => $detail->amount,
+                    'credit' => 0,
                     'date' => $cashOut->date,
                 ]);
             }
