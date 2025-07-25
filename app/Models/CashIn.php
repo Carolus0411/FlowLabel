@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -15,6 +16,11 @@ class CashIn extends Model
 
     protected $table = 'cash_in';
     protected $guarded = [];
+
+    public function settlements(): MorphMany
+    {
+        return $this->morphMany(SalesSettlementSource::class, 'settleable');
+    }
 
     public function cashAccount(): BelongsTo
     {

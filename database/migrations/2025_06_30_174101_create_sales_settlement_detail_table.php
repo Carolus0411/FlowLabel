@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('sales_settlement_detail', function (Blueprint $table) {
             $table->id();
             $table->string('sales_settlement_code')->index();
-            $table->string('invoice_code')->index();
+            $table->string('sales_invoice_code')->index();
             $table->foreignId('currency_id')->index()->default(0);
             $table->decimal('currency_rate', 12, 2)->default(0);
+            $table->decimal('invoice_balance_amount', 12, 2)->default(0);
             $table->decimal('foreign_amount', 12, 2)->default(0);
             $table->decimal('amount', 12, 2)->default(0);
+            $table->enum('status', ['open','close','void'])->index()->default('open');
             $table->timestamps();
         });
     }

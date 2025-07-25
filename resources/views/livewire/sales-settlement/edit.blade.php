@@ -21,7 +21,8 @@ new class extends Component {
     public $contact_id = '';
     public $status = '';
     public $source_amount = 0;
-    public $total_amount = 0;
+    public $paid_amount = 0;
+    public $balance_amount = 0;
 
     public $open = true;
     public $closeConfirm = false;
@@ -99,20 +100,20 @@ new class extends Component {
 
     public function validity(): void
     {
-        $this->total_amount = $this->salesSettlement->details()->sum('amount');
+        $this->paid_amount = $this->salesSettlement->details()->sum('amount');
 
         $this->validityStatus = true;
         $this->validityMessage = '';
 
-        if (empty($this->total_amount)) {
+        if ($this->source_amount != $this->paid_amount) {
             $this->validityStatus = false;
-            $this->validityMessage = 'Total amount cannot be zero';
+            $this->validityMessage = 'Source amount and paid amount must be the same.';
         }
     }
 
     public function close(): void
     {
-        $this->salessettlement->update([
+        $this->salesSettlement->update([
             'status' => 'close'
         ]);
 
@@ -170,8 +171,8 @@ new class extends Component {
                             :disabled="!$open"
                         />
                         <x-input label="Note" wire:model="note" :disabled="!$open" />
-                        <x-input label="Debit Total" wire:model="debit_total" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
-                        <x-input label="Credit Total" wire:model="credit_total" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
+                        <x-input label="Source Amount" wire:model="source_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
+                        <x-input label="Paid Amount" wire:model="paid_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
                     </div>
                 </div>
                 {{-- <x-slot:actions>

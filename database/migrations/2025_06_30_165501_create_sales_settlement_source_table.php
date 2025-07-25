@@ -14,9 +14,8 @@ return new class extends Migration
         Schema::create('sales_settlement_source', function (Blueprint $table) {
             $table->id();
             $table->string('sales_settlement_code')->index();
-            $table->string('source_type')->index();
-            $table->string('source_account_id')->index();
-            $table->string('source_id')->index();
+            $table->string('settleable_type')->index();
+            $table->string('settleable_id')->index();
             $table->foreignId('currency_id')->index()->default(0);
             $table->decimal('currency_rate', 12, 2)->default(0);
             $table->decimal('foreign_amount', 12, 2)->default(0);

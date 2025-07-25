@@ -30,7 +30,7 @@ class SalesSettlement extends Model
 
     public function details(): HasMany
 	{
-		return $this->hasMany(SalesSettlementDetail::class,'code','code');
+		return $this->hasMany(SalesSettlementDetail::class,'sales_settlement_code','code');
 	}
 
     public function contact(): BelongsTo
@@ -69,6 +69,13 @@ class SalesSettlement extends Model
         });
 
         static::updated(function (Model $model) {
+
+            if ($model->isDirty('status')) {
+                $model->details()->update([
+                    'status' => $model->status
+                ]);
+            }
+
             auth()->user()->logs()->create([
                 'resource' => class_basename($model),
                 'action' => $model->isDirty('code') ? 'create' : 'update',
