@@ -5,10 +5,10 @@ use Livewire\Volt\Component;
 use Mary\Traits\Toast;
 use App\Helpers\Cast;
 use App\Rules\Number;
-use App\Rules\SalesInvoicePaidCheck;
+use App\Models\CashIn;
 use App\Models\SalesInvoice;
 use App\Models\SalesSettlement;
-use App\Models\SalesSettlementDetail;
+use App\Models\SalesSettlementSource;
 
 new class extends Component {
     use Toast;
@@ -20,13 +20,12 @@ new class extends Component {
     public bool $drawer = false;
     public bool $open = true;
 
-    public $sales_invoice_code = '';
-    public $invoice_total_amount = '';
-    public $invoice_balance_amount = 0;
-    public $currency_id = '';
-    public $currency_rate = 1;
-    public $foreign_amount = 0;
-    public $amount = 0;
+    public $payment_method = '';
+    public $settleable_id = '';
+    $this->currency_id = '';
+    $this->currency_rate = 1;
+    $this->foreign_amount = 0;
+    $this->amount = 0;
 
     public function mount( $id = '' ): void
     {

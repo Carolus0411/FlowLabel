@@ -51,7 +51,8 @@ new class extends Component {
             ['key' => 'code', 'label' => 'Code'],
             ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y']],
             ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false],
-            ['key' => 'total_amount', 'label' => 'Total Amount', 'format' => ['currency', '2.,', '']],
+            ['key' => 'source_amount', 'label' => 'Source Amount', 'format' => ['currency', '2.,', '']],
+            ['key' => 'paid_amount', 'label' => 'Paid Amount', 'format' => ['currency', '2.,', '']],
             ['key' => 'updated_at', 'label' => 'Updated At', 'format' => ['date', 'd-M-y, H:i']],
             ['key' => 'updatedBy.name', 'label' => 'Updated By'],
         ];
@@ -174,7 +175,7 @@ new class extends Component {
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$salesSettlements" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text :link="route('sales-settlement.edit', ['salesSettlement' => '[id]'])">
             @scope('cell_status', $salesSettlement)
-            <x-status-badge :status="$salessettlement->status" />
+            <x-status-badge :status="$salesSettlement->status" />
             @endscope
             {{-- @scope('actions', $sales-settlement)
             <div class="flex gap-1.5">

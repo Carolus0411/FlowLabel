@@ -60,14 +60,15 @@ new class extends Component {
         unset($data['details']);
 
         if ($this->salesSettlement->saved == '0') {
-            $code = Code::auto('JV');
+            $code = Code::auto('SS');
             $data['code'] = $code;
             $data['saved'] = 1;
-            $this->salesSettlement->details()->update(['code' => $code]);
+            $this->salesSettlement->details()->update(['sales_settlement_code' => $code]);
         }
 
         $this->validity();
-        $data['total_amount'] = Cast::number($this->total_amount);
+        $data['source_amount'] = $this->salesSettlement->sources()->sum('amount');
+        $data['paid_amount'] = $this->salesSettlement->details()->sum('amount');
 
         $this->salesSettlement->update($data);
 
@@ -81,7 +82,8 @@ new class extends Component {
     #[On('detail-updated')]
     public function detailUpdated(array $data = [])
     {
-        $this->total_amount = Cast::money($data['total_amount'] ?? 0);
+        $this->source_amount = Cast::money($this->salesSettlement->sources()->sum('amount'));
+        $this->paid_amount = Cast::money($this->salesSettlement->details()->sum('amount'));
         $this->validity();
     }
 
@@ -104,6 +106,11 @@ new class extends Component {
 
         $this->validityStatus = true;
         $this->validityMessage = '';
+
+        if ($this->source_amount == 0) {
+            $this->validityStatus = false;
+            $this->validityMessage = 'Source amount is required.';
+        }
 
         if ($this->source_amount != $this->paid_amount) {
             $this->validityStatus = false;

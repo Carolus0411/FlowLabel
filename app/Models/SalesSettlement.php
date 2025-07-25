@@ -28,6 +28,11 @@ class SalesSettlement extends Model
         $query->where('saved', 0);
     }
 
+    public function sources(): HasMany
+	{
+		return $this->hasMany(SalesSettlementSource::class,'sales_settlement_code','code');
+	}
+
     public function details(): HasMany
 	{
 		return $this->hasMany(SalesSettlementDetail::class,'sales_settlement_code','code');
