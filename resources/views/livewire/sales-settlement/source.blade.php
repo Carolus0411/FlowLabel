@@ -21,11 +21,12 @@ new class extends Component {
     public bool $open = true;
 
     public $payment_method = '';
+    public $settleable_type = '';
     public $settleable_id = '';
-    $this->currency_id = '';
-    $this->currency_rate = 1;
-    $this->foreign_amount = 0;
-    $this->amount = 0;
+    public $currency_id = '';
+    public $currency_rate = 1;
+    public $foreign_amount = 0;
+    public $amount = 0;
 
     public function mount( $id = '' ): void
     {
@@ -37,18 +38,18 @@ new class extends Component {
         $this->open = $this->salesSettlement->status == 'open';
 
         return [
-            'details' => $this->salesSettlement->details()->with(['salesInvoice','currency'])->get()
+            'sources' => $this->salesSettlement->sources()->get()
         ];
     }
 
     public function clearForm(): void
     {
         $this->selected = null;
-        $this->sales_invoice_code = '';
+        $this->payment_method = '';
+        $this->settleable_type = '';
+        $this->settleable_id = '';
         $this->currency_id = '';
         $this->currency_rate = 1;
-        $this->invoice_total_amount = 0;
-        $this->invoice_balance_amount = 0;
         $this->foreign_amount = 0;
         $this->amount = 0;
         $this->resetValidation();
@@ -61,13 +62,13 @@ new class extends Component {
         $this->drawer = true;
     }
 
-    public function edit(SalesSettlementDetail $detail): void
+    public function edit(SalesSettlementSource $source): void
     {
         $this->clearForm();
-        $this->fill($detail);
-        $this->getInvoice($detail->sales_invoice_code);
+        $this->fill($source);
+        $this->getSource($source->settleable_id);
 
-        $this->selected = $detail;
+        $this->selected = $source;
         $this->mode = 'edit';
         $this->drawer = true;
     }
@@ -75,10 +76,11 @@ new class extends Component {
     public function save(): void
     {
         $data = $this->validate([
-            'sales_invoice_code' => 'required',
+            'payment_method' => 'required',
+            'settleable_id' => 'required',
             'currency_id' => 'required',
             'currency_rate' => ['required', new Number],
-            'foreign_amount' => ['required', new Number, new SalesInvoicePaidCheck($this->sales_invoice_code)],
+            'foreign_amount' => ['required', new Number],
         ]);
 
         $currency_rate = Cast::number($this->currency_rate);
@@ -87,8 +89,10 @@ new class extends Component {
 
         if ($this->mode == 'add')
         {
-            $this->salesSettlement->details()->create([
-                'sales_invoice_code' => $this->sales_invoice_code,
+            $this->salesSettlement->sources()->create([
+                'payment_method' => $this->payment_method,
+                'settleable_id' => $this->settleable_id,
+                'settleable_type' => $this->settleable_type,
                 'currency_id' => $this->currency_id,
                 'currency_rate' => $currency_rate,
                 'foreign_amount' => $foreign_amount,
@@ -99,7 +103,9 @@ new class extends Component {
         if ($this->mode == 'edit')
         {
             $this->selected->update([
-                'sales_invoice_code' => $this->sales_invoice_code,
+                'payment_method' => $this->payment_method,
+                'settleable_id' => $this->settleable_id,
+                'settleable_type' => $this->settleable_type,
                 'currency_id' => $this->currency_id,
                 'currency_rate' => $currency_rate,
                 'foreign_amount' => $foreign_amount,
@@ -110,39 +116,42 @@ new class extends Component {
         $data = $this->calculate();
 
         $this->drawer = false;
-        $this->success('Detail has been updated.');
+        $this->success('Source has been updated.');
     }
 
     public function calculate(): void
     {
-        $data = [
-            'paid_amount' => $this->salesSettlement->details()->sum('amount'),
-        ];
-
-        $this->dispatch('detail-updated', data: $data);
+        $this->dispatch('detail-updated');
     }
 
     public function delete(string $id): void
     {
-        SalesSettlementDetail::find($id)->delete();
+        SalesSettlementSource::find($id)->delete();
 
         $this->calculate();
 
-        $this->success('Detail has been deleted.');
+        $this->success('Source has been deleted.');
     }
 
     public function updated($property, $value): void
     {
-        if ($property == 'sales_invoice_code') {
-            $this->getInvoice($value);
+        if (in_array($property, ['payment_method'])) {
+            $this->settleable_id = '';
+        }
+
+        if (in_array($property, ['settleable_id'])) {
+            $this->getSource($value);
         }
     }
 
-    public function getInvoice($code): void
+    public function getSource($code): void
     {
-        $invoice = SalesInvoice::where('code', $code)->first();
-        $this->invoice_total_amount = Cast::money($invoice->invoice_amount ?? 0);
-        $this->invoice_balance_amount = Cast::money($invoice->balance_amount ?? 0);
+        if ($this->payment_method == 'cash')
+        {
+            $cashIn = CashIn::where('code', $code)->first();
+            $this->settleable_type = get_class($cashIn);
+            $this->foreign_amount = Cast::money($cashIn->total_amount ?? 0);
+        }
     }
 }; ?>
 
@@ -150,10 +159,10 @@ new class extends Component {
     x-data="{ drawer : $wire.entangle('drawer') }"
     x-init="$watch('drawer', value => { mask() })"
 >
-    <x-card title="Details" separator progress-indicator>
+    <x-card title="Sources" separator progress-indicator>
         <x-slot:menu>
             @if ($open)
-            <x-button label="Add Detail" icon="o-plus" wire:click="add" spinner="add" class="" />
+            <x-button label="Add Source" icon="o-plus" wire:click="add" spinner="add" class="" />
             @endif
         </x-slot:menu>
 
@@ -161,12 +170,11 @@ new class extends Component {
             <table class="table">
             <thead>
             <tr>
-                <th class="text-left">Invoice Code</th>
-                <th class="text-right lg:w-[6rem]">Invoice Total</th>
-                <th class="text-right lg:w-[6rem]">Invoice Balance</th>
+                <th class="text-left">Payment Method</th>
+                <th class="text-left">Payment Code</th>
                 <th class="text-right lg:w-[3rem]">Currency</th>
                 <th class="text-right lg:w-[6rem]">Rate</th>
-                <th class="text-right lg:w-[9rem]">Paid Amount</th>
+                <th class="text-right lg:w-[9rem]">Source Amount</th>
                 <th class="text-right lg:w-[9rem]">IDR Amount</th>
                 @if ($open)
                 <th class="lg:w-[4rem]"></th>
@@ -175,31 +183,29 @@ new class extends Component {
             </thead>
             <tbody>
 
-            @forelse ($details as $key => $detail)
+            @forelse ($sources as $key => $source)
             @if ($open)
-            <tr wire:key="table-row-{{ $detail->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
-                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->salesInvoice->code ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->salesInvoice->invoice_amount, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->invoice_balance_amount, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->currency->code ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
+            <tr wire:key="table-row-{{ $source->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
+                <td wire:click="edit('{{ $source->id }}')" class="">{{ $source->payment_method }}</td>
+                <td wire:click="edit('{{ $source->id }}')" class="">{{ $source->settleable_id }}</td>
+                <td wire:click="edit('{{ $source->id }}')" class="">{{ $source->currency->code ?? '' }}</td>
+                <td wire:click="edit('{{ $source->id }}')" class="text-right">{{ Cast::money($source->currency_rate, 2) }}</td>
+                <td wire:click="edit('{{ $source->id }}')" class="text-right">{{ Cast::money($source->foreign_amount, 2) }}</td>
+                <td wire:click="edit('{{ $source->id }}')" class="text-right">{{ Cast::money($source->amount, 2) }}</td>
                 <td>
                 <div class="flex items-center">
-                    <x-button icon="o-x-mark" wire:click="delete('{{ $detail->id }}')" spinner="delete('{{ $detail->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
+                    <x-button icon="o-x-mark" wire:click="delete('{{ $source->id }}')" spinner="delete('{{ $source->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
                 </div>
                 </td>
             </tr>
             @else
-            <tr wire:key="table-row-{{ $detail->id }}" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
-                <td class="">{{ $detail->salesInvoice->code ?? '' }}</td>
-                <td class="text-right">{{ Cast::money($detail->salesInvoice->invoice_amount, 2) }}</td>
-                <td class="text-right">{{ Cast::money($detail->invoice_balance_amount, 2) }}</td>
-                <td class="">{{ $detail->currency->code ?? '' }}</td>
-                <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
-                <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
-                <td class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
+            <tr wire:key="table-row-{{ $source->id }}" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
+                <td class="">{{ $source->payment_method }}</td>
+                <td class="">{{ $source->settlement_id }}</td>
+                <td class="">{{ $source->currency->code ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($source->currency_rate, 2) }}</td>
+                <td class="text-right">{{ Cast::money($source->foreign_amount, 2) }}</td>
+                <td class="text-right">{{ Cast::money($source->amount, 2) }}</td>
             </tr>
             @endif
             @empty
@@ -215,22 +221,32 @@ new class extends Component {
 
     {{-- FORM --}}
     {{-- x-mask: dynamic="$money($input,'.','')" --}}
-    <x-drawer wire:model="drawer" title="Create Detail" right separator with-close-button class="lg:w-1/3">
+    <x-drawer wire:model="drawer" title="Create Source" right separator with-close-button class="lg:w-1/3">
         <x-form wire:submit="save">
             <div class="space-y-4">
+                <x-select
+                    label="Payment Method"
+                    wire:model.live="payment_method"
+                    :options="\App\Enums\PaymentMethod::toSelect()"
+                    placeholder="-- Select --"
+                    :disabled="!$open"
+                />
+
+                @if ($payment_method == 'cash')
                 <x-choices-offline
-                    label="Invoice"
-                    :options="\App\Models\SalesInvoice::query()->get()"
-                    wire:model.live="sales_invoice_code"
+                    label="Cash In"
+                    :options="\App\Models\CashIn::query()->get()"
+                    wire:model.live="settleable_id"
                     option-label="code"
+                    option-sub-label="total_amount"
                     option-value="code"
                     single
                     searchable
                     placeholder="-- Select --"
                 />
+                @endif
+
                 <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
-                    <x-input label="Invoice Total" wire:model="invoice_total_amount" class="money" disabled />
-                    <x-input label="Invoice Balance" wire:model="invoice_balance_amount" class="money" disabled />
                     <x-choices-offline
                         label="Currency"
                         :options="\App\Models\Currency::query()->isActive()->get()"
@@ -240,7 +256,7 @@ new class extends Component {
                         searchable
                         placeholder="-- Select --"
                     />
-                    <x-input label="Paid Amount" wire:model="foreign_amount" class="money" />
+                    <x-input label="Source Amount" wire:model="foreign_amount" class="money" disabled />
                     <x-input label="Rate" wire:model="currency_rate" class="money" />
                 </div>
             </div>

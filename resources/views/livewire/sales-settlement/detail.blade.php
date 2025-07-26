@@ -116,11 +116,7 @@ new class extends Component {
 
     public function calculate(): void
     {
-        $data = [
-            'paid_amount' => $this->salesSettlement->details()->sum('amount'),
-        ];
-
-        $this->dispatch('detail-updated', data: $data);
+        $this->dispatch('detail-updated');
     }
 
     public function delete(string $id): void

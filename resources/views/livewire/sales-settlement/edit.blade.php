@@ -107,12 +107,12 @@ new class extends Component {
         $this->validityStatus = true;
         $this->validityMessage = '';
 
-        if ($this->source_amount == 0) {
+        if (Cast::number($this->source_amount) == 0) {
             $this->validityStatus = false;
             $this->validityMessage = 'Source amount is required.';
         }
 
-        if ($this->source_amount != $this->paid_amount) {
+        if (Cast::number($this->source_amount) != Cast::number($this->paid_amount)) {
             $this->validityStatus = false;
             $this->validityMessage = 'Source amount and paid amount must be the same.';
         }
@@ -200,6 +200,10 @@ new class extends Component {
             <span class="text-red-500 text-sm p-1">{{ $validityMessage }}</span>
         </div>
         @endif
+
+        <div class="overflow-x-auto">
+            <livewire:sales-settlement.source :id="$salesSettlement->id" />
+        </div>
 
         <div class="overflow-x-auto">
             <livewire:sales-settlement.detail :id="$salesSettlement->id" />
