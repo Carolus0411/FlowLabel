@@ -95,6 +95,16 @@ new class extends Component {
     public function delete(SalesSettlement $salesSettlement): void
     {
         Gate::authorize('delete sales-settlement');
+
+        if ($salesSettlement->sources()->count() > 0) {
+            foreach ($salesSettlement->sources as $source) {
+                $source->settleable()->update([
+                    'has_settlement' => '0'
+                ]);
+            }
+        }
+
+        $salesSettlement->sources()->delete();
         $salesSettlement->details()->delete();
         $salesSettlement->delete();
         $this->success('Settlement successfully deleted.', redirectTo: route('sales-settlement.index'));

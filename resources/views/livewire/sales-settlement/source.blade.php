@@ -17,7 +17,7 @@ new class extends Component {
     public $selected;
 
     public string $mode = '';
-    public bool $drawer = false;
+    public bool $sourceDrawer = false;
     public bool $open = true;
 
     public $payment_method = '';
@@ -72,8 +72,9 @@ new class extends Component {
     public function add(): void
     {
         $this->clearForm();
+        $this->searchCashIn();
         $this->mode = 'add';
-        $this->drawer = true;
+        $this->sourceDrawer = true;
     }
 
     public function edit(SalesSettlementSource $source): void
@@ -84,7 +85,7 @@ new class extends Component {
 
         $this->selected = $source;
         $this->mode = 'edit';
-        $this->drawer = true;
+        $this->sourceDrawer = true;
     }
 
     public function save(): void
@@ -133,7 +134,7 @@ new class extends Component {
 
         $data = $this->calculate();
 
-        $this->drawer = false;
+        $this->sourceDrawer = false;
         $this->success('Source has been updated.');
     }
 
@@ -180,8 +181,8 @@ new class extends Component {
 }; ?>
 
 <div
-    x-data="{ drawer : $wire.entangle('drawer') }"
-    x-init="$watch('drawer', value => { mask() })"
+    x-data="{ sourceDrawer : $wire.entangle('sourceDrawer') }"
+    x-init="$watch('sourceDrawer', value => { mask() })"
 >
     <x-card title="Sources" separator progress-indicator>
         <x-slot:menu>
@@ -245,7 +246,7 @@ new class extends Component {
 
     {{-- FORM --}}
     {{-- x-mask: dynamic="$money($input,'.','')" --}}
-    <x-drawer wire:model="drawer" title="Create Source" right separator with-close-button class="lg:w-1/3">
+    <x-drawer wire:model="sourceDrawer" title="Create Source" right separator with-close-button class="lg:w-1/3">
         <x-form wire:submit="save">
             <div class="space-y-4">
                 <x-select
