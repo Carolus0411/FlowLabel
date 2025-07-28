@@ -26,6 +26,6 @@ class SalesSettlementSource extends Model
 
     public function settleable(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo(null, null, null, 'code');
     }
 }

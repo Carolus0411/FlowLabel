@@ -19,7 +19,7 @@ class CashIn extends Model
 
     public function settlements(): MorphMany
     {
-        return $this->morphMany(SalesSettlementSource::class, 'settleable');
+        return $this->morphMany(SalesSettlementSource::class, 'settleable', null, null, 'code');
     }
 
     public function cashAccount(): BelongsTo

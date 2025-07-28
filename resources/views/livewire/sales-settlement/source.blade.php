@@ -28,9 +28,23 @@ new class extends Component {
     public $foreign_amount = 0;
     public $amount = 0;
 
+    public Collection $cashIn;
+
+    public function searchCashIn(string $value = ''): void
+    {
+        $selected = CashIn::where('code', $this->settleable_id)->get();
+        $this->cashIn = CashIn::query()
+            ->where('has_settlement', '0')
+            ->filterLike('code', $value)
+            ->take(20)
+            ->get()
+            ->merge($selected);
+    }
+
     public function mount( $id = '' ): void
     {
         $this->salesSettlement = SalesSettlement::find($id);
+        $this->searchCashIn();
     }
 
     public function with(): array
@@ -89,7 +103,7 @@ new class extends Component {
 
         if ($this->mode == 'add')
         {
-            $this->salesSettlement->sources()->create([
+            $sources = $this->salesSettlement->sources()->create([
                 'payment_method' => $this->payment_method,
                 'settleable_id' => $this->settleable_id,
                 'settleable_type' => $this->settleable_type,
@@ -97,21 +111,25 @@ new class extends Component {
                 'currency_rate' => $currency_rate,
                 'foreign_amount' => $foreign_amount,
                 'amount' => $amount,
+            ]);
+
+            $sources->settleable()->update([
+                'has_settlement' => '1'
             ]);
         }
 
-        if ($this->mode == 'edit')
-        {
-            $this->selected->update([
-                'payment_method' => $this->payment_method,
-                'settleable_id' => $this->settleable_id,
-                'settleable_type' => $this->settleable_type,
-                'currency_id' => $this->currency_id,
-                'currency_rate' => $currency_rate,
-                'foreign_amount' => $foreign_amount,
-                'amount' => $amount,
-            ]);
-        }
+        // if ($this->mode == 'edit')
+        // {
+        //     $this->selected->update([
+        //         'payment_method' => $this->payment_method,
+        //         'settleable_id' => $this->settleable_id,
+        //         'settleable_type' => $this->settleable_type,
+        //         'currency_id' => $this->currency_id,
+        //         'currency_rate' => $currency_rate,
+        //         'foreign_amount' => $foreign_amount,
+        //         'amount' => $amount,
+        //     ]);
+        // }
 
         $data = $this->calculate();
 
@@ -126,7 +144,13 @@ new class extends Component {
 
     public function delete(string $id): void
     {
-        SalesSettlementSource::find($id)->delete();
+        $source = SalesSettlementSource::find($id);
+
+        $source->settleable()->update([
+            'has_settlement' => '0'
+        ]);
+
+        $source->delete();
 
         $this->calculate();
 
@@ -185,13 +209,13 @@ new class extends Component {
 
             @forelse ($sources as $key => $source)
             @if ($open)
-            <tr wire:key="table-row-{{ $source->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
-                <td wire:click="edit('{{ $source->id }}')" class="">{{ $source->payment_method }}</td>
-                <td wire:click="edit('{{ $source->id }}')" class="">{{ $source->settleable_id }}</td>
-                <td wire:click="edit('{{ $source->id }}')" class="">{{ $source->currency->code ?? '' }}</td>
-                <td wire:click="edit('{{ $source->id }}')" class="text-right">{{ Cast::money($source->currency_rate, 2) }}</td>
-                <td wire:click="edit('{{ $source->id }}')" class="text-right">{{ Cast::money($source->foreign_amount, 2) }}</td>
-                <td wire:click="edit('{{ $source->id }}')" class="text-right">{{ Cast::money($source->amount, 2) }}</td>
+            <tr wire:key="table-row-{{ $source->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
+                <td class="">{{ $source->payment_method }}</td>
+                <td class="">{{ $source->settleable_id }}</td>
+                <td class="">{{ $source->currency->code ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($source->currency_rate, 2) }}</td>
+                <td class="text-right">{{ Cast::money($source->foreign_amount, 2) }}</td>
+                <td class="text-right">{{ Cast::money($source->amount, 2) }}</td>
                 <td>
                 <div class="flex items-center">
                     <x-button icon="o-x-mark" wire:click="delete('{{ $source->id }}')" spinner="delete('{{ $source->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
@@ -233,16 +257,19 @@ new class extends Component {
                 />
 
                 @if ($payment_method == 'cash')
-                <x-choices-offline
+                <x-choices
                     label="Cash In"
-                    :options="\App\Models\CashIn::query()->get()"
                     wire:model.live="settleable_id"
+                    :options="$cashIn"
+                    search-function="searchCashIn"
                     option-label="code"
                     option-sub-label="total_amount"
                     option-value="code"
                     single
                     searchable
+                    clearable
                     placeholder="-- Select --"
+                    :disabled="!$open"
                 />
                 @endif
 
