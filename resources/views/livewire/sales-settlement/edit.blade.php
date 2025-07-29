@@ -63,6 +63,7 @@ new class extends Component {
             $code = Code::auto('SS');
             $data['code'] = $code;
             $data['saved'] = 1;
+            $this->salesSettlement->sources()->update(['sales_settlement_code' => $code]);
             $this->salesSettlement->details()->update(['sales_settlement_code' => $code]);
         }
 
@@ -82,8 +83,6 @@ new class extends Component {
     #[On('detail-updated')]
     public function detailUpdated(array $data = [])
     {
-        $this->source_amount = Cast::money($this->salesSettlement->sources()->sum('amount'));
-        $this->paid_amount = Cast::money($this->salesSettlement->details()->sum('amount'));
         $this->validity();
     }
 
@@ -112,14 +111,16 @@ new class extends Component {
 
     public function validity(): void
     {
-        $this->paid_amount = $this->salesSettlement->details()->sum('amount');
+        $this->source_amount = Cast::money($this->salesSettlement->sources()->sum('amount'));
+        $this->paid_amount = Cast::money($this->salesSettlement->details()->sum('amount'));
+        $this->balance_amount = Cast::money(Cast::number($this->source_amount) - Cast::number($this->paid_amount));
 
         $this->validityStatus = true;
         $this->validityMessage = '';
 
         if (Cast::number($this->source_amount) == 0) {
             $this->validityStatus = false;
-            $this->validityMessage = 'Source amount is required.';
+            $this->validityMessage = 'Source is required.';
         }
 
         if (Cast::number($this->source_amount) != Cast::number($this->paid_amount)) {
@@ -187,9 +188,10 @@ new class extends Component {
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
-                        <x-input label="Note" wire:model="note" :disabled="!$open" />
                         <x-input label="Source Amount" wire:model="source_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
                         <x-input label="Paid Amount" wire:model="paid_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
+                        <x-input label="Balance Amount" wire:model="balance_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
+                        <x-input label="Note" wire:model="note" :disabled="!$open" />
                     </div>
                 </div>
                 {{-- <x-slot:actions>

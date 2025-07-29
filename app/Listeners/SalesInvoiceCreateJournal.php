@@ -30,6 +30,7 @@ class SalesInvoiceCreateJournal
         $code = Code::auto('JV', $salesInvoice->invoice_date);
 
         $salesInvoice->update([
+            'balance_amount' => $salesInvoice->invoice_amount,
             'status' => 'close'
         ]);
 

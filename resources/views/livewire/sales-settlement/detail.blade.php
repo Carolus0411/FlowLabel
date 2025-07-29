@@ -88,25 +88,27 @@ new class extends Component {
 
         if ($this->mode == 'add')
         {
-            $this->salesSettlement->details()->create([
+            $detail = $this->salesSettlement->details()->create([
                 'sales_invoice_code' => $this->sales_invoice_code,
                 'currency_id' => $this->currency_id,
                 'currency_rate' => $currency_rate,
                 'foreign_amount' => $foreign_amount,
                 'amount' => $amount,
             ]);
+
+            $detail->salesInvoice()->increment('');
         }
 
-        if ($this->mode == 'edit')
-        {
-            $this->selected->update([
-                'sales_invoice_code' => $this->sales_invoice_code,
-                'currency_id' => $this->currency_id,
-                'currency_rate' => $currency_rate,
-                'foreign_amount' => $foreign_amount,
-                'amount' => $amount,
-            ]);
-        }
+        // if ($this->mode == 'edit')
+        // {
+        //     $this->selected->update([
+        //         'sales_invoice_code' => $this->sales_invoice_code,
+        //         'currency_id' => $this->currency_id,
+        //         'currency_rate' => $currency_rate,
+        //         'foreign_amount' => $foreign_amount,
+        //         'amount' => $amount,
+        //     ]);
+        // }
 
         $data = $this->calculate();
 
@@ -174,14 +176,15 @@ new class extends Component {
 
             @forelse ($details as $key => $detail)
             @if ($open)
-            <tr wire:key="table-row-{{ $detail->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
-                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->salesInvoice->code ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->salesInvoice->invoice_amount, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->invoice_balance_amount, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->currency->code ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
+            <tr wire:key="table-row-{{ $detail->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
+                {{-- wire : click="edit('{{ $detail->id }}')" --}}
+                <td class="">{{ $detail->salesInvoice->code ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($detail->salesInvoice->invoice_amount, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->invoice_balance_amount, 2) }}</td>
+                <td class="">{{ $detail->currency->code ?? '' }}</td>
+                <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
                 <td>
                 <div class="flex items-center">
                     <x-button icon="o-x-mark" wire:click="delete('{{ $detail->id }}')" spinner="delete('{{ $detail->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />

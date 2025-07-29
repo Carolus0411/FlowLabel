@@ -97,8 +97,20 @@ class SalesInvoice extends Model
         });
 
         static::updating(function (Model $model) {
+
+            $payment_status = 'unpaid';
+            if ($model->status == 'close')
+            {
+                if (($model->balance_amount > 0) AND ($model->invoice_amount > $model->balance_amount)) {
+                    $payment_status = 'outstanding';
+                }
+                if ($model->balance_amount == 0) {
+                    $payment_status = 'paid';
+                }
+            }
+
+            $model->payment_status = $payment_status;
             $model->updated_by = auth()->user()->id;
-            $model->balance_amount = $model->invoice_amount;
         });
 
         static::updated(function (Model $model) {

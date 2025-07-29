@@ -52,6 +52,7 @@ new class extends Component {
         return [
             ['key' => 'act', 'label' => '#', 'disableLink' => true, 'sortable' => false],
             ['key' => 'status', 'label' => 'Status'],
+            ['key' => 'payment_status', 'label' => 'Payment'],
             ['key' => 'code', 'label' => 'Code'],
             ['key' => 'invoice_date', 'label' => 'Invoice Date', 'format' => ['date', 'd-m-Y']],
             ['key' => 'contact.name', 'label' => 'Customer', 'sortable' => false],
@@ -199,6 +200,9 @@ new class extends Component {
             @endscope
             @scope('cell_status', $salesInvoice)
             <x-status-badge :status="$salesInvoice->status" />
+            @endscope
+            @scope('cell_payment_status', $salesInvoice)
+            <x-payment-status-badge :status="$salesInvoice->payment_status" />
             @endscope
             {{-- @scope('actions', $salesInvoice)
             <div class="flex gap-1.5">
