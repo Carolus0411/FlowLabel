@@ -59,6 +59,9 @@ new class extends Component {
 
         unset($data['details']);
 
+        $data['source_amount'] = $this->salesSettlement->sources()->sum('amount');
+        $data['paid_amount'] = $this->salesSettlement->details()->sum('amount');
+
         if ($this->salesSettlement->saved == '0') {
             $code = Code::auto('SS');
             $data['code'] = $code;
@@ -67,9 +70,10 @@ new class extends Component {
             $this->salesSettlement->details()->update(['sales_settlement_code' => $code]);
         }
 
-        $this->validity();
-        $data['source_amount'] = $this->salesSettlement->sources()->sum('amount');
-        $data['paid_amount'] = $this->salesSettlement->details()->sum('amount');
+        // refresh model
+        // $this->salesSettlement = SalesSettlement::find($this->salesSettlement->id);
+        // $data['source_amount'] = $this->salesSettlement->sources()->sum('amount');
+        // $data['paid_amount'] = $this->salesSettlement->details()->sum('amount');
 
         $this->salesSettlement->update($data);
 
@@ -105,6 +109,7 @@ new class extends Component {
 
         $salesSettlement->sources()->delete();
         $salesSettlement->details()->delete();
+
         $salesSettlement->delete();
         $this->success('Settlement successfully deleted.', redirectTo: route('sales-settlement.index'));
     }
@@ -178,7 +183,7 @@ new class extends Component {
                         <x-datetime label="Date" wire:model="date" :disabled="!$open" />
                         <x-choices
                             label="Contact"
-                            wire:model="contact_id"
+                            wire:model.live="contact_id"
                             :options="$contactChoice"
                             search-function="searchContact"
                             option-label="name"
@@ -214,11 +219,11 @@ new class extends Component {
         @endif
 
         <div class="overflow-x-auto">
-            <livewire:sales-settlement.source :id="$salesSettlement->id" />
+            <livewire:sales-settlement.source :id="$salesSettlement->id" :contact_id="$contact_id" />
         </div>
 
         <div class="overflow-x-auto">
-            <livewire:sales-settlement.detail :id="$salesSettlement->id" />
+            <livewire:sales-settlement.detail :id="$salesSettlement->id" :contact_id="$contact_id" />
         </div>
 
         @if ($salesSettlement->saved == '1')

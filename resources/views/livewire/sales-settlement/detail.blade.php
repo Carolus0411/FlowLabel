@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Reactive;
 use Livewire\Volt\Component;
 use Mary\Traits\Toast;
 use App\Helpers\Cast;
@@ -12,6 +14,9 @@ use App\Models\SalesSettlementDetail;
 
 new class extends Component {
     use Toast;
+
+    #[Reactive]
+    public $contact_id;
 
     public SalesSettlement $salesSettlement;
     public $selected;
@@ -28,9 +33,24 @@ new class extends Component {
     public $foreign_amount = 0;
     public $amount = 0;
 
+    public Collection $salesInvoice;
+
+    public function searchSalesInvoice(string $value = ''): void
+    {
+        $selected = SalesInvoice::where('code', $this->sales_invoice_code)->get();
+        $this->salesInvoice = SalesInvoice::query()
+            ->where('contact_id', $this->contact_id)
+            ->where('balance_amount', '>', '0')
+            ->filterLike('code', $value)
+            ->take(20)
+            ->get()
+            ->merge($selected);
+    }
+
     public function mount( $id = '' ): void
     {
         $this->salesSettlement = SalesSettlement::find($id);
+        $this->searchSalesInvoice();
     }
 
     public function with(): array
@@ -58,6 +78,7 @@ new class extends Component {
     public function add(): void
     {
         $this->clearForm();
+        $this->searchSalesInvoice();
         $this->mode = 'add';
         $this->drawer = true;
     }
@@ -96,7 +117,9 @@ new class extends Component {
                 'amount' => $amount,
             ]);
 
-            $detail->salesInvoice()->increment('');
+            $detail->salesInvoice()->update([
+                'balance_amount' => DB::raw("balance_amount - " . $foreign_amount),
+            ]);
         }
 
         // if ($this->mode == 'edit')
@@ -123,7 +146,11 @@ new class extends Component {
 
     public function delete(string $id): void
     {
-        SalesSettlementDetail::find($id)->delete();
+        $detail = SalesSettlementDetail::find($id);
+        $detail->salesInvoice()->update([
+            'balance_amount' => DB::raw("balance_amount + " . $detail->foreign_amount),
+        ]);
+        $detail->delete();
 
         $this->calculate();
 
@@ -142,6 +169,9 @@ new class extends Component {
         $invoice = SalesInvoice::where('code', $code)->first();
         $this->invoice_total_amount = Cast::money($invoice->invoice_amount ?? 0);
         $this->invoice_balance_amount = Cast::money($invoice->balance_amount ?? 0);
+        if (empty($this->foreign_amount)) {
+            $this->foreign_amount = $this->invoice_balance_amount;
+        }
     }
 }; ?>
 
@@ -218,15 +248,29 @@ new class extends Component {
     <x-drawer wire:model="drawer" title="Create Detail" right separator with-close-button class="lg:w-1/3">
         <x-form wire:submit="save">
             <div class="space-y-4">
-                <x-choices-offline
+                {{-- <x-choices-offline
                     label="Invoice"
-                    :options="\App\Models\SalesInvoice::query()->get()"
-                    wire:model.live="sales_invoice_code"
+                    : options="\App\Models\SalesInvoice::query()->get()"
+                    wire : model.live="sales_invoice_code"
                     option-label="code"
                     option-value="code"
                     single
                     searchable
                     placeholder="-- Select --"
+                /> --}}
+                <x-choices
+                    label="Invoice"
+                    wire:model.live="sales_invoice_code"
+                    :options="$salesInvoice"
+                    search-function="searchSalesInvoice"
+                    option-label="code"
+                    option-sub-label="invoice_amount"
+                    option-value="code"
+                    single
+                    searchable
+                    clearable
+                    placeholder="-- Select --"
+                    :disabled="!$open"
                 />
                 <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
                     <x-input label="Invoice Total" wire:model="invoice_total_amount" class="money" disabled />

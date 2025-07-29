@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Reactive;
 use Livewire\Volt\Component;
 use Mary\Traits\Toast;
 use App\Helpers\Cast;
@@ -12,6 +13,9 @@ use App\Models\SalesSettlementSource;
 
 new class extends Component {
     use Toast;
+
+    #[Reactive]
+    public $contact_id;
 
     public SalesSettlement $salesSettlement;
     public $selected;
@@ -34,6 +38,7 @@ new class extends Component {
     {
         $selected = CashIn::where('code', $this->settleable_id)->get();
         $this->cashIn = CashIn::query()
+            ->where('contact_id', $this->contact_id)
             ->where('has_settlement', '0')
             ->filterLike('code', $value)
             ->take(20)
