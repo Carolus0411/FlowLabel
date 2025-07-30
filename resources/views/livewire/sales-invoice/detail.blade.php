@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Collection;
-use Livewire\Attributes\Reactive;
 use Livewire\Volt\Component;
+use Livewire\Attributes\On;
 use Mary\Traits\Toast;
 use App\Helpers\Cast;
 use App\Rules\Number;
@@ -30,15 +30,42 @@ new class extends Component {
     public $foreign_amount = 0;
     public $amount = 0;
 
-    #[Reactive]
     public $transport = '';
-
-    #[Reactive]
     public $service_type = '';
+    public Collection $serviceCharge;
+
+    public function searchServiceCharge(string $value = ''): void
+    {
+        $selected = ServiceCharge::where('id', intval($this->service_charge_id))->get();
+        $this->serviceCharge = ServiceCharge::query()
+            ->where(function ($query) use ($value) {
+                $query->filterLike('code', $value);
+                $query->orFilterLike('name', $value);
+            })
+            ->whereIn('transport', [$this->transport,''])
+            ->whereIn('type', [$this->service_type,''])
+            ->isActive()
+            ->take(20)
+            ->get()
+            ->merge($selected);
+    }
+
+    #[On('transport-changed')]
+    public function transportChanged($value)
+    {
+        $this->transport = $value;
+    }
+
+    #[On('service-type-changed')]
+    public function serviceTypeChanged($value)
+    {
+        $this->service_type = $value;
+    }
 
     public function mount( $id = '' ): void
     {
         $this->salesInvoice = SalesInvoice::find($id);
+        $this->searchServiceCharge();
     }
 
     public function with(): array
@@ -68,6 +95,7 @@ new class extends Component {
     public function add(): void
     {
         $this->clearForm();
+        $this->searchServiceCharge();
         $this->mode = 'add';
         $this->drawer = true;
     }
@@ -77,6 +105,7 @@ new class extends Component {
         $this->clearForm();
 
         $this->fill($detail);
+        $this->searchServiceCharge();
 
         $this->selected = $detail;
 
@@ -243,14 +272,26 @@ new class extends Component {
     <x-drawer wire:model="drawer" title="Create Item" right separator with-close-button class="lg:w-1/3">
         <x-form wire:submit="save">
             <div class="space-y-4">
-                <x-choices-offline
+                {{-- <x-choices-offline
                     label="Service Charge"
-                    :options="\App\Models\ServiceCharge::query()->whereIn('transport', [$transport,''])->whereIn('type', [$service_type,''])->isActive()->get()"
-                    wire:model="service_charge_id"
+                    : options="\App\Models\ServiceCharge::query()->whereIn('transport', [$transport,''])->whereIn('type', [$service_type,''])->isActive()->get()"
+                    wire : model="service_charge_id"
                     option-label="full_name"
                     single
                     searchable
                     placeholder="-- Select --"
+                /> --}}
+                <x-choices
+                    label="Service Charge"
+                    wire:model="service_charge_id"
+                    :options="$serviceCharge"
+                    search-function="searchServiceCharge"
+                    option-label="full_name"
+                    single
+                    searchable
+                    clearable
+                    placeholder="-- Select --"
+                    :disabled="!$open"
                 />
                 <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
                     <x-choices-offline

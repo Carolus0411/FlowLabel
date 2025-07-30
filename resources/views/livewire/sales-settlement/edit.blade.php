@@ -99,16 +99,16 @@ new class extends Component {
     {
         Gate::authorize('delete sales-settlement');
 
-        if ($salesSettlement->sources()->count() > 0) {
-            foreach ($salesSettlement->sources as $source) {
-                $source->settleable()->update([
-                    'has_settlement' => '0'
-                ]);
-            }
-        }
+        // if ($salesSettlement->sources()->count() > 0) {
+        //     foreach ($salesSettlement->sources as $source) {
+        //         $source->settleable()->update([
+        //             'has_settlement' => '0'
+        //         ]);
+        //     }
+        // }
 
-        $salesSettlement->sources()->delete();
-        $salesSettlement->details()->delete();
+        // $salesSettlement->sources()->delete();
+        // $salesSettlement->details()->delete();
 
         $salesSettlement->delete();
         $this->success('Settlement successfully deleted.', redirectTo: route('sales-settlement.index'));
@@ -264,7 +264,7 @@ new class extends Component {
                             label="Delete Permanently"
                             icon="o-trash"
                             wire:click="delete('{{ $salesSettlement->id }}')"
-                            spinner="save"
+                            spinner="delete('{{ $salesSettlement->id }}')"
                             wire:confirm="Are you sure you want to delete this invoice?"
                             class="btn-error btn-soft"
                         />

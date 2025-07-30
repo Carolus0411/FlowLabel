@@ -147,6 +147,16 @@ new class extends Component {
         {
             $this->calculate();
         }
+
+        if ( in_array($property, ['transport']))
+        {
+            $this->dispatch('transport-changed', value: $value);
+        }
+
+        if ( in_array($property, ['service_type']))
+        {
+            $this->dispatch('service-type-changed', value: $value);
+        }
     }
 
     public function calculate()
@@ -209,6 +219,7 @@ new class extends Component {
                 <div class="flex items-center gap-4">
                     <span>Update Sales Invoice</span>
                     <x-status-badge :status="$salesInvoice->status" class="uppercase !text-sm" />
+                    <x-payment-status-badge :status="$salesInvoice->payment_status" class="uppercase !text-sm" />
                 </div>
             </x-slot:title>
             <x-slot:actions>
@@ -231,8 +242,8 @@ new class extends Component {
                         <x-input label="Code" wire:model="code" readonly class="bg-base-200" />
                         <x-datetime label="Invoice Date" wire:model="invoice_date" :disabled="!$open" />
                         <x-datetime label="Due Date" wire:model="due_date" :disabled="!$open" />
-                        <x-select label="Transport" wire:model.live="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" :disabled="!$open" />
-                        <x-select label="Service Type" wire:model="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
+                        <x-select label="Transport" wire:model.live="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" :disabled="!$open" wire:loading.attr="disabled" />
+                        <x-select label="Service Type" wire:model.live="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" wire:loading.attr="disabled" />
                         <x-select label="Invoice Type" wire:model="invoice_type" :options="\App\Enums\InvoiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Customer"
@@ -293,7 +304,7 @@ new class extends Component {
         @enderror
 
         <div class="overflow-x-auto">
-            <livewire:sales-invoice.detail :id="$salesInvoice->id" :transport="$transport" :service_type="$service_type" />
+            <livewire:sales-invoice.detail :id="$salesInvoice->id" />
         </div>
 
         @if ($salesInvoice->saved == '1')
