@@ -3,6 +3,7 @@
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Reactive;
 use Livewire\Volt\Component;
+use Livewire\Attributes\On;
 use Mary\Traits\Toast;
 use App\Helpers\Cast;
 use App\Rules\Number;
@@ -14,10 +15,8 @@ use App\Models\SalesSettlementSource;
 new class extends Component {
     use Toast;
 
-    #[Reactive]
-    public $contact_id;
-
     public SalesSettlement $salesSettlement;
+    public $contact_id;
     public $selected;
 
     public string $mode = '';
@@ -33,6 +32,12 @@ new class extends Component {
     public $amount = 0;
 
     public Collection $cashIn;
+
+    #[On('contact-changed')]
+    public function contactChanged($value)
+    {
+        $this->contact_id = $value;
+    }
 
     public function searchCashIn(string $value = ''): void
     {

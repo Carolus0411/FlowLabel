@@ -92,23 +92,26 @@ new class extends Component {
 
     public function updated($property, $value): void
     {
-
+        if ( in_array($property, ['contact_id']))
+        {
+            $this->dispatch('contact-changed', value: $value);
+        }
     }
 
     public function delete(SalesSettlement $salesSettlement): void
     {
         Gate::authorize('delete sales-settlement');
 
-        // if ($salesSettlement->sources()->count() > 0) {
-        //     foreach ($salesSettlement->sources as $source) {
-        //         $source->settleable()->update([
-        //             'has_settlement' => '0'
-        //         ]);
-        //     }
-        // }
+        if ($salesSettlement->sources()->count() > 0) {
+            foreach ($salesSettlement->sources as $source) {
+                $source->settleable()->update([
+                    'has_settlement' => '0'
+                ]);
+            }
+        }
 
-        // $salesSettlement->sources()->delete();
-        // $salesSettlement->details()->delete();
+        $salesSettlement->sources()->delete();
+        $salesSettlement->details()->delete();
 
         $salesSettlement->delete();
         $this->success('Settlement successfully deleted.', redirectTo: route('sales-settlement.index'));
@@ -219,11 +222,11 @@ new class extends Component {
         @endif
 
         <div class="overflow-x-auto">
-            <livewire:sales-settlement.source :id="$salesSettlement->id" :contact_id="$contact_id" />
+            <livewire:sales-settlement.source :id="$salesSettlement->id" />
         </div>
 
         <div class="overflow-x-auto">
-            <livewire:sales-settlement.detail :id="$salesSettlement->id" :contact_id="$contact_id" />
+            <livewire:sales-settlement.detail :id="$salesSettlement->id" />
         </div>
 
         @if ($salesSettlement->saved == '1')
