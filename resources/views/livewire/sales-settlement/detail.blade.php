@@ -44,6 +44,7 @@ new class extends Component {
     {
         $selected = SalesInvoice::where('code', $this->sales_invoice_code)->get();
         $this->salesInvoice = SalesInvoice::query()
+            ->closed()
             ->where('contact_id', $this->contact_id)
             ->where('balance_amount', '>', '0')
             ->filterLike('code', $value)

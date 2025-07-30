@@ -43,6 +43,7 @@ new class extends Component {
     {
         $selected = CashIn::where('code', $this->settleable_id)->get();
         $this->cashIn = CashIn::query()
+            ->closed()
             ->where('contact_id', $this->contact_id)
             ->where('has_settlement', '0')
             ->filterLike('code', $value)
@@ -282,6 +283,8 @@ new class extends Component {
                     placeholder="-- Select --"
                     :disabled="!$open"
                 />
+                @else
+                <x-input label="Source : cash / bank / prepaid" wire:model="settleable_id" disabled />
                 @endif
 
                 <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">

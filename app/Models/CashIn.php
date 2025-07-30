@@ -49,6 +49,12 @@ class CashIn extends Model
         $query->where('saved', 0);
     }
 
+    #[Scope]
+    protected function closed(Builder $query): void
+    {
+        $query->where('status', 'close');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class,'created_by','id')->withDefault();

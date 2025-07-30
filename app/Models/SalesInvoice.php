@@ -29,6 +29,12 @@ class SalesInvoice extends Model
     }
 
     #[Scope]
+    protected function closed(Builder $query): void
+    {
+        $query->where('status', 'close');
+    }
+
+    #[Scope]
     protected function unpaid(Builder $query): void
     {
         $query->whereRaw('(balance_amount = invoice_amount)');

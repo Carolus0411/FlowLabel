@@ -28,7 +28,6 @@ new class extends Component {
     public $closeConfirm = false;
     public $validityStatus = false;
     public $validityMessage = '';
-
     public $details;
 
     public function mount(): void
@@ -70,11 +69,6 @@ new class extends Component {
             $this->salesSettlement->details()->update(['sales_settlement_code' => $code]);
         }
 
-        // refresh model
-        // $this->salesSettlement = SalesSettlement::find($this->salesSettlement->id);
-        // $data['source_amount'] = $this->salesSettlement->sources()->sum('amount');
-        // $data['paid_amount'] = $this->salesSettlement->details()->sum('amount');
-
         $this->salesSettlement->update($data);
 
         if ($close) {
@@ -106,6 +100,14 @@ new class extends Component {
             foreach ($salesSettlement->sources as $source) {
                 $source->settleable()->update([
                     'has_settlement' => '0'
+                ]);
+            }
+        }
+
+        if ($salesSettlement->details()->count() > 0) {
+            foreach ($salesSettlement->details as $detail) {
+                $detail->salesInvoice()->update([
+                    'balance_amount' => DB::raw("balance_amount + " . $detail->foreign_amount),
                 ]);
             }
         }
@@ -222,11 +224,11 @@ new class extends Component {
         @endif
 
         <div class="overflow-x-auto">
-            <livewire:sales-settlement.source :id="$salesSettlement->id" />
+            <livewire:sales-settlement.source :id="$salesSettlement->id" :contact_id="$contact_id" />
         </div>
 
         <div class="overflow-x-auto">
-            <livewire:sales-settlement.detail :id="$salesSettlement->id" />
+            <livewire:sales-settlement.detail :id="$salesSettlement->id" :contact_id="$contact_id" />
         </div>
 
         @if ($salesSettlement->saved == '1')
