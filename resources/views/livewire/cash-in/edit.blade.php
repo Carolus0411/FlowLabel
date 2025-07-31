@@ -242,7 +242,7 @@ new class extends Component {
                     @endcan
 
                     @can('delete cash-in')
-                    <div class="divider"></div>
+                    @if ($cashIn->status == 'void')
                     <div class="text-xs">
                         <p>Once you delete, there is no going back. Please be certain.</p>
                     </div>
@@ -251,11 +251,12 @@ new class extends Component {
                             label="Delete Permanently"
                             icon="o-trash"
                             wire:click="delete('{{ $cashIn->id }}')"
-                            spinner="save"
+                            spinner="delete('{{ $cashIn->id }}')"
                             wire:confirm="Are you sure you want to delete this?"
                             class="btn-error btn-soft"
                         />
                     </div>
+                    @endif
                     @endcan
                 </div>
             </x-card>

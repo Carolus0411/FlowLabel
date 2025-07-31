@@ -44,6 +44,7 @@ new class extends Component {
         $selected = CashIn::where('code', $this->settleable_id)->get();
         $this->cashIn = CashIn::query()
             ->closed()
+            ->sales()
             ->where('contact_id', $this->contact_id)
             ->where('has_settlement', '0')
             ->filterLike('code', $value)
@@ -63,7 +64,10 @@ new class extends Component {
         $this->open = $this->salesSettlement->status == 'open';
 
         return [
-            'sources' => $this->salesSettlement->sources()->get()
+            'sources' => $this->salesSettlement
+                ->sources()
+                ->with(['currency'])
+                ->get()
         ];
     }
 
@@ -237,7 +241,7 @@ new class extends Component {
             @else
             <tr wire:key="table-row-{{ $source->id }}" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
                 <td class="">{{ $source->payment_method }}</td>
-                <td class="">{{ $source->settlement_id }}</td>
+                <td class="">{{ $source->settleable_id }}</td>
                 <td class="">{{ $source->currency->code ?? '' }}</td>
                 <td class="text-right">{{ Cast::money($source->currency_rate, 2) }}</td>
                 <td class="text-right">{{ Cast::money($source->foreign_amount, 2) }}</td>

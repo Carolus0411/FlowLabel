@@ -216,7 +216,7 @@ new class extends Component {
                 {{-- wire : click="edit('{{ $detail->id }}')" --}}
                 <td class="">{{ $detail->salesInvoice->code ?? '' }}</td>
                 <td class="text-right">{{ Cast::money($detail->salesInvoice->invoice_amount, 2) }}</td>
-                <td class="text-right">{{ Cast::money($detail->invoice_balance_amount, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->salesInvoice->balance_amount, 2) }}</td>
                 <td class="">{{ $detail->currency->code ?? '' }}</td>
                 <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
                 <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
@@ -231,7 +231,7 @@ new class extends Component {
             <tr wire:key="table-row-{{ $detail->id }}" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
                 <td class="">{{ $detail->salesInvoice->code ?? '' }}</td>
                 <td class="text-right">{{ Cast::money($detail->salesInvoice->invoice_amount, 2) }}</td>
-                <td class="text-right">{{ Cast::money($detail->invoice_balance_amount, 2) }}</td>
+                <td class="text-right">{{ Cast::money($detail->salesInvoice->balance_amount, 2) }}</td>
                 <td class="">{{ $detail->currency->code ?? '' }}</td>
                 <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
                 <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>

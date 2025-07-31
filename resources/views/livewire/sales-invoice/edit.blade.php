@@ -63,6 +63,7 @@ new class extends Component {
         $this->contacts = Contact::query()
             ->filterLike('name', $value)
             ->isActive()
+            ->orderBy('name')
             ->take(20)
             ->get()
             ->merge($selected);
@@ -74,6 +75,7 @@ new class extends Component {
         $this->ppns = Ppn::query()
             ->filterLike('name', $value)
             ->isActive()
+            ->orderBy('name')
             ->take(20)
             ->get()
             ->merge($selected);
@@ -85,6 +87,7 @@ new class extends Component {
         $this->pphs = Pph::query()
             ->filterLike('name', $value)
             ->isActive()
+            ->orderBy('name')
             ->take(20)
             ->get()
             ->merge($selected);
@@ -337,8 +340,11 @@ new class extends Component {
             <x-card>
                 <div class="space-y-4">
                     <h2 class="text-lg font-semibold">Danger Zone</h2>
-                    @can('void sales invoice')
+                    @can('void sales-invoice')
                     @if ($salesInvoice->status != 'void')
+                    <div class="text-xs">
+                        <p>You can cancel a transaction without destroying it with void.</p>
+                    </div>
                     <div>
                         <x-button
                             label="Void"
@@ -352,7 +358,8 @@ new class extends Component {
                     @endif
                     @endcan
 
-                    @can('delete sales invoice')
+                    @if ($salesInvoice->status == 'void')
+                    @can('delete sales-invoice')
                     <div class="text-xs">
                         <p>Once you delete a invoice, there is no going back. Please be certain.</p>
                     </div>
@@ -367,6 +374,7 @@ new class extends Component {
                         />
                     </div>
                     @endcan
+                    @endif
                 </div>
             </x-card>
         </div>

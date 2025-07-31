@@ -81,6 +81,7 @@ new class extends Component {
             ->with(['contact'])
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
+            ->filterWhere('type', $this->type)
             ->filterWhere('status', $this->status)
             ->paginate($this->perPage);
     }
@@ -115,7 +116,7 @@ new class extends Component {
         $this->date2 = date('Y-m-t');
 
         $this->success('Filters cleared.');
-        $this->reset(['code','status']);
+        $this->reset(['code','type','status']);
         $this->resetPage();
         $this->updateFilterCount();
         $this->drawer = false;
@@ -125,6 +126,7 @@ new class extends Component {
     {
         $count = 0;
         if (!empty($this->code)) $count++;
+        if (!empty($this->type)) $count++;
         if (!empty($this->status)) $count++;
         $this->filterCount = $count;
     }
@@ -152,6 +154,7 @@ new class extends Component {
                 'cash_account_id' => $cashIn->cash_account_id,
                 'contact_id' => $cashIn->contact_id,
                 'total_amount' => $cashIn->total_amount,
+                'type' => $cashIn->type,
                 'status' => $cashIn->status,
                 'saved' => $cashIn->saved,
                 'created_by' => $cashIn->created_by,
@@ -213,6 +216,7 @@ new class extends Component {
             <x-datetime label="End Date" wire:model="date2" />
         </div>
         <x-input label="Code" wire:model="code" />
+        <x-select label="Type" wire:model="type" :options="\App\Enums\IncomeType::toSelect()" placeholder="-- All --" />
         <x-select label="Status" wire:model="status" :options="\App\Enums\Status::toSelect()" placeholder="-- All --" />
     </x-search-drawer>
 

@@ -4,8 +4,8 @@ namespace App\Enums;
 
 enum IncomeType: string
 {
-    case sales = 'sales';
-    case non_sales = 'non sales';
+    case sales_income = 'sales income';
+    case non_sales_income = 'non sales income';
     case cash_advance_refund = 'cash advance refund';
     case guarantee_refund = 'guarantee refund';
 
@@ -13,8 +13,8 @@ enum IncomeType: string
     {
         return match($this)
         {
-            self::sales => 'badge-success text-white',
-            self::non_sales => 'badge-error text-white',
+            self::sales_income => 'badge-success text-white',
+            self::non_sales_income => 'badge-error text-white',
             self::cash_advance_refund => 'badge-warning',
             self::guarantee_refund => 'badge-info',
         };
