@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('cash_account_id')->index()->nullable();
             $table->foreignId('contact_id')->index()->nullable();
             $table->decimal('total_amount', 12, 2)->default(0);
+            $table->string('type')->index()->nullable();
             $table->string('note')->nullable();
             $table->integer('saved')->index()->default(0);
             $table->integer('has_settlement')->index()->default(0);

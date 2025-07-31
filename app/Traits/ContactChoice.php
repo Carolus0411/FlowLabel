@@ -21,6 +21,7 @@ trait ContactChoice
             ->filterLike('name', $value)
             ->isActive()
             ->take(20)
+            ->orderBy('name')
             ->get()
             ->merge($selected);
     }

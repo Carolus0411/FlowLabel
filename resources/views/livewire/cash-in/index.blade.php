@@ -25,6 +25,9 @@ new class extends Component {
     #[Session(key: 'cashin_code')]
     public $code = '';
 
+    #[Session(key: 'cashin_type')]
+    public $type = '';
+
     #[Session(key: 'cashin_status')]
     public $status = '';
 
@@ -54,6 +57,7 @@ new class extends Component {
             ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y']],
             ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false],
             ['key' => 'total_amount', 'label' => 'Total Amount', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
+            ['key' => 'type', 'label' => 'Type'],
             ['key' => 'note', 'label' => 'Note'],
             ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
         ];

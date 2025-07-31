@@ -18,6 +18,7 @@ new class extends Component {
 
     public $code = '';
     public $date = '';
+    public $type = '';
     public $note = '';
     public $cash_account_id = '';
     public $contact_id = '';
@@ -39,7 +40,6 @@ new class extends Component {
         $this->open = $this->cashIn->status == 'open';
         $this->cash_account_id = $this->cash_account_id ?? '';
         $this->contact_id = $this->contact_id ?? '';
-
         return [];
     }
 
@@ -50,6 +50,7 @@ new class extends Component {
         $data = $this->validate([
             'code' => 'required',
             'date' => 'required',
+            'type' => 'nullable',
             'note' => 'nullable',
             'cash_account_id' => 'required',
             'contact_id' => 'required',
@@ -148,12 +149,14 @@ new class extends Component {
                     <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-3 gap-4">
                         <x-input label="Code" wire:model="code" readonly class="bg-base-200" :disabled="!$open" />
                         <x-datetime label="Date" wire:model="date" :disabled="!$open" />
+                        <x-select label="Type" wire:model="type" :options="\App\Enums\IncomeType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Account"
                             wire:model="cash_account_id"
                             :options="$cashAccountChoice"
                             search-function="searchCashAccount"
                             option-label="name"
+                            option-sub-label="code"
                             single
                             searchable
                             clearable
