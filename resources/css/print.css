@@ -7,7 +7,4 @@
         "Noto Color Emoji";
 }
 
-/* Dark theme variant support */
-@custom-variant dark (&:where(.dark, .dark *));
-
 @source "../**/*.blade.php";

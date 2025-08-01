@@ -133,8 +133,7 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/settings/draft', 'setting.draft')->name('setting.draft');
 
     // print
-    Volt::route('/print/cash-in/{cashIn}', 'setting.draft')->name('setting.draft');
-    Route::get('/print/cash-in/{cashIn}', [PrintController::class, 'cashIn']);
+    Route::get('/print/cash-in/{cashIn}', [PrintController::class, 'cashIn'])->name('print.cash-in');
 
     Route::get('/logout', function () {
         auth()->logout();
