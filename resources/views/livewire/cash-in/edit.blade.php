@@ -132,11 +132,14 @@ new class extends Component {
             </x-slot:title>
             <x-slot:actions>
                 <x-button label="Back" link="{{ route('cash-in.index') }}" icon="o-arrow-uturn-left" />
-                @if ($cashIn->status == 'open' AND $cashIn->saved == '1')
+                {{-- @if ($cashIn->status == 'open' AND $cashIn->saved == '1')
                 <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
                 @if ($open)
                 <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
+                @endif --}}
+                @if ($open)
+                <x-button label="Save & Close" icon="o-paper-airplane" wire:click="save(true)" spinner="save(true)" class="btn-primary" />
                 @endif
             </x-slot:actions>
         </x-header>

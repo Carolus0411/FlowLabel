@@ -1,8 +1,10 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Livewire\Volt\Volt;
 use App\Livewire\Home;
+use App\Http\Controllers\PrintController;
 
 Route::get('/', function () {
     return redirect()->route('home');
@@ -129,6 +131,10 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/settings/account-mapping', 'setting.account-mapping')->name('setting.account-mapping');
     Volt::route('/settings/code', 'setting.code')->name('setting.code');
     Volt::route('/settings/draft', 'setting.draft')->name('setting.draft');
+
+    // print
+    Volt::route('/print/cash-in/{cashIn}', 'setting.draft')->name('setting.draft');
+    Route::get('/print/cash-in/{cashIn}', [PrintController::class, 'cashIn']);
 
     Route::get('/logout', function () {
         auth()->logout();

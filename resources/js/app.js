@@ -1,5 +1,6 @@
 import "./bootstrap";
 import mask from "./mask";
+import popupWindow from "./popupWindow";
 
 import {
     Livewire,
@@ -14,9 +15,10 @@ import {
 Livewire.start();
 
 window.mask = mask;
-
 document.addEventListener("livewire:navigated", () => {
     setTimeout(function () {
         window.mask();
     }, 100);
 });
+
+window.popupWindow = popupWindow;
