@@ -20,10 +20,10 @@
                 display: none !important;
             }
         }
-        .table td { font-size:14px; }
+        .table td { font-size:13px; padding:2px 4px; }
         .table-print { width:100%; border-spacing: 0; border-collapse:collapse !important; }
-        .table-print tr th { font-size:12px; padding:5px; font-weight:bold; border:1px solid #000000; vertical-align:middle !important; text-align:center; }
-        .table-print tr td { font-size:12px; padding:4px 5px; border-right:1px solid #000000; border-left:1px solid #000000; }
+        .table-print tr th { font-size:13px; padding:5px; font-weight:bold; border:1px solid #000000; vertical-align:middle !important; text-align:center; }
+        .table-print tr td { font-size:13px; padding:4px 5px; border-right:1px solid #000000; border-left:1px solid #000000; }
         .table-print tr.border-top td { border-top:1px solid #000000; }
         .table-print tr.border-bottom td { border-bottom:1px solid #000000; }
         .border-top { border-top:1px solid #000000; }

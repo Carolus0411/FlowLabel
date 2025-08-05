@@ -134,6 +134,7 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
 
     // print
     Route::get('/print/cash-in/{cashIn}', [PrintController::class, 'cashIn'])->name('print.cash-in');
+    Route::get('/print/journal/{resource}/{id}', [PrintController::class, 'journal'])->name('print.journal');
 
     Route::get('/logout', function () {
         auth()->logout();

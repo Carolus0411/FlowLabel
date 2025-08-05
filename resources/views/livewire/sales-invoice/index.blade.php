@@ -195,7 +195,8 @@ new class extends Component {
             @scope('cell_act', $salesInvoice)
             <x-dropdown class="btn-sm btn-soft">
                 <x-menu-item title="Edit" link="{{ route('sales-invoice.edit', $salesInvoice->id) }}" icon="o-pencil-square" />
-                <x-menu-item title="Show Journal" wire:click="showJournal('{{ $salesInvoice->code }}')" icon="o-magnifying-glass" />
+                {{-- <x-menu-item title="Show Journal" wire : click="showJournal('{{ $salesInvoice->code }}')" icon="o-magnifying-glass" /> --}}
+                <x-menu-item title="Show Journal" onclick="popupWindow('{{ route('print.journal', ['SalesInvoice', base64_encode($salesInvoice->code)]) }}', 'journal', '1000', '450', 'yes', 'center')" icon="o-magnifying-glass" />
             </x-dropdown>
             @endscope
             @scope('cell_status', $salesInvoice)

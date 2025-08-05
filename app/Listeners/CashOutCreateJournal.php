@@ -57,7 +57,7 @@ class CashOutCreateJournal
             $journal->details()->create([
                 'coa_code' => $cashOut->cashAccount->coa->code,
                 'description' => $cashOut->note,
-                'dc' => 'D',
+                'dc' => 'C',
                 'debit' => 0,
                 'credit' => $cashOut->total_amount,
                 'date' => $cashOut->date,
@@ -69,7 +69,7 @@ class CashOutCreateJournal
                 $journal->details()->create([
                     'coa_code' => $detail->coa->code,
                     'description' => $cashOut->note,
-                    'dc' => 'C',
+                    'dc' => 'D',
                     'debit' => $detail->amount,
                     'credit' => 0,
                     'date' => $cashOut->date,
