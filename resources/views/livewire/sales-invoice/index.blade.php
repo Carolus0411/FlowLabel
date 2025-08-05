@@ -9,7 +9,6 @@ use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use Mary\Traits\Toast;
 use App\Models\SalesInvoice;
-use App\Models\Journal;
 
 new class extends Component {
     use Toast, WithPagination;
@@ -32,8 +31,6 @@ new class extends Component {
     public int $filterCount = 0;
     public bool $drawer = false;
     public array $sortBy = ['column' => 'id', 'direction' => 'desc'];
-    public $journal;
-    public $journalModal = false;
 
     public function mount(): void
     {
@@ -143,12 +140,6 @@ new class extends Component {
         $this->success('Invoice has been deleted.');
     }
 
-    public function showJournal($code): void
-    {
-        $this->journal = Journal::with(['details.coa'])->where('ref_name', 'SalesInvoice')->where('ref_id', $code)->first();
-        $this->journalModal = true;
-    }
-
     public function export()
     {
         Gate::authorize('export sales-invoice');
@@ -195,15 +186,16 @@ new class extends Component {
             @scope('cell_act', $salesInvoice)
             <x-dropdown class="btn-sm btn-soft">
                 <x-menu-item title="Edit" link="{{ route('sales-invoice.edit', $salesInvoice->id) }}" icon="o-pencil-square" />
-                {{-- <x-menu-item title="Show Journal" wire : click="showJournal('{{ $salesInvoice->code }}')" icon="o-magnifying-glass" /> --}}
-                <x-menu-item title="Show Journal" onclick="popupWindow('{{ route('print.journal', ['SalesInvoice', base64_encode($salesInvoice->code)]) }}', 'journal', '1000', '450', 'yes', 'center')" icon="o-magnifying-glass" />
+                <x-menu-item title="Show Journal" onclick="popupWindow('{{ route('print.journal', ['SalesInvoice', base64_encode($salesInvoice->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" icon="o-magnifying-glass" />
             </x-dropdown>
             @endscope
             @scope('cell_status', $salesInvoice)
             <x-status-badge :status="$salesInvoice->status" />
             @endscope
             @scope('cell_payment_status', $salesInvoice)
+            @if ($salesInvoice->status == 'close')
             <x-payment-status-badge :status="$salesInvoice->payment_status" />
+            @endif
             @endscope
             {{-- @scope('actions', $salesInvoice)
             <div class="flex gap-1.5">
@@ -227,40 +219,4 @@ new class extends Component {
             <x-select label="Status" wire:model="status" :options="\App\Enums\Status::toSelect()" placeholder="-- All --" />
         </x-grid>
     </x-search-drawer>
-
-    {{-- JOURNAL MODAL --}}
-    <x-modal wire:model="journalModal" title="Journal" subtitle="{{ $journal->code ?? '' }}" box-class="max-w-11/12 lg:max-w-2/3">
-        <div class="overflow-x-auto">
-            <table class="table">
-            <thead>
-            <tr>
-                <th class="text-left">Account</th>
-                <th class="text-left">Description</th>
-                <th class="text-right lg:w-[9rem]">Debit</th>
-                <th class="text-right lg:w-[9rem]">Credit</th>
-            </tr>
-            </thead>
-            <tbody>
-            @forelse ($journal->details ?? [] as $detail)
-            <tr class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
-                <td><b>{{ $detail->coa->code ?? '' }}</b>, {{ $detail->coa->name ?? '' }}</td>
-                <td class="">{{ $detail->description }}</td>
-                <td class="text-right">{{ \App\Helpers\Cast::money($detail->debit, 2) }}</td>
-                <td class="text-right">{{ \App\Helpers\Cast::money($detail->credit, 2) }}</td>
-            </tr>
-            @empty
-            <tr class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
-                <td colspan="4" class="text-center">No record found.</td>
-            </tr>
-            @endforelse
-            </tbody>
-            </table>
-        </div>
-        <x-slot:actions>
-            <x-button label="Close" icon="o-x-mark" @click="$wire.journalModal = false" />
-            @unless (empty($journal->id))
-            <x-button label="View Journal" icon="o-eye" link="{{ route('journal.edit', $journal->id) }}" class="btn-primary" />
-            @endunless
-        </x-slot:actions>
-    </x-modal>
 </div>

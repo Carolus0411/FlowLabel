@@ -222,11 +222,17 @@ new class extends Component {
                 <div class="flex items-center gap-4">
                     <span>Update Sales Invoice</span>
                     <x-status-badge :status="$salesInvoice->status" class="uppercase !text-sm" />
+                    @if ($salesInvoice->status == 'close')
                     <x-payment-status-badge :status="$salesInvoice->payment_status" class="uppercase !text-sm" />
+                    @endif
                 </div>
             </x-slot:title>
             <x-slot:actions>
                 <x-button label="Back" link="{{ route('sales-invoice.index') }}" icon="o-arrow-uturn-left" />
+
+                @if ($salesInvoice->status == 'close')
+                <x-button label="Journal" icon="o-document-text" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['SalesInvoice', base64_encode($salesInvoice->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" />
+                @endif
                 @if ($salesInvoice->saved == '1' AND $salesInvoice->status == 'open')
                 <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
@@ -307,7 +313,7 @@ new class extends Component {
         @enderror
 
         <div class="overflow-x-auto">
-            <livewire:sales-invoice.detail :id="$salesInvoice->id" />
+            <livewire:sales-invoice.detail :id="$salesInvoice->id" :transport="$transport" :service_type="$service_type" />
         </div>
 
         @if ($salesInvoice->saved == '1')

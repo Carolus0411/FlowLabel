@@ -1,6 +1,6 @@
 <x-print-layout>
 
-<h1 class="mb-10 text-center font-bold">
+<h1 class="mb-5 text-center font-bold">
     JOURNAL
 </h1>
 
