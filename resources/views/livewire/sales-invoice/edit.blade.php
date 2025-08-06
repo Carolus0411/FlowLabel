@@ -313,7 +313,11 @@ new class extends Component {
         @enderror
 
         <div class="overflow-x-auto">
-            <livewire:sales-invoice.detail :id="$salesInvoice->id" :transport="$transport" :service_type="$service_type" />
+            <livewire:sales-invoice.detail
+                :id="$salesInvoice->id"
+                :transport="$transport"
+                :service_type="$service_type"
+            />
         </div>
 
         @if ($salesInvoice->saved == '1')
