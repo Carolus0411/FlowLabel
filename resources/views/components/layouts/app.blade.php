@@ -31,6 +31,13 @@
 </head>
 <body class="min-h-screen font-inter antialiased bg-base-200 dark:bg-base-200">
 
+    {{-- <div class="fixed top-0 z-[999] w-full flex justify-center">
+        <div wire:loading class="py-0.5 px-4 text-xs flex items-center gap-3 bg-red-300">
+            <span class="loading loading-dots loading-md"></span>
+            Loading ...
+        </div>
+    </div> --}}
+
     {{-- The navbar with `sticky` and `full-width` --}}
     <x-nav id="nav" sticky full-width class="h-[65px] z-50">
 

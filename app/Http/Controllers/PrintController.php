@@ -18,6 +18,10 @@ class PrintController extends Controller
             ->where('ref_id', base64_decode($id))
             ->first();
 
+        if (!$journal) {
+            abort(403, 'JOURNAL IS NOT FOUND');
+        }
+
         return view('print.journal', [
             'journal' => $journal,
         ]);
