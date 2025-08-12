@@ -2,12 +2,26 @@
 
 use Livewire\Volt\Component;
 use App\Models\Shipping;
+use Mary\Traits\Toast;
 
 new class extends Component {
+
+    use Toast;
 
     public ?string $date1;
     public ?string $date2;
     public ?string $show = '';
+
+    public $country_id = '2';
+
+    public function tes(): void
+    {
+        $data = $this->validate([
+            'country_id' => 'nullable',
+        ]);
+
+        $this->success('Value : ' . $this->country_id);
+    }
 
     public function mount(): void
     {
@@ -41,6 +55,43 @@ new class extends Component {
         'dateFormat' => 'Y-m-d',
     ];
     @endphp
+
+    <x-card class="mb-5">
+        <x-input label="Name" />
+        <div
+            wire:ignore
+            x-data="{
+                value : $wire.entangle('country_id'),
+                init() {
+                    this.$nextTick(() => {
+
+                        let choices = new Choices(this.$refs.xxx, {
+                            allowHTML: false,
+                            placeholder: true,
+                            placeholderValue: 'Pick a country',
+                            searchPlaceholderValue: 'Type a keyword'
+                        })
+
+                        choices.setChoiceByValue(this.value)
+
+                        this.$refs.xxx.addEventListener('change', () => {
+                            this.value = choices.getValue(true)
+                            console.log(this.value)
+                        })
+
+                    })
+                }
+            }"
+        >
+            <select x-ref="xxx">
+                <option value="1">One</option>
+                <option value="2">Two</option>
+                <option value="3">Three</option>
+            </select>
+            <x-button label="Get Value" wire:click="tes" />
+        </div>
+    </x-card>
+
     <x-header title="Dashboard" subtitle="Application Dashboard" separator progress-indicator>
         <x-slot:middle class="!justify-end">
             <div class="flex items-center gap-3">
