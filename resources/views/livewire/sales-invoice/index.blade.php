@@ -52,7 +52,7 @@ new class extends Component {
             ['key' => 'payment_status', 'label' => 'Payment'],
             ['key' => 'code', 'label' => 'Code'],
             ['key' => 'invoice_date', 'label' => 'Invoice Date', 'format' => ['date', 'd-m-Y']],
-            ['key' => 'contact.name', 'label' => 'Customer', 'sortable' => false],
+            ['key' => 'contact.name', 'label' => 'Customer', 'sortable' => false, 'class' => 'max-w-[200px] truncate'],
             ['key' => 'dpp_amount', 'label' => 'DPP Amount', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
             ['key' => 'ppn.value', 'label' => 'PPN %', 'class' => 'text-right', 'sortable' => false],
             ['key' => 'ppn_amount', 'label' => 'PPN', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
@@ -61,7 +61,7 @@ new class extends Component {
             ['key' => 'stamp_amount', 'label' => 'Stamp', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
             ['key' => 'invoice_amount', 'label' => 'Invoice Amount', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
             // ['key' => 'created_at', 'label' => 'Created At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
-            ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
+            ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'whitespace-nowrap', 'format' => ['date', 'd-M-y, H:i']],
         ];
     }
 
@@ -184,11 +184,14 @@ new class extends Component {
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$salesInvoices" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text :link="route('sales-invoice.edit', ['salesInvoice' => '[id]'])">
             @scope('cell_act', $salesInvoice)
-            <x-dropdown class="btn-sm btn-soft">
+            <x-dropdown class="btn-xs btn-soft">
                 <x-menu-item title="Edit" link="{{ route('sales-invoice.edit', $salesInvoice->id) }}" icon="o-pencil-square" />
                 <x-menu-item title="Show Journal" onclick="popupWindow('{{ route('print.journal', ['SalesInvoice', base64_encode($salesInvoice->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" icon="o-magnifying-glass" />
             </x-dropdown>
             @endscope
+            {{-- @scope('cell_contact.name', $salesInvoice)
+            <div class="whitespace-nowrap">{{ $salesInvoice->contact->name }}</div>
+            @endscope --}}
             @scope('cell_status', $salesInvoice)
             <x-status-badge :status="$salesInvoice->status" />
             @endscope

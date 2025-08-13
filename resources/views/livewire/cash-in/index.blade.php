@@ -34,7 +34,6 @@ new class extends Component {
     public int $filterCount = 0;
     public bool $drawer = false;
     public array $sortBy = ['column' => 'id', 'direction' => 'desc'];
-    public $journalCode = '';
 
     public function mount(): void
     {
@@ -53,13 +52,13 @@ new class extends Component {
         return [
             ['key' => 'act', 'label' => '#', 'disableLink' => true, 'sortable' => false],
             ['key' => 'status', 'label' => 'Status'],
-            ['key' => 'code', 'label' => 'Code'],
+            ['key' => 'code', 'label' => 'Code', 'class' => 'truncate'],
             ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y']],
-            ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false],
+            ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false, 'class' => 'max-w-[300px] truncate'],
             ['key' => 'total_amount', 'label' => 'Total Amount', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
-            ['key' => 'type', 'label' => 'Type'],
-            ['key' => 'note', 'label' => 'Note'],
-            ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
+            ['key' => 'type', 'label' => 'Type', 'class' => 'truncate'],
+            ['key' => 'note', 'label' => 'Note', 'class' => 'max-w-[300px] truncate'],
+            ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'truncate', 'format' => ['date', 'd-m-y, H:i']],
         ];
     }
 
@@ -131,12 +130,6 @@ new class extends Component {
         $this->filterCount = $count;
     }
 
-    public function showJournal($code): void
-    {
-        $this->journalCode = $code;
-        $this->dispatch('show-journal');
-    }
-
     public function export()
     {
         Gate::authorize('export cash-in');
@@ -174,14 +167,14 @@ new class extends Component {
         </x-slot:subtitle>
         <x-slot:actions>
             @can('export cash-in')
-            <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
+            <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" class="btn-soft" responsive />
             @endcan
             @can('import cash-in')
-            <x-button label="Import" link="{{ route('cash-in.import') }}" icon="o-arrow-up-tray" />
+            <x-button label="Import" link="{{ route('cash-in.import') }}" icon="o-arrow-up-tray" class="btn-soft" responsive />
             @endcan
-            <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
+            <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" class="btn-soft" responsive />
             @can('create cash-in')
-            <x-button label="Create" wire:click="create" spinner="create" icon="o-plus" class="btn-primary" />
+            <x-button label="Create" wire:click="create" spinner="create" icon="o-plus" class="btn-primary" responsive />
             @endcan
         </x-slot:actions>
     </x-header>
@@ -200,7 +193,7 @@ new class extends Component {
             @scope('cell_act', $cashIn)
             <x-dropdown class="btn-xs btn-soft">
                 <x-menu-item title="Edit" link="{{ route('cash-in.edit', $cashIn->id) }}" icon="o-pencil-square" />
-                <x-menu-item title="Show Journal" wire:click="showJournal('{{ $cashIn->code }}')" icon="o-magnifying-glass" />
+                <x-menu-item title="Show Journal" onclick="popupWindow('{{ route('print.journal', ['CashIn', base64_encode($cashIn->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" icon="o-magnifying-glass" />
                 <x-menu-item title="Print" onclick="popupWindow('{{ route('print.cash-in', $cashIn->id) }}', 'cash-in', '1000', '560', 'yes', 'center')" icon="o-printer" />
             </x-dropdown>
             @endscope
@@ -220,7 +213,4 @@ new class extends Component {
         <x-select label="Type" wire:model="type" :options="\App\Enums\IncomeType::toSelect()" placeholder="-- All --" />
         <x-select label="Status" wire:model="status" :options="\App\Enums\Status::toSelect()" placeholder="-- All --" />
     </x-search-drawer>
-
-    {{-- SHOW JOURNAL --}}
-    <livewire:journal.modal :ref_id="$journalCode" ref_name="CashIn">
 </div>

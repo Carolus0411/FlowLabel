@@ -131,7 +131,10 @@ new class extends Component {
                 </div>
             </x-slot:title>
             <x-slot:actions>
-                <x-button label="Back" link="{{ route('cash-in.index') }}" icon="o-arrow-uturn-left" />
+                <x-button label="Back" link="{{ route('cash-in.index') }}" icon="o-arrow-uturn-left" class="btn-soft" />
+                @if ($cashIn->status == 'close')
+                <x-button label="Journal" icon="o-document-text" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['CashIn', base64_encode($cashIn->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" />
+                @endif
                 @if ($cashIn->status == 'open')
                 <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif

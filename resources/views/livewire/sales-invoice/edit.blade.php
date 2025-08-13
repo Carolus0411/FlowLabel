@@ -233,8 +233,8 @@ new class extends Component {
                 @if ($salesInvoice->status == 'close')
                 <x-button label="Journal" icon="o-document-text" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['SalesInvoice', base64_encode($salesInvoice->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" />
                 @endif
-                @if ($salesInvoice->saved == '1' AND $salesInvoice->status == 'open')
-                <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
+                @if ( $salesInvoice->status == 'open')
+                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
                 @if ($open)
                 <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
@@ -394,7 +394,7 @@ new class extends Component {
 
     <x-modal wire:model="closeConfirm" title="Closing Confirmation" persistent>
         <div class="flex pb-2">
-            Are you sure you want to close this invoice?
+            Are you sure you want to approve this invoice?
         </div>
         <x-slot:actions>
             <div class="flex items-center gap-4">

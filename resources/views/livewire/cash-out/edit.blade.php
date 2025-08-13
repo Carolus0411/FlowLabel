@@ -131,9 +131,12 @@ new class extends Component {
                 </div>
             </x-slot:title>
             <x-slot:actions>
-                <x-button label="Back" link="{{ route('cash-out.index') }}" icon="o-arrow-uturn-left" />
-                @if ($cashOut->status == 'open' AND $cashOut->saved == '1')
-                <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
+                <x-button label="Back" link="{{ route('cash-out.index') }}" icon="o-arrow-uturn-left" class="btn-soft" />
+                @if ($cashOut->status == 'close')
+                <x-button label="Journal" icon="o-document-text" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['cashOut', base64_encode($cashOut->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" />
+                @endif
+                @if ($cashOut->status == 'open')
+                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
                 @if ($open)
                 <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
@@ -240,6 +243,7 @@ new class extends Component {
                     @endcan
 
                     @can('delete cash-out')
+                    @if ($cashOut->status == 'void')
                     <div class="divider"></div>
                     <div class="text-xs">
                         <p>Once you delete, there is no going back. Please be certain.</p>
@@ -254,6 +258,7 @@ new class extends Component {
                             class="btn-error btn-soft"
                         />
                     </div>
+                    @endif
                     @endcan
                 </div>
             </x-card>

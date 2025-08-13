@@ -188,9 +188,11 @@ new class extends Component {
     {
         if ($this->payment_method == 'cash')
         {
+            $accountReceivable = settings('account_receivable_code');
             $cashIn = CashIn::where('code', $code)->first();
+            $amount = $cashIn->details()->where('coa_code', $accountReceivable)->sum('amount');
             $this->settleable_type = get_class($cashIn);
-            $this->foreign_amount = Cast::money($cashIn->total_amount ?? 0);
+            $this->foreign_amount = Cast::money($amount);
         }
     }
 }; ?>
