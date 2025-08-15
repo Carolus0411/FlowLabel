@@ -12,11 +12,21 @@ class PrintController extends Controller
 {
     public function journal(string $resource, string $id)
     {
-        $journal = Journal::query()
-            ->with('details.coa')
-            ->where('ref_name', $resource)
-            ->where('ref_id', base64_decode($id))
-            ->first();
+        if ($resource == 'journal') {
+
+            $journal = Journal::query()
+                ->with('details.coa')
+                ->where('id', intval($id))
+                ->first();
+
+        } else {
+
+            $journal = Journal::query()
+                ->with('details.coa')
+                ->where('ref_name', $resource)
+                ->where('ref_id', base64_decode($id))
+                ->first();
+        }
 
         if (!$journal) {
             abort(403, 'JOURNAL IS NOT FOUND');

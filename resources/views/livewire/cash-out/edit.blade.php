@@ -197,31 +197,8 @@ new class extends Component {
         <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
             <x-card>
                 <div class="space-y-4">
-                    <h2 class="text-lg font-semibold">Histories</h2>
-                    <table class="table table-sm">
-                    <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Time</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @forelse ($cashOut->logs()->with('user')->latest()->limit(5)->get() as $log)
-                    <tr>
-                        <td>{{ $log->user->name }}</td>
-                        <td>{{ $log->action }}</td>
-                        <td>{{ $log->created_at->diffForHumans() }}</td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="3">No data found.</td></tr>
-                    @endforelse
-                    </tbody>
-                    </table>
-                </div>
-            </x-card>
-            <x-card>
-                <div class="space-y-4">
+                    <x-other-info :data="$cashOut" />
+
                     <h2 class="text-lg font-semibold">Danger Zone</h2>
 
                     @can('void cash-out')
@@ -244,7 +221,6 @@ new class extends Component {
 
                     @can('delete cash-out')
                     @if ($cashOut->status == 'void')
-                    <div class="divider"></div>
                     <div class="text-xs">
                         <p>Once you delete, there is no going back. Please be certain.</p>
                     </div>
@@ -253,7 +229,7 @@ new class extends Component {
                             label="Delete Permanently"
                             icon="o-trash"
                             wire:click="delete('{{ $cashOut->id }}')"
-                            spinner="save"
+                            spinner="delete('{{ $cashOut->id }}')"
                             wire:confirm="Are you sure you want to delete this?"
                             class="btn-error btn-soft"
                         />
@@ -262,6 +238,7 @@ new class extends Component {
                     @endcan
                 </div>
             </x-card>
+            <x-logs :data="$cashOut" />
         </div>
         @endif
 

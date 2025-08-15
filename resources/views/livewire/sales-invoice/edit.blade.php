@@ -223,21 +223,21 @@ new class extends Component {
                     <span>Update Sales Invoice</span>
                     <x-status-badge :status="$salesInvoice->status" class="uppercase !text-sm" />
                     @if ($salesInvoice->status == 'close')
-                    <x-payment-status-badge :status="$salesInvoice->payment_status" class="uppercase !text-sm" />
+                    <x-payment-status-badge :data="$salesInvoice" class="uppercase !text-sm" />
                     @endif
                 </div>
             </x-slot:title>
             <x-slot:actions>
-                <x-button label="Back" link="{{ route('sales-invoice.index') }}" icon="o-arrow-uturn-left" />
+                <x-button label="Back" link="{{ route('sales-invoice.index') }}" icon="o-arrow-uturn-left" class="btn-soft" responsive />
 
                 @if ($salesInvoice->status == 'close')
-                <x-button label="Journal" icon="o-document-text" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['SalesInvoice', base64_encode($salesInvoice->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" />
+                <x-button label="Journal" icon="o-document-text" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['SalesInvoice', base64_encode($salesInvoice->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" responsive />
                 @endif
                 @if ( $salesInvoice->status == 'open')
-                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
+                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" responsive />
                 @endif
                 @if ($open)
-                <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
+                <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" responsive />
                 @endif
             </x-slot:actions>
         </x-header>
@@ -324,31 +324,8 @@ new class extends Component {
         <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
             <x-card>
                 <div class="space-y-4">
-                    <h2 class="text-lg font-semibold">Histories</h2>
-                    <table class="table table-sm">
-                    <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Time</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @forelse ($salesInvoice->logs()->with('user')->latest()->limit(5)->get() as $log)
-                    <tr>
-                        <td>{{ $log->user->name }}</td>
-                        <td>{{ $log->action }}</td>
-                        <td>{{ $log->created_at->diffForHumans() }}</td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="3">No data found.</td></tr>
-                    @endforelse
-                    </tbody>
-                    </table>
-                </div>
-            </x-card>
-            <x-card>
-                <div class="space-y-4">
+                    <x-other-info :data="$salesInvoice" />
+
                     <h2 class="text-lg font-semibold">Danger Zone</h2>
                     @can('void sales-invoice')
                     @if ($salesInvoice->status != 'void')
@@ -387,6 +364,7 @@ new class extends Component {
                     @endif
                 </div>
             </x-card>
+            <x-logs :data="$salesInvoice" />
         </div>
         @endif
 

@@ -20,6 +20,8 @@ return new class extends Migration
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->string('note')->nullable();
             $table->integer('saved')->index()->default(0);
+            $table->integer('has_payable')->index()->default(0);
+            $table->integer('used_payable')->index()->default(0);
             $table->enum('status', ['open','close','void'])->index()->default('open');
             $table->foreignId('created_by')->index()->default(0);
             $table->foreignId('updated_by')->index()->default(0);

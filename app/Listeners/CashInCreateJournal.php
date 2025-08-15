@@ -33,11 +33,11 @@ class CashInCreateJournal
 
             $code = Code::auto('JV', $cashIn->date);
 
-            // has settlement?
-            $has_settlement = 0;
+            // has receivable?
+            $has_receivable = 0;
             $accountReceivable = settings('account_receivable_code');
             if ($cashIn->details()->where('coa_code', $accountReceivable)->exists()) {
-                $has_settlement = 1;
+                $has_receivable = 1;
             }
 
             // has prepaid?
@@ -49,7 +49,7 @@ class CashInCreateJournal
 
             // update cash in status
             $cashIn->update([
-                'has_settlement' => $has_settlement,
+                'has_receivable' => $has_receivable,
                 'has_prepaid' => $has_prepaid,
                 'status' => 'close'
             ]);

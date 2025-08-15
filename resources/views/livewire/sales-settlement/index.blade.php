@@ -48,13 +48,13 @@ new class extends Component {
     {
         return [
             ['key' => 'status', 'label' => 'Status'],
-            ['key' => 'code', 'label' => 'Code'],
-            ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y']],
-            ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false],
+            ['key' => 'code', 'label' => 'Code', 'class' => 'truncate'],
+            ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y'], 'class' => 'truncate'],
+            ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false, 'class' => 'truncate max-w-[300px]'],
             ['key' => 'source_amount', 'label' => 'Source Amount', 'format' => ['currency', '2.,', '']],
             ['key' => 'paid_amount', 'label' => 'Paid Amount', 'format' => ['currency', '2.,', '']],
-            ['key' => 'updated_at', 'label' => 'Updated At', 'format' => ['date', 'd-M-y, H:i']],
-            ['key' => 'updatedBy.name', 'label' => 'Updated By'],
+            ['key' => 'updated_at', 'label' => 'Updated At', 'format' => ['date', 'd-M-y, H:i'], 'class' => 'truncate'],
+            ['key' => 'updatedBy.name', 'label' => 'Updated By', 'class' => 'truncate'],
         ];
     }
 

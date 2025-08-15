@@ -46,7 +46,8 @@ new class extends Component {
             ->closed()
             ->sales()
             ->where('contact_id', $this->contact_id)
-            ->where('has_settlement', '0')
+            ->where('has_receivable', '1')
+            ->where('used_receivable', '0')
             ->filterLike('code', $value)
             ->take(20)
             ->get()
@@ -130,7 +131,7 @@ new class extends Component {
             ]);
 
             $sources->settleable()->update([
-                'has_settlement' => '1'
+                'used_receivable' => '1'
             ]);
         }
 
@@ -163,7 +164,7 @@ new class extends Component {
         $source = SalesSettlementSource::find($id);
 
         $source->settleable()->update([
-            'has_settlement' => '0'
+            'used_receivable' => '0'
         ]);
 
         $source->delete();

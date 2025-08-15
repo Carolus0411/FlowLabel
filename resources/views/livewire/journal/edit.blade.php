@@ -63,16 +63,15 @@ new class extends Component {
 
         unset($data['details']);
 
+        $data['debit_total'] = Cast::number($this->journal->details()->sum('debit'));
+        $data['credit_total'] = Cast::number($this->journal->details()->sum('credit'));
+
         if ($this->journal->saved == '0') {
             $code = Code::auto('JV');
             $data['code'] = $code;
             $data['saved'] = 1;
             $this->journal->details()->update(['code' => $code]);
         }
-
-        $this->validity();
-        $data['debit_total'] = Cast::number($this->debit_total);
-        $data['credit_total'] = Cast::number($this->credit_total);
 
         $this->journal->update($data);
 
@@ -101,7 +100,7 @@ new class extends Component {
         Gate::authorize('delete journal');
         $journal->details()->delete();
         $journal->delete();
-        $this->success('Journal successfully deleted.', redirectTo: route('journal.index'));
+        $this->success('Success','journal successfully deleted.', redirectTo: route('journal.index'));
     }
 
     public function validity(): void
@@ -130,7 +129,7 @@ new class extends Component {
         ]);
 
         $this->closeConfirm = false;
-        $this->success('Journal successfully closed.', redirectTo: route('journal.index'));
+        // $this->success('Journal successfully closed.', redirectTo: route('journal.index'));
     }
 }; ?>
 
@@ -152,9 +151,10 @@ new class extends Component {
                 </div>
             </x-slot:title>
             <x-slot:actions>
-                <x-button label="Back" link="{{ route('journal.index') }}" icon="o-arrow-uturn-left" />
-                @if ($validityStatus AND $journal->saved == '1' AND $journal->status == 'open')
-                <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
+                <x-button label="Back" link="{{ route('journal.index') }}" icon="o-arrow-uturn-left" class="btn-soft" />
+                <x-button label="Print" icon="o-printer" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['journal', $journal->id]) }}', 'journal', '1000', '460', 'yes', 'center')" />
+                @if ($validityStatus AND $journal->status == 'open')
+                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
                 @if ($open)
                 <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
@@ -190,10 +190,6 @@ new class extends Component {
                         <x-input label="Credit Total" wire:model="credit_total" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
                     </div>
                 </div>
-                {{-- <x-slot:actions>
-                    <x-button label="Cancel" link="{{ route('journal.index') }}" />
-                    <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
-                </x-slot:actions> --}}
             </x-form>
         </x-card>
 
@@ -217,47 +213,25 @@ new class extends Component {
         <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
             <x-card>
                 <div class="space-y-4">
-                    <h2 class="text-lg font-semibold">Histories</h2>
-                    <table class="table table-sm">
-                    <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Time</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @forelse ($journal->logs()->with('user')->latest()->limit(10)->get() as $log)
-                    <tr>
-                        <td>{{ $log->user->name }}</td>
-                        <td>{{ $log->action }}</td>
-                        <td>{{ $log->created_at->diffForHumans() }}</td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="3">No data found.</td></tr>
-                    @endforelse
-                    </tbody>
-                    </table>
-                </div>
-            </x-card>
-            <x-card>
-                <div class="space-y-4">
+                    <x-other-info :data="$journal" />
+
                     <h2 class="text-lg font-semibold">Danger Zone</h2>
                     <div class="text-xs">
-                        <p>Once you delete a invoice, there is no going back. Please be certain.</p>
+                        <p>Once you delete a journal, there is no going back. Please be certain.</p>
                     </div>
                     <div>
                         <x-button
                             label="Delete Permanently"
                             icon="o-trash"
                             wire:click="delete('{{ $journal->id }}')"
-                            spinner="save"
-                            wire:confirm="Are you sure you want to delete this invoice?"
+                            spinner="delete('{{ $journal->id }}')"
+                            wire:confirm="Are you sure you want to delete this?"
                             class="btn-error btn-soft"
                         />
                     </div>
                 </div>
             </x-card>
+            <x-logs :data="$journal" />
         </div>
         @endif
 

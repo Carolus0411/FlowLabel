@@ -197,7 +197,7 @@ new class extends Component {
             @endscope
             @scope('cell_payment_status', $salesInvoice)
             @if ($salesInvoice->status == 'close')
-            <x-payment-status-badge :status="$salesInvoice->payment_status" />
+            <x-payment-status-badge :data="$salesInvoice" />
             @endif
             @endscope
             {{-- @scope('actions', $salesInvoice)

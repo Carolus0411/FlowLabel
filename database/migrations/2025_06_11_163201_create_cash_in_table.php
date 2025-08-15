@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('type')->index()->nullable();
             $table->string('note')->nullable();
             $table->integer('saved')->index()->default(0);
-            $table->integer('has_settlement')->index()->default(0);
-            $table->integer('used_settlement')->index()->default(0);
+            $table->integer('has_receivable')->index()->default(0);
+            $table->integer('used_receivable')->index()->default(0);
             $table->integer('has_prepaid')->index()->default(0);
             $table->integer('used_prepaid')->index()->default(0);
             $table->enum('status', ['open','close','void'])->index()->default('open');

@@ -136,7 +136,7 @@ new class extends Component {
                 <x-button label="Journal" icon="o-document-text" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['CashIn', base64_encode($cashIn->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" />
                 @endif
                 @if ($cashIn->status == 'open')
-                <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
+                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
                 @endif
                 @if ($open)
                 <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
@@ -202,33 +202,9 @@ new class extends Component {
         <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-2 gap-4">
             <x-card>
                 <div class="space-y-4">
-                    <h2 class="text-lg font-semibold">Histories</h2>
-                    <table class="table table-sm">
-                    <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Time</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @forelse ($cashIn->logs()->with('user')->latest()->limit(5)->get() as $log)
-                    <tr>
-                        <td>{{ $log->user->name }}</td>
-                        <td>{{ $log->action }}</td>
-                        <td>{{ $log->created_at->diffForHumans() }}</td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="3">No data found.</td></tr>
-                    @endforelse
-                    </tbody>
-                    </table>
-                </div>
-            </x-card>
-            <x-card>
-                <div class="space-y-4">
-                    <h2 class="text-lg font-semibold">Danger Zone</h2>
+                    <x-other-info :data="$cashIn" />
 
+                    <h2 class="text-lg font-semibold">Danger Zone</h2>
                     @can('void cash-in')
                     @if ($cashIn->status != 'void')
                     <div class="text-xs">
@@ -266,6 +242,7 @@ new class extends Component {
                     @endcan
                 </div>
             </x-card>
+            <x-logs :data="$cashIn" />
         </div>
         @endif
 

@@ -53,15 +53,16 @@ new class extends Component {
     public function headers(): array
     {
         return [
+            ['key' => 'action', 'label' => '#', 'disableLink' => true, 'sortable' => false],
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'code', 'label' => 'Code'],
             ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y']],
-            ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false],
+            ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false, 'class' => 'truncate max-w-[300px]'],
             ['key' => 'debit_total', 'label' => 'Debit Total', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
             ['key' => 'credit_total', 'label' => 'Credit Total', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
-            ['key' => 'ref_name', 'label' => 'Ref Name'],
-            ['key' => 'ref_id', 'label' => 'Ref ID'],
-            ['key' => 'updated_at', 'label' => 'Updated At', 'format' => ['date', 'd-M-y, H:i']],
+            ['key' => 'ref_name', 'label' => 'Ref Name', 'class' => 'truncate max-w-[200px]'],
+            ['key' => 'ref_id', 'label' => 'Ref ID', 'class' => 'truncate max-w-[200px]'],
+            ['key' => 'updated_at', 'label' => 'Updated At', 'format' => ['date', 'd-M-y, H:i'], 'class' => 'truncate'],
             ['key' => 'updatedBy.name', 'label' => 'Updated By'],
         ];
     }
@@ -183,7 +184,7 @@ new class extends Component {
             @endcan
             <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" class="btn-soft" responsive />
             @can('create journal')
-            <x-button label="Create" wire:click="create" spinner="create" icon="o-plus" class="btn-primary"responsive />
+            <x-button label="Create" wire:click="create" spinner="create" icon="o-plus" class="btn-primary" responsive />
             @endcan
         </x-slot:actions>
     </x-header>
@@ -191,19 +192,15 @@ new class extends Component {
     {{-- TABLE --}}
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$journals" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text :link="route('journal.edit', ['journal' => '[id]'])">
+            @scope('cell_action', $journal)
+            <x-dropdown class="btn-xs btn-ghost">
+                <x-menu-item title="Edit" link="{{ route('journal.edit', $journal->id) }}" icon="o-pencil-square" />
+                <x-menu-item title="Print" onclick="popupWindow('{{ route('print.journal', ['journal', $journal->id]) }}', 'journal', '1000', '460', 'yes', 'center')" icon="o-printer" />
+            </x-dropdown>
+            @endscope
             @scope('cell_status', $journal)
             <x-status-badge :status="$journal->status" />
             @endscope
-            {{-- @scope('actions', $journal)
-            <div class="flex gap-1.5">
-                @can('delete journal')
-                <x-button wire: click="delete({{ $journal->id }})" spinner="delete({{ $journal->id }})" wire: confirm="Are you sure you want to delete this row?" icon="o-trash" class="btn btn-sm" />
-                @endcan
-                @can('update journal')
-                <x-button link="{{ route('journal.edit', $journal->id) }}" icon="o-pencil-square" class="btn btn-sm" />
-                @endcan
-            </div>
-            @endscope --}}
         </x-table>
     </x-card>
 

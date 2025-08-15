@@ -99,7 +99,7 @@ new class extends Component {
         if ($salesSettlement->sources()->count() > 0) {
             foreach ($salesSettlement->sources as $source) {
                 $source->settleable()->update([
-                    'has_settlement' => '0'
+                    'used_receivable' => '0'
                 ]);
             }
         }
@@ -168,12 +168,12 @@ new class extends Component {
                 </div>
             </x-slot:title>
             <x-slot:actions>
-                <x-button label="Back" link="{{ route('sales-settlement.index') }}" icon="o-arrow-uturn-left" />
-                @if ($validityStatus AND $salesSettlement->saved == '1' AND $salesSettlement->status == 'open')
-                <x-button label="Close" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" />
+                <x-button label="Back" link="{{ route('sales-settlement.index') }}" icon="o-arrow-uturn-left" class="btn-soft" responsive />
+                @if ($validityStatus AND $salesSettlement->status == 'open')
+                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" responsive />
                 @endif
                 @if ($open)
-                <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" />
+                <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" responsive />
                 @endif
             </x-slot:actions>
         </x-header>
