@@ -159,14 +159,14 @@ new class extends Component {
         </x-slot:subtitle>
         <x-slot:actions>
             @can('export sales-settlement')
-            <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
+            <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" class="btn-soft" responsive />
             @endcan
-            @can('import salessettlement')
-            <x-button label="Import" link="{{ route('sales-settlement.import') }}" icon="o-arrow-up-tray" />
+            @can('import sales-settlement')
+            <x-button label="Import" link="{{ route('sales-settlement.import') }}" icon="o-arrow-up-tray" class="btn-soft" responsive />
             @endcan
-            <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
+            <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" class="btn-soft" responsive />
             @can('create sales-settlement')
-            <x-button label="Create" wire:click="create" spinner="create" icon="o-plus" class="btn-primary" />
+            <x-button label="Create" wire:click="create" spinner="create" icon="o-plus" class="btn-primary" responsive />
             @endcan
         </x-slot:actions>
     </x-header>
