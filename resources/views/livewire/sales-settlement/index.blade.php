@@ -129,25 +129,25 @@ new class extends Component {
     {
         Gate::authorize('export salessettlement');
 
-        $salessettlement = SalesSettlement::stored()
+        $salesSettlements = SalesSettlement::stored()
             ->whereDateBetween('DATE(date)', $this->date1, $this->date2)
             ->orderBy('id','asc');
-        $writer = SimpleExcelWriter::streamDownload('SalesSettlement.xlsx');
-        foreach ( $salessettlement->lazy() as $salessettlement ) {
+        $writer = SimpleExcelWriter::streamDownload('Sales Settlement.xlsx');
+        foreach ( $salesSettlements->lazy() as $salesSettlement ) {
             $writer->addRow([
-                'id' => $salessettlement->id,
-                'code' => $salessettlement->code,
-                'date' => $salessettlement->date,
-                'note' => $salessettlement->note,
-                'contact_id' => $salessettlement->contact_id,
-                'total_amount' => $salessettlement->total_amount,
-                'status' => $salessettlement->status,
-                'saved' => $salessettlement->saved,
+                'id' => $salesSettlement->id,
+                'code' => $salesSettlement->code,
+                'date' => $salesSettlement->date,
+                'note' => $salesSettlement->note,
+                'contact_id' => $salesSettlement->contact_id,
+                'total_amount' => $salesSettlement->total_amount,
+                'status' => $salesSettlement->status,
+                'saved' => $salesSettlement->saved,
             ]);
         }
         return response()->streamDownload(function() use ($writer){
             $writer->close();
-        }, 'SalesSettlement.xlsx');
+        }, 'Sales Settlement.xlsx');
     }
 }; ?>
 
