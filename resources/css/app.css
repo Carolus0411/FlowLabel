@@ -121,3 +121,7 @@ x-cloak {
         @apply bg-base-100 text-base-content;
     }
 }
+
+.filepond--credits {
+    display: none;
+}

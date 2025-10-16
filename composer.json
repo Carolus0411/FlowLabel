@@ -17,6 +17,7 @@
         "rawilk/laravel-settings": "^3.4",
         "robsontenorio/mary": "^2.4",
         "spatie/laravel-permission": "^6.18",
+        "spatie/livewire-filepond": "^1.5",
         "spatie/simple-excel": "^3.7"
     },
     "require-dev": {

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ApproveCashIn implements ShouldQueue
+class CashInApprove implements ShouldQueue
 {
     use Queueable;
 
