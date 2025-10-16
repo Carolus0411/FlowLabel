@@ -20,7 +20,7 @@ new class extends Component {
     public function save(): void
     {
         $data = $this->validate([
-            'code' => 'required|unique:coa,code',
+            'code' => 'required|unique:contact,code',
             'name' => 'required',
             'is_active' => 'boolean',
         ]);

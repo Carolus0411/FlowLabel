@@ -1,4 +1,4 @@
-import "./bootstrap";
+// import "./bootstrap";
 import mask from "./mask";
 import popupWindow from "./popupWindow";
 

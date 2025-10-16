@@ -33,6 +33,21 @@ x-cloak {
 
 /* Your styles goes here ... */
 
+/* custom form outline */
+.input,
+.select,
+.textarea {
+    &:focus,
+    &:focus-within {
+        @apply !outline-offset-0 !outline-1;
+    }
+}
+
+.input:has(:read-only),
+.textarea:has(:read-only) {
+    @apply border-solid bg-base-200;
+}
+
 /* fix scrollbar flickering on chromium family */
 :root {
     scrollbar-color: #aeaeaf #0000 !important;

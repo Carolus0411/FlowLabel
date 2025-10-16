@@ -83,7 +83,7 @@ new class extends Component {
             {{-- CASH OUT --}}
             @if ($cashOutDraft->count() > 0)
             <div>
-            <h3 class="font-semibold text-lg mb-4">Cash In</h3>
+            <h3 class="font-semibold text-lg mb-4">Cash Out</h3>
             <table class="table table-sm">
             <tbody>
             @foreach($cashOutDraft as $draft)

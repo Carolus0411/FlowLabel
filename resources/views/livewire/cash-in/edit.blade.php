@@ -102,13 +102,13 @@ new class extends Component {
     {
         Gate::authorize('close cash-in');
         $this->closeConfirm = false;
-        \App\Events\CashInClosed::dispatch($this->cashIn);
+        \App\Jobs\ApproveCashIn::dispatchSync($this->cashIn);
     }
 
-    public function void(CashIn $cashIn): void
+    public function void(): void
     {
         Gate::authorize('void cash-in');
-        \App\Events\CashInVoided::dispatch($this->cashIn);
+        \App\Jobs\VoidCashIn::dispatchSync($this->cashIn);
         $this->success('Cash successfully voided.', redirectTo: route('cash-in.index'));
     }
 }; ?>
@@ -153,7 +153,7 @@ new class extends Component {
             <x-form wire:submit="save">
                 <div class="space-y-4">
                     <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-3 gap-4">
-                        <x-input label="Code" wire:model="code" readonly class="bg-base-200" :disabled="!$open" />
+                        <x-input label="Code" wire:model="code" readonly :disabled="!$open" />
                         <x-datetime label="Date" wire:model="date" :disabled="!$open" />
                         <x-select label="Type" wire:model="type" :options="\App\Enums\IncomeType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
@@ -181,7 +181,7 @@ new class extends Component {
                             placeholder="-- Select --"
                             :disabled="!$open"
                         />
-                        <x-input label="Total Amount" wire:model="total_amount" readonly class="bg-base-200" x-mask:dynamic="$money($input,'.',',')" />
+                        <x-input label="Total Amount" wire:model="total_amount" readonly x-mask:dynamic="$money($input,'.',',')" />
                         <x-input label="Note" wire:model="note" :disabled="!$open" />
                     </div>
                 </div>
@@ -214,8 +214,8 @@ new class extends Component {
                         <x-button
                             label="Void"
                             icon="o-archive-box-x-mark"
-                            wire:click="void('{{ $cashIn->id }}')"
-                            spinner="void('{{ $cashIn->id }}')"
+                            wire:click="void()"
+                            spinner="void()"
                             wire:confirm="Are you sure you want to void this?"
                             class="btn-error btn-soft"
                         />
