@@ -4,7 +4,7 @@
 <x-card>
     <div class="space-y-4">
         <h2 class="text-lg font-semibold">Histories</h2>
-        <table class="table table-sm">
+        <table class="table table-xs table-zebra">
         <thead>
         <tr>
             <th>User</th>
@@ -14,7 +14,7 @@
         </thead>
         <tbody>
         @isset ($data->logs)
-        @forelse ($data->logs()->with('user')->latest()->limit(10)->get() as $log)
+        @forelse ($data->logs()->with('user')->latest()->limit(8)->get() as $log)
         <tr>
             <td>{{ $log->user->name }}</td>
             <td>{{ $log->action }}</td>

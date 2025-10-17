@@ -199,42 +199,8 @@ new class extends Component {
                 <div class="space-y-4">
                     <x-other-info :data="$cashOut" />
 
-                    <h2 class="text-lg font-semibold">Danger Zone</h2>
-
-                    @can('void cash-out')
-                    @if ($cashOut->status != 'void')
-                    <div class="text-xs">
-                        <p>You can cancel a transaction without destroying it with void.</p>
-                    </div>
-                    <div>
-                        <x-button
-                            label="Void"
-                            icon="o-archive-box-x-mark"
-                            wire:click="void('{{ $cashOut->id }}')"
-                            spinner="void('{{ $cashOut->id }}')"
-                            wire:confirm="Are you sure you want to void this?"
-                            class="btn-error btn-soft"
-                        />
-                    </div>
-                    @endif
-                    @endcan
-
-                    @can('delete cash-out')
-                    @if ($cashOut->status == 'void')
-                    <div class="text-xs">
-                        <p>Once you delete, there is no going back. Please be certain.</p>
-                    </div>
-                    <div>
-                        <x-button
-                            label="Delete Permanently"
-                            icon="o-trash"
-                            wire:click="delete('{{ $cashOut->id }}')"
-                            spinner="delete('{{ $cashOut->id }}')"
-                            wire:confirm="Are you sure you want to delete this?"
-                            class="btn-error btn-soft"
-                        />
-                    </div>
-                    @endif
+                    @can('create request')
+                    <livewire:request.button :model="$cashOut" />
                     @endcan
                 </div>
             </x-card>

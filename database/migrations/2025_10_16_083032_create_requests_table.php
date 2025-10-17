@@ -21,7 +21,7 @@ return new class extends Migration
             $table->text('response')->nullable();
             $table->enum('status', ['open','approved','rejected'])->index()->default('open');
             $table->foreignId('created_by')->index()->default(0);
-            $table->foreignId('responded_by')->index()->default(0);
+            $table->foreignId('updated_by')->index()->default(0);
             $table->timestamps();
         });
     }

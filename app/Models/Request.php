@@ -24,9 +24,9 @@ class Request extends Model
         return $this->belongsTo(User::class,'created_by','id')->withDefault();
     }
 
-    public function respondedBy(): BelongsTo
+    public function updatedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class,'responded_by','id')->withDefault();
+        return $this->belongsTo(User::class,'updated_by','id')->withDefault();
     }
 
     protected static function booted(): void
@@ -36,7 +36,7 @@ class Request extends Model
         });
 
         static::updating(function (Model $model) {
-            // $model->updated_by = auth()->user()->id;
+            $model->updated_by = auth()->user()->id;
         });
     }
 }

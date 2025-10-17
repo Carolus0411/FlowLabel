@@ -53,10 +53,12 @@ new class extends Component {
             ['key' => 'act', 'label' => '#', 'disableLink' => true, 'sortable' => false],
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'code', 'label' => 'Code', 'class' => 'truncate'],
-            ['key' => 'createdBy.name', 'label' => 'Created By'],
+            ['key' => 'requestable.code', 'label' => 'Ref ID', 'class' => 'truncate'],
+            ['key' => 'requestable_type', 'label' => 'Ref Type', 'class' => 'truncate'],
             ['key' => 'description', 'label' => 'Description', 'class' => 'max-w-[300px] truncate'],
-            ['key' => 'respondedBy.name', 'label' => 'Responded By'],
             ['key' => 'response', 'label' => 'Response', 'class' => 'max-w-[300px] truncate'],
+            ['key' => 'createdBy.name', 'label' => 'Created By'],
+            ['key' => 'updatedBy.name', 'label' => 'Updated By'],
             ['key' => 'created_at', 'label' => 'Created At', 'class' => 'truncate', 'format' => ['date', 'd-m-y, H:i']],
             ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'truncate', 'format' => ['date', 'd-m-y, H:i']],
         ];
@@ -66,7 +68,7 @@ new class extends Component {
     {
         return Request::query()
             ->whereDateBetween('DATE(created_at)', $this->date1, $this->date2)
-            ->with(['createdBy','respondedBy'])
+            ->with(['requestable','createdBy','updatedBy'])
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
             ->filterWhere('type', $this->type)
@@ -138,7 +140,7 @@ new class extends Component {
                 'response' => $request->response,
                 'status' => $request->status,
                 'created_by' => $request->created_by,
-                'responded_by' => $request->responded_by,
+                'updated_by' => $request->updated_by,
                 'created_at' => $request->created_at,
                 'updated_at' => $request->updated_at,
             ]);
@@ -183,6 +185,9 @@ new class extends Component {
             @endscope
             @scope('cell_status', $request)
             <x-request-badge :status="$request->status" />
+            @endscope
+            @scope('cell_requestable_type', $request)
+            {{ class_basename($request->requestable_type) }}
             @endscope
         </x-table>
     </x-card>

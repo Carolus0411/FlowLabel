@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Attributes\Scope;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use App\Traits\Filterable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class CashOut extends Model
 {
@@ -15,6 +16,11 @@ class CashOut extends Model
 
     protected $table = 'cash_out';
     protected $guarded = [];
+
+    public function requests(): MorphMany
+    {
+        return $this->morphMany(Request::class, 'requestable');
+    }
 
     public function cashAccount(): BelongsTo
     {

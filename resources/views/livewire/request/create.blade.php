@@ -15,6 +15,7 @@ new class extends Component {
     public $description = '';
     public $requestable_id = '';
     public $requestable_type = '';
+    public $response = '';
 
     public $open = true;
     public $closeConfirm = false;
@@ -41,8 +42,6 @@ new class extends Component {
 
     public function save($close = false): void
     {
-        $this->closeConfirm = false;
-
         $data = $this->validate([
             'type' => 'required',
             'description' => 'required',
@@ -53,25 +52,41 @@ new class extends Component {
         $code = Code::auto('REQ');
         $data['code'] = $code;
 
-        Request::create($data);
+        $request = Request::create($data);
 
-        // if ($close) {
-        //     $this->close();
-        // }
+        if ($close == 'approve') {
+            $this->approve($request);
+        }
+
+        if ($close == 'reject') {
+            $this->reject($request);
+        }
 
         $this->success('Request successfully updated.', redirectTo: route('request.index'));
     }
+
+    public function approve($request): void
+    {
+        Gate::authorize('close request');
+        \App\Jobs\RequestApprove::dispatchSync($request);
+        $this->success('Request successfully updated.');
+        $this->closeConfirm = false;
+    }
+
+    public function reject($request): void
+    {
+        Gate::authorize('close request');
+        $request->update([
+            'status' => 'rejected',
+            'response' => $this->response,
+        ]);
+
+        $this->success('Request successfully updated.');
+        $this->closeConfirm = false;
+    }
 }; ?>
 
-<div
-    x-data="{
-        init : function() {
-            setTimeout(function () {
-                mask()
-            }, 100);
-        }
-    }"
->
+<div>
     <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0 pt-3">
         <x-header separator>
             <x-slot:title>
@@ -103,14 +118,17 @@ new class extends Component {
         </x-card>
     </div>
 
-    <x-modal wire:model="closeConfirm" title="Closing Confirmation" persistent>
-        <div class="flex pb-2">
-            Are you sure you want to close this?
+    <x-modal wire:model="closeConfirm" title="Approval Confirmation" persistent>
+        <div class="space-y-3">
+            <p>Are you sure you want to process this request?</p>
+            <x-textarea rows="4" label="Response notes" wire:model="response" />
         </div>
         <x-slot:actions>
             <div class="flex items-center gap-4">
-                <x-button label="Cancel" icon="o-x-mark" @click="$wire.closeConfirm = false" class="" />
-                <x-button label="Yes, I am sure" icon="o-check" wire:click="save(true)" spinner="save(true)" class="" />
+                <x-button label="Cancel" icon="o-arrow-uturn-left" @click="$wire.closeConfirm = false" class="" />
+                <x-button label="Reject" icon="o-x-mark" wire:click="save('reject')" spinner="save('reject')" class="btn-error" />
+                <x-button label="Approve" icon="o-check" wire:click="save('approve')" spinner="save('approve')" class="btn-success" />
+
             </div>
         </x-slot:actions>
     </x-modal>
