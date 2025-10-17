@@ -69,6 +69,10 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/cash-out/{cashOut}/edit', 'cash-out.edit')->name('cash-out.edit');
     Volt::route('/cash-out/import', 'cash-out.import')->name('cash-out.import');
 
+    Volt::route('/request', 'request.index')->name('request.index');
+    Volt::route('/request/create', 'request.create')->name('request.create');
+    Volt::route('/request/{request}/edit', 'request.edit')->name('request.edit');
+
     Volt::route('/coa', 'coa.index')->name('coa.index');
     Volt::route('/coa/create', 'coa.create')->name('coa.create');
     Volt::route('/coa/{coa}/edit', 'coa.edit')->name('coa.edit');

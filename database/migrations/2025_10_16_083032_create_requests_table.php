@@ -13,6 +13,15 @@ return new class extends Migration
     {
         Schema::create('requests', function (Blueprint $table) {
             $table->id();
+            $table->string('code')->unique();
+            $table->string('type')->index();
+            $table->string('requestable_id')->index();
+            $table->string('requestable_type')->index();
+            $table->text('description')->nullable();
+            $table->text('response')->nullable();
+            $table->enum('status', ['open','approved','rejected'])->index()->default('open');
+            $table->foreignId('created_by')->index()->default(0);
+            $table->foreignId('responded_by')->index()->default(0);
             $table->timestamps();
         });
     }

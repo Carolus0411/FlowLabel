@@ -85,6 +85,7 @@
             <x-menu activate-by-route class="text-[13px] font-light">
 
                 <x-menu-item title="Home" icon="o-sparkles" link="{{ route('dashboard') }}" />
+                <x-menu-item title="Request" icon="o-inbox-arrow-down" link="{{ route('request.index') }}" />
 
                 <x-menu-sub title="Sales" icon="o-shopping-cart">
                     <x-menu-item title="Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales-invoice')" />
@@ -92,7 +93,6 @@
                 </x-menu-sub>
 
                 <x-menu-sub title="Cash And Bank" icon="o-banknotes">
-                    {{-- <x-menu-item title="Cash Book" link="{{ route('cash-book.index') }}" : hidden="auth()->user()->cannot('view cash-book')" /> --}}
                     <x-menu-item title="Cash In" link="{{ route('cash-in.index') }}" :hidden="auth()->user()->cannot('view cash-in')" />
                     <x-menu-item title="Cash Out" link="{{ route('cash-out.index') }}" :hidden="auth()->user()->cannot('view cash-out')" />
                 </x-menu-sub>
