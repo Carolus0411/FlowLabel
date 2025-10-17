@@ -5,7 +5,7 @@ namespace App\Enums;
 enum RequestType: string
 {
     case void = 'void';
-    // case delete = 'delete';
+    case delete = 'delete';
 
     public function color(): string
     {

@@ -47,6 +47,25 @@ class RequestApprove implements ShouldQueue
                     \App\Jobs\Journal::dispatchSync($this->request->requestable);
                 }
             }
+
+            if ($this->request->type == 'delete')
+            {
+                if ($this->request->requestable_type == 'App\Models\CashIn') {;
+                    \App\Jobs\CashInDelete::dispatchSync($this->request->requestable);
+                }
+                if ($this->request->requestable_type == 'App\Models\CashOut') {;
+                    \App\Jobs\CashOutDelete::dispatchSync($this->request->requestable);
+                }
+                if ($this->request->requestable_type == 'App\Models\SalesInvoice') {;
+                    \App\Jobs\SalesInvoiceDelete::dispatchSync($this->request->requestable);
+                }
+                if ($this->request->requestable_type == 'App\Models\SalesSettlement') {;
+                    \App\Jobs\SalesSettlementDelete::dispatchSync($this->request->requestable);
+                }
+                if ($this->request->requestable_type == 'App\Models\Journal') {;
+                    \App\Jobs\JournalDelete::dispatchSync($this->request->requestable);
+                }
+            }
         });
     }
 }

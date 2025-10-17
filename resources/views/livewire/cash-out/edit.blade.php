@@ -92,8 +92,7 @@ new class extends Component {
     public function delete(CashOut $cashOut): void
     {
         Gate::authorize('delete cash-out');
-        $cashOut->details()->delete();
-        $cashOut->delete();
+        \App\Jobs\CashOutDelete::dispatchSync($this->cashOut);
         $this->success('Cash successfully deleted.', redirectTo: route('cash-out.index'));
     }
 
@@ -101,14 +100,14 @@ new class extends Component {
     {
         Gate::authorize('close cash-out');
         $this->closeConfirm = false;
-        \App\Events\CashOutClosed::dispatch($this->cashOut);
+        \App\Jobs\CashOutApprove::dispatchSync($this->cashOut);
 
     }
 
     public function void(CashOut $cashOut): void
     {
         Gate::authorize('void cash-out');
-        \App\Events\CashOutVoided::dispatch($this->cashOut);
+        \App\Jobs\CashOutVoid::dispatchSync($this->cashOut);
         $this->success('Cash successfully voided.', redirectTo: route('cash-out.index'));
     }
 }; ?>

@@ -53,6 +53,7 @@ new class extends Component {
             ['key' => 'act', 'label' => '#', 'disableLink' => true, 'sortable' => false],
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'code', 'label' => 'Code', 'class' => 'truncate'],
+            ['key' => 'type', 'label' => 'Type', 'class' => 'truncate'],
             ['key' => 'requestable.code', 'label' => 'Ref ID', 'class' => 'truncate'],
             ['key' => 'requestable_type', 'label' => 'Ref Type', 'class' => 'truncate'],
             ['key' => 'description', 'label' => 'Description', 'class' => 'max-w-[300px] truncate'],
