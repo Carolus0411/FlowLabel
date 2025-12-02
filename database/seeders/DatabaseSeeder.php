@@ -33,5 +33,11 @@ class DatabaseSeeder extends Seeder
         $this->call(BankSeeder::class);
         $this->call(BankAccountSeeder::class);
         $this->call(CashAccountSeeder::class);
+        $this->call(SalesInvoiceSeeder::class);
+        $this->call(BankInPermissionSeeder::class);
+        $this->call(BankOutPermissionSeeder::class);
+        $this->call(SupplierPermissionSeeder::class);
+        $this->call(SupplierSeeder::class);
+        $this->call(PurchasePermissionSeeder::class);
     }
 }

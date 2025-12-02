@@ -28,4 +28,9 @@ class SalesSettlementSource extends Model
     {
         return $this->morphTo(null, null, null, 'code');
     }
+
+    public function salesSettlement(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\SalesSettlement::class, 'sales_settlement_code', 'code')->withDefault();
+    }
 }

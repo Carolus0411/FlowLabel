@@ -7,6 +7,8 @@ use Illuminate\View\View;
 use App\Helpers\Cast;
 use App\Models\Journal;
 use App\Models\CashIn;
+use App\Models\BankIn;
+use App\Models\BankOut;
 
 class PrintController extends Controller
 {
@@ -43,6 +45,24 @@ class PrintController extends Controller
 
         return view('print.cash-in', [
             'cashIn' => $cashIn,
+        ]);
+    }
+
+    public function bankIn(BankIn $bankIn)
+    {
+        $bankIn->load(['details','details.coa']);
+
+        return view('print.bank-in', [
+            'bankIn' => $bankIn,
+        ]);
+    }
+
+    public function bankOut(BankOut $bankOut)
+    {
+        $bankOut->load(['details','details.coa']);
+
+        return view('print.bank-out', [
+            'bankOut' => $bankOut,
         ]);
     }
 }

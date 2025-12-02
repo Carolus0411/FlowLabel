@@ -22,6 +22,11 @@ class CashOut extends Model
         return $this->morphMany(Request::class, 'requestable');
     }
 
+    public function purchaseSettlements(): MorphMany
+    {
+        return $this->morphMany(\App\Models\PurchaseSettlementSource::class, 'settleable', null, null, 'code');
+    }
+
     public function cashAccount(): BelongsTo
     {
         return $this->belongsTo(CashAccount::class,'cash_account_id','id')->withDefault();
@@ -30,6 +35,11 @@ class CashOut extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class,'contact_id','id')->withDefault();
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class,'supplier_id','id')->withDefault();
     }
 
     public function details(): HasMany
@@ -52,6 +62,12 @@ class CashOut extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class,'created_by','id')->withDefault();
+    }
+
+    #[Scope]
+    protected function closed(Builder $query): void
+    {
+        $query->where('status', 'close');
     }
 
     public function updatedBy(): BelongsTo

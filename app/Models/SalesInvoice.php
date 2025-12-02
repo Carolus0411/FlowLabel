@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Filterable;
+use Illuminate\Database\Query\Expression;
 
 class SalesInvoice extends Model
 {
@@ -100,18 +101,41 @@ class SalesInvoice extends Model
         static::creating(function (Model $model) {
             $model->created_by = auth()->user()->id;
             $model->updated_by = auth()->user()->id;
+
+            // Determine initial payment status if any settlement details are present
+            $payment_status = 'unpaid';
+            $balance = $model->balance_amount;
+            if ($balance instanceof Expression) {
+                $balance = $model->getOriginal('balance_amount') ?? 0;
+            }
+            if ($balance == 0) {
+                $payment_status = 'paid';
+            } else {
+                // if any settlement exists for this invoice, mark as outstanding
+                if ($model->settlementDetails()->exists()) {
+                    $payment_status = 'outstanding';
+                }
+            }
+            $model->payment_status = $payment_status;
         });
 
         static::updating(function (Model $model) {
 
             $payment_status = 'unpaid';
-            if ($model->status == 'close')
-            {
-                if (($model->balance_amount > 0) AND ($model->invoice_amount > $model->balance_amount)) {
+
+            // Paid if balance is zero
+            $balance = $model->balance_amount;
+            if ($balance instanceof Expression) {
+                $balance = $model->getOriginal('balance_amount') ?? 0;
+            }
+            if ($balance == 0) {
+                $payment_status = 'paid';
+            } else {
+                // If there are any settlements applied (partial payments), mark outstanding
+                if ($model->settlementDetails()->exists()) {
                     $payment_status = 'outstanding';
-                }
-                if ($model->balance_amount == 0) {
-                    $payment_status = 'paid';
+                } else {
+                    $payment_status = 'unpaid';
                 }
             }
 
@@ -136,5 +160,35 @@ class SalesInvoice extends Model
                 'data' => json_encode($model)
             ]);
         });
+    }
+
+    // Sales Settlement details connected to this invoice via sales_invoice_code => code
+    public function settlementDetails(): HasMany
+    {
+        return $this->hasMany(\App\Models\SalesSettlementDetail::class, 'sales_invoice_code', 'code');
+    }
+
+    public function recalcPaymentStatus(): void
+    {
+        // if balance_amount holds a DB expression (due to DB::raw update on model), refresh
+        if ($this->balance_amount instanceof Expression) {
+            $this->refresh();
+        }
+        $payment_status = 'unpaid';
+
+        if ($this->balance_amount == 0) {
+            $payment_status = 'paid';
+        } else {
+            if ($this->settlementDetails()->exists()) {
+                $payment_status = 'outstanding';
+            } else {
+                $payment_status = 'unpaid';
+            }
+        }
+
+        if ($this->payment_status !== $payment_status) {
+            // update without triggering infinite loops by directly updating the DB
+            $this->update(['payment_status' => $payment_status]);
+        }
     }
 }

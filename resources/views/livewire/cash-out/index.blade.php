@@ -51,7 +51,7 @@ new class extends Component {
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'code', 'label' => 'Code', 'class' => 'truncate'],
             ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y']],
-            ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false, 'class' => 'max-w-[300px] truncate'],
+            ['key' => 'supplier.name', 'label' => 'Supplier', 'sortable' => false, 'class' => 'max-w-[300px] truncate'],
             ['key' => 'total_amount', 'label' => 'Total Amount', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
             ['key' => 'note', 'label' => 'Note', 'class' => 'max-w-[300px] truncate'],
             ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'truncate', 'format' => ['date', 'd/m/y, H:i']],
@@ -73,7 +73,7 @@ new class extends Component {
     {
         return CashOut::stored()
             ->whereDateBetween('DATE(date)', $this->date1, $this->date2)
-            ->with(['contact'])
+            ->with(['supplier'])
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
             ->filterWhere('status', $this->status)
@@ -140,7 +140,7 @@ new class extends Component {
                 'date' => $cashOut->date,
                 'note' => $cashOut->note,
                 'cash_account_id' => $cashOut->cash_account_id,
-                'contact_id' => $cashOut->contact_id,
+                'supplier_id' => $cashOut->supplier_id,
                 'total_amount' => $cashOut->total_amount,
                 'status' => $cashOut->status,
                 'saved' => $cashOut->saved,

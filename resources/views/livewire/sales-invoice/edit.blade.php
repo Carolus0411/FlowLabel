@@ -11,6 +11,7 @@ use App\Models\Contact;
 use App\Models\Ppn;
 use App\Models\Pph;
 use App\Models\SalesInvoice;
+use App\Enums\InvoiceType;
 
 new class extends Component {
     use Toast;
@@ -54,7 +55,15 @@ new class extends Component {
     public function with(): array
     {
         $this->open = $this->salesInvoice->status == 'open';
-        return [];
+        $all = InvoiceType::toSelect();
+        $filtered = array_values(array_filter($all, fn($o) => $o['id'] !== 'AP'));
+        // Keep AP available if current invoice uses AP so user can see its value
+        if (($this->invoice_type ?? $this->salesInvoice->invoice_type ?? '') === 'AP') {
+            array_unshift($filtered, ['id' => 'AP', 'name' => 'AP']);
+        }
+        return [
+            'invoiceTypes' => $filtered,
+        ];
     }
 
     public function searchContact(string $value = ''): void
@@ -253,7 +262,7 @@ new class extends Component {
                         <x-datetime label="Due Date" wire:model="due_date" :disabled="!$open" />
                         <x-select label="Transport" wire:model.live="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" :disabled="!$open" wire:loading.attr="disabled" />
                         <x-select label="Service Type" wire:model.live="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" wire:loading.attr="disabled" />
-                        <x-select label="Invoice Type" wire:model="invoice_type" :options="\App\Enums\InvoiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" />
+                        <x-select label="Invoice Type" wire:model="invoice_type" :options="$invoiceTypes" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Customer"
                             wire:model="contact_id"

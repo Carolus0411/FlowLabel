@@ -22,6 +22,25 @@ class SalesSettlementDetail extends Model
         static::updating(function (Model $model) {
             $model->status = $model->status ?? $model->salesSettlement->status;
         });
+
+        // after creating/updating/deleting details, recalc invoice payment status
+        static::created(function (Model $model) {
+            if ($invoice = \App\Models\SalesInvoice::where('code', $model->sales_invoice_code)->first()) {
+                $invoice->recalcPaymentStatus();
+            }
+        });
+
+        static::updated(function (Model $model) {
+            if ($invoice = \App\Models\SalesInvoice::where('code', $model->sales_invoice_code)->first()) {
+                $invoice->recalcPaymentStatus();
+            }
+        });
+
+        static::deleted(function (Model $model) {
+            if ($invoice = \App\Models\SalesInvoice::where('code', $model->sales_invoice_code)->first()) {
+                $invoice->recalcPaymentStatus();
+            }
+        });
     }
 
     public function salesSettlement(): BelongsTo

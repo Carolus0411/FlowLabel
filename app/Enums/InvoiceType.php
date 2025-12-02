@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum InvoiceType: string
 {
+    case AP = 'AP';
     case CC = 'CC';
     case LC = 'LC';
     case RC = 'RC';
@@ -12,6 +13,7 @@ enum InvoiceType: string
     {
         return match($this)
         {
+            self::AP => 'badge-secondary text-white',
             self::CC => 'badge-success text-white',
             self::LC => 'badge-primary text-white',
             self::RC => 'badge-error text-white',

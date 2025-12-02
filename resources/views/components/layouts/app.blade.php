@@ -87,14 +87,24 @@
                 <x-menu-item title="Home" icon="o-sparkles" link="{{ route('dashboard') }}" />
                 <x-menu-item title="Request" icon="o-inbox-arrow-down" link="{{ route('request.index') }}" />
 
-                <x-menu-sub title="Sales" icon="o-shopping-cart">
-                    <x-menu-item title="Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales-invoice')" />
-                    <x-menu-item title="Settlement" link="{{ route('sales-settlement.index') }}" :hidden="auth()->user()->cannot('view sales-settlement')" />
+                    <x-menu-sub title="Sales" icon="o-shopping-cart">
+                    <x-menu-item title="Sales Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales-invoice')" />
+                    <x-menu-item title="Sales Settlement" link="{{ route('sales-settlement.index') }}" :hidden="auth()->user()->cannot('view sales-settlement')" />
+                        <x-menu-item title="AR Outstanding" link="{{ route('sales.ar-outstanding') }}" :hidden="auth()->user()->cannot('view sales-invoice')" />
                 </x-menu-sub>
+
+                    <x-menu-sub title="Purchase" icon="o-shopping-cart">
+                        <x-menu-item title="Purchase Invoice" link="{{ route('purchase-invoice.index') }}" :hidden="auth()->user()->cannot('view purchase-invoice')" />
+                        <x-menu-item title="Purchase Settlement" link="{{ route('purchase-settlement.index') }}" :hidden="auth()->user()->cannot('view purchase-settlement')" />
+                        <x-menu-item title="AP Outstanding" link="{{ route('purchase.ap-outstanding') }}" :hidden="auth()->user()->cannot('view purchase-invoice')" />
+                    </x-menu-sub>
 
                 <x-menu-sub title="Cash And Bank" icon="o-banknotes">
                     <x-menu-item title="Cash In" link="{{ route('cash-in.index') }}" :hidden="auth()->user()->cannot('view cash-in')" />
                     <x-menu-item title="Cash Out" link="{{ route('cash-out.index') }}" :hidden="auth()->user()->cannot('view cash-out')" />
+                    <x-menu-item title="Bank In" link="{{ route('bank-in.index') }}" :hidden="auth()->user()->cannot('view bank-in')" />
+                    <x-menu-item title="Bank Out" link="{{ route('bank-out.index') }}" :hidden="auth()->user()->cannot('view bank-out')" />
+                    <x-menu-item title="Prepaid Account" link="{{ route('prepaid-account.index') }}" :hidden="auth()->user()->cannot('view prepaid-account')" />
                 </x-menu-sub>
 
                 <x-menu-sub title="General Ledger" icon="o-clipboard-document-list">
@@ -113,6 +123,7 @@
 
                 <x-menu-sub title="Master" icon="o-circle-stack">
                     <x-menu-item title="Contact" link="{{ route('contact.index') }}" :hidden="auth()->user()->cannot('view contact')" />
+                    <x-menu-item title="Supplier" link="{{ route('supplier.index') }}" :hidden="auth()->user()->cannot('view supplier')" />
                     <x-menu-item title="PPN" link="{{ route('ppn.index') }}" :hidden="auth()->user()->cannot('view ppn')" />
                     <x-menu-item title="PPH" link="{{ route('pph.index') }}" :hidden="auth()->user()->cannot('view pph')" />
                     <x-menu-item title="Chart Of Account" link="{{ route('coa.index') }}" :hidden="auth()->user()->cannot('view coa')" />

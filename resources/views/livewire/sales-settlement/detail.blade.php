@@ -43,10 +43,15 @@ new class extends Component {
     public function searchSalesInvoice(string $value = ''): void
     {
         $selected = SalesInvoice::where('code', $this->sales_invoice_code)->get();
+
+        // Get existing invoice codes in current settlement details
+        $existingInvoiceCodes = $this->salesSettlement->details()->pluck('sales_invoice_code')->toArray();
+
         $this->salesInvoice = SalesInvoice::query()
             ->closed()
             ->where('contact_id', $this->contact_id)
             ->where('balance_amount', '>', '0')
+            ->whereNotIn('code', $existingInvoiceCodes)
             ->filterLike('code', $value)
             ->take(20)
             ->get()
@@ -113,8 +118,8 @@ new class extends Component {
         $foreign_amount = Cast::number($this->foreign_amount);
         $amount = $foreign_amount * $currency_rate;
 
-        if ($this->mode == 'add')
-        {
+            if ($this->mode == 'add')
+            {
             $detail = $this->salesSettlement->details()->create([
                 'sales_invoice_code' => $this->sales_invoice_code,
                 'currency_id' => $this->currency_id,
@@ -122,10 +127,7 @@ new class extends Component {
                 'foreign_amount' => $foreign_amount,
                 'amount' => $amount,
             ]);
-
-            $detail->salesInvoice()->update([
-                'balance_amount' => DB::raw("balance_amount - " . $foreign_amount),
-            ]);
+            // Note: balance_amount will be updated when Settlement is approved (close)
         }
 
         // if ($this->mode == 'edit')
@@ -153,9 +155,7 @@ new class extends Component {
     public function delete(string $id): void
     {
         $detail = SalesSettlementDetail::find($id);
-        $detail->salesInvoice()->update([
-            'balance_amount' => DB::raw("balance_amount + " . $detail->foreign_amount),
-        ]);
+        // Note: balance_amount restore will be handled when Settlement is deleted (if already approved)
         $detail->delete();
 
         $this->calculate();
@@ -173,8 +173,8 @@ new class extends Component {
     public function getInvoice($code): void
     {
         $invoice = SalesInvoice::where('code', $code)->first();
-        $this->invoice_total_amount = Cast::money($invoice->invoice_amount ?? 0);
-        $this->invoice_balance_amount = Cast::money($invoice->balance_amount ?? 0);
+        $this->invoice_total_amount = Cast::number($invoice->invoice_amount ?? 0);
+        $this->invoice_balance_amount = Cast::number($invoice->balance_amount ?? 0);
         if (empty($this->foreign_amount)) {
             $this->foreign_amount = $this->invoice_balance_amount;
         }

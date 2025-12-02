@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Gate;
 use Livewire\Volt\Component;
 use Livewire\Attributes\On;
 use Mary\Traits\Toast;
-use App\Traits\ContactChoice;
+use App\Traits\SupplierChoice;
 use App\Traits\CashAccountChoice;
 use App\Helpers\Cast;
 use App\Helpers\Code;
@@ -12,7 +12,7 @@ use App\Models\CashAccount;
 use App\Models\CashOut;
 
 new class extends Component {
-    use Toast, ContactChoice, CashAccountChoice;
+    use Toast, SupplierChoice, CashAccountChoice;
 
     public CashOut $cashOut;
 
@@ -20,7 +20,7 @@ new class extends Component {
     public $date = '';
     public $note = '';
     public $cash_account_id = '';
-    public $contact_id = '';
+    public $supplier_id = '';
     public $status = '';
     public $total_amount = 0;
 
@@ -38,7 +38,7 @@ new class extends Component {
     {
         $this->open = $this->cashOut->status == 'open';
         $this->cash_account_id = $this->cash_account_id ?? '';
-        $this->contact_id = $this->contact_id ?? '';
+        $this->supplier_id = $this->supplier_id ?? '';
 
         return [];
     }
@@ -52,7 +52,7 @@ new class extends Component {
             'date' => 'required',
             'note' => 'nullable',
             'cash_account_id' => 'required',
-            'contact_id' => 'required',
+            'supplier_id' => 'required',
             'details' => new \App\Rules\CashOutDetailCheck($this->cashOut),
         ]);
 
@@ -164,10 +164,10 @@ new class extends Component {
                             :disabled="!$open"
                         />
                         <x-choices
-                            label="Contact"
-                            wire:model="contact_id"
-                            :options="$contactChoice"
-                            search-function="searchContact"
+                            label="Supplier"
+                            wire:model="supplier_id"
+                            :options="$supplierChoice"
+                            search-function="searchSupplier"
                             option-label="name"
                             single
                             searchable

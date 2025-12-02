@@ -29,6 +29,11 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/contact/{contact}/edit', 'contact.edit')->name('contact.edit');
     Volt::route('/contact/import', 'contact.import')->name('contact.import');
 
+    Volt::route('/supplier', 'supplier.index')->name('supplier.index');
+    Volt::route('/supplier/create', 'supplier.create')->name('supplier.create');
+    Volt::route('/supplier/{supplier}/edit', 'supplier.edit')->name('supplier.edit');
+    Volt::route('/supplier/import', 'supplier.import')->name('supplier.import');
+
     Volt::route('/currency', 'currency.index')->name('currency.index');
     Volt::route('/currency/create', 'currency.create')->name('currency.create');
     Volt::route('/currency/{currency}/edit', 'currency.edit')->name('currency.edit');
@@ -43,6 +48,46 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/bank-name/create', 'bank.create')->name('bank.create');
     Volt::route('/bank-name/{bank}/edit', 'bank.edit')->name('bank.edit');
     Volt::route('/bank-name/import', 'bank.import')->name('bank.import');
+
+    // Supplier template download route (not a Volt component, just a simple route)
+    Route::get('/supplier/template', function () {
+        $writer = Spatie\SimpleExcel\SimpleExcelWriter::streamDownload('Supplier Template.xlsx');
+        // header row for template
+        $writer->addRow([
+            'code' => 'CODE',
+            'name' => 'NAME',
+            'contact_name' => 'CONTACT NAME',
+            'address_1' => 'ADDRESS 1',
+            'address_2' => 'ADDRESS 2',
+            'telephone' => 'TELEPHONE',
+            'mobile_phone' => 'MOBILE PHONE',
+            'email' => 'EMAIL',
+            'npwp' => 'NO NPWP',
+            'information' => 'INFORMATION',
+            'term_of_payment' => 'TERM OF PAYMENT',
+            'is_active' => 'IS ACTIVE',
+        ]);
+
+        // sample data row to guide upload format
+        $writer->addRow([
+            'code' => 'S001',
+            'name' => 'Supplier One',
+            'contact_name' => 'John Doe',
+            'address_1' => 'Jl. Example No. 123',
+            'address_2' => 'Kel. Sample',
+            'telephone' => '021-555-1234',
+            'mobile_phone' => '081234567890',
+            'email' => 'supplier@example.com',
+            'npwp' => '12.345.678.9-012.345',
+            'information' => 'Sample supplier for import template',
+            'term_of_payment' => '30',
+            'is_active' => 1,
+        ]);
+
+        return response()->streamDownload(function() use ($writer){
+            $writer->close();
+        }, 'Supplier Template.xlsx');
+    })->name('supplier.template');
 
     Volt::route('/bank-account', 'bank-account.index')->name('bank-account.index');
     Volt::route('/bank-account/create', 'bank-account.create')->name('bank-account.create');
@@ -69,6 +114,18 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/cash-out/{cashOut}/edit', 'cash-out.edit')->name('cash-out.edit');
     Volt::route('/cash-out/import', 'cash-out.import')->name('cash-out.import');
 
+    Volt::route('/bank-in', 'bank-in.index')->name('bank-in.index');
+    Volt::route('/bank-in/create', 'bank-in.create')->name('bank-in.create');
+    Volt::route('/bank-in/{bankIn}/edit', 'bank-in.edit')->name('bank-in.edit');
+    Volt::route('/bank-in/import', 'bank-in.import')->name('bank-in.import');
+
+    Volt::route('/bank-out', 'bank-out.index')->name('bank-out.index');
+    Volt::route('/bank-out/create', 'bank-out.create')->name('bank-out.create');
+    Volt::route('/bank-out/{bankOut}/edit', 'bank-out.edit')->name('bank-out.edit');
+    Volt::route('/bank-out/import', 'bank-out.import')->name('bank-out.import');
+
+    Volt::route('/prepaid-account', 'prepaid-account.index')->name('prepaid-account.index');
+
     Volt::route('/request', 'request.index')->name('request.index');
     Volt::route('/request/create', 'request.create')->name('request.create');
     Volt::route('/request/{request}/edit', 'request.edit')->name('request.edit');
@@ -94,6 +151,22 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/sales-invoice/create', 'sales-invoice.create')->name('sales-invoice.create');
     Volt::route('/sales-invoice/{salesInvoice}/edit', 'sales-invoice.edit')->name('sales-invoice.edit');
     Volt::route('/sales-invoice/import', 'sales-invoice.import')->name('sales-invoice.import');
+
+    // AR Outstanding -> added as requested
+    Volt::route('/sales/ar-outstanding', 'sales.ar-outstanding')->name('sales.ar-outstanding');
+
+    // Purchase module placeholders
+    Volt::route('/purchase-invoice', 'purchase-invoice.index')->name('purchase-invoice.index');
+    Volt::route('/purchase-invoice/create', 'purchase-invoice.create')->name('purchase-invoice.create');
+    Volt::route('/purchase-invoice/{purchaseInvoice}/edit', 'purchase-invoice.edit')->name('purchase-invoice.edit');
+    Volt::route('/purchase-invoice/import', 'purchase-invoice.import')->name('purchase-invoice.import');
+
+    Volt::route('/purchase-settlement', 'purchase-settlement.index')->name('purchase-settlement.index');
+    Volt::route('/purchase-settlement/create', 'purchase-settlement.create')->name('purchase-settlement.create');
+    Volt::route('/purchase-settlement/{purchaseSettlement}/edit', 'purchase-settlement.edit')->name('purchase-settlement.edit');
+    Volt::route('/purchase-settlement/import', 'purchase-settlement.import')->name('purchase-settlement.import');
+
+    Volt::route('/purchase/ap-outstanding', 'purchase.ap-outstanding')->name('purchase.ap-outstanding');
 
     Volt::route('/sales-settlement', 'sales-settlement.index')->name('sales-settlement.index');
     Volt::route('/sales-settlement/create', 'sales-settlement.create')->name('sales-settlement.create');
@@ -139,6 +212,8 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     // print
     Route::get('/print/cash-in/{cashIn}', [PrintController::class, 'cashIn'])->name('print.cash-in');
     Route::get('/print/journal/{resource}/{id}', [PrintController::class, 'journal'])->name('print.journal');
+    Route::get('/print/bank-in/{bankIn}', [PrintController::class, 'bankIn'])->name('print.bank-in');
+    Route::get('/print/bank-out/{bankOut}', [PrintController::class, 'bankOut'])->name('print.bank-out');
 
     Route::get('/logout', function () {
         auth()->logout();

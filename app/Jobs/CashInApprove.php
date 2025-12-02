@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Helpers\Code;
 use App\Models\CashIn;
 use App\Models\Journal;
+use App\Models\PrepaidAccount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -51,6 +52,26 @@ class CashInApprove implements ShouldQueue
                 'has_prepaid' => $has_prepaid,
                 'status' => 'close'
             ]);
+
+            // Create Prepaid Account entries for prepaid COA codes
+            $prepaidCoaCodes = PrepaidAccount::getPrepaidCoaCodes();
+            foreach ($this->cashIn->details as $detail) {
+                if (in_array($detail->coa_code, $prepaidCoaCodes)) {
+                    $prepaidCode = Code::auto('PA', $this->cashIn->date);
+                    PrepaidAccount::create([
+                        'code' => $prepaidCode,
+                        'date' => $this->cashIn->date,
+                        'coa_code' => $detail->coa_code,
+                        'source_type' => 'CashIn',
+                        'source_code' => $this->cashIn->code,
+                        'contact_id' => $this->cashIn->contact_id,
+                        'supplier_id' => null,
+                        'debit' => 0,
+                        'credit' => $detail->amount,
+                        'note' => $this->cashIn->note,
+                    ]);
+                }
+            }
 
             // Journal header
             $journal = Journal::create([

@@ -2,6 +2,12 @@ export default function mask() {
     let el = document.querySelectorAll(".money");
 
     for (let i = 0; i < el.length; i++) {
+        // Skip if already initialized to prevent duplicate event listeners
+        if (el[i].dataset.maskInitialized) {
+            continue;
+        }
+        el[i].dataset.maskInitialized = "true";
+
         maskInit(el[i]);
         el[i].addEventListener("focus", clearMask);
         el[i].addEventListener("input", clearMask);
@@ -13,7 +19,9 @@ function maskInit(el) {
     let value = "";
     if (el.value) {
         value = el.value;
-        value = parseFloat(value.replace(/,/g, ""));
+        // Remove existing formatting first (commas)
+        value = value.replace(/,/g, "");
+        value = parseFloat(value);
         if (!isNaN(value)) {
             const formattedValue = new Intl.NumberFormat("en-US").format(value);
             el.value = formattedValue;

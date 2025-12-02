@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Volt\Component;
 use Livewire\Attributes\On;
@@ -9,6 +10,9 @@ use App\Helpers\Cast;
 use App\Helpers\Code;
 use App\Models\Contact;
 use App\Models\SalesSettlement;
+use App\Models\PrepaidAccount;
+use App\Models\Journal;
+use App\Models\JournalDetail;
 
 new class extends Component {
     use Toast, ContactChoice;
@@ -96,19 +100,17 @@ new class extends Component {
     {
         Gate::authorize('delete sales-settlement');
 
-        if ($salesSettlement->sources()->count() > 0) {
-            foreach ($salesSettlement->sources as $source) {
-                $source->settleable()->update([
-                    'used_receivable' => '0'
-                ]);
-            }
-        }
-
-        if ($salesSettlement->details()->count() > 0) {
+        // Only restore balance if settlement was already approved (status = close)
+        if ($salesSettlement->status == 'close' && $salesSettlement->details()->count() > 0) {
             foreach ($salesSettlement->details as $detail) {
-                $detail->salesInvoice()->update([
-                    'balance_amount' => DB::raw("balance_amount + " . $detail->foreign_amount),
-                ]);
+                $invoice = \App\Models\SalesInvoice::where('code', $detail->sales_invoice_code)->first();
+                if ($invoice) {
+                    $invoice->update([
+                        'balance_amount' => DB::raw("balance_amount + " . $detail->foreign_amount),
+                    ]);
+                    $invoice->refresh();
+                    $invoice->recalcPaymentStatus();
+                }
             }
         }
 
@@ -141,6 +143,75 @@ new class extends Component {
 
     public function close(): void
     {
+        // Deduct balance_amount from each invoice when Settlement is approved
+        foreach ($this->salesSettlement->details as $detail) {
+            $invoice = \App\Models\SalesInvoice::where('code', $detail->sales_invoice_code)->first();
+            if ($invoice) {
+                $invoice->update([
+                    'balance_amount' => DB::raw("balance_amount - " . $detail->foreign_amount),
+                ]);
+                $invoice->refresh();
+                $invoice->recalcPaymentStatus();
+            }
+        }
+
+        // Process prepaid sources - create journal entry and record debit in PrepaidAccount
+        $accountReceivable = settings('account_receivable_code');
+        foreach ($this->salesSettlement->sources as $source) {
+            if ($source->payment_method == 'prepaid' && $source->settleable_type == 'App\\Models\\PrepaidAccount') {
+                $prepaid = PrepaidAccount::where('code', $source->settleable_id)->first();
+                if ($prepaid) {
+                    // Create Journal entry: Debit Prepaid COA, Credit Trade Receivable
+                    $journalCode = Code::auto('JV', $this->salesSettlement->date);
+                    $journal = Journal::create([
+                        'code' => $journalCode,
+                        'date' => $this->salesSettlement->date,
+                        'type' => 'prepaid-settlement',
+                        'ref_name' => 'SalesSettlement',
+                        'ref_id' => $this->salesSettlement->code,
+                        'note' => 'Prepaid Settlement: ' . $this->salesSettlement->code,
+                        'status' => 'close',
+                        'contact_id' => $this->salesSettlement->contact_id,
+                        'debit_total' => $source->amount,
+                        'credit_total' => $source->amount,
+                        'saved' => 1,
+                    ]);
+
+                    // Debit: Prepaid Account (Customer Down Payment / Refundable Cust.Deposit)
+                    $journal->details()->create([
+                        'date' => $this->salesSettlement->date,
+                        'coa_code' => $prepaid->coa_code,
+                        'dc' => 'D',
+                        'debit' => $source->amount,
+                        'credit' => 0,
+                    ]);
+
+                    // Credit: Trade Receivable
+                    $journal->details()->create([
+                        'date' => $this->salesSettlement->date,
+                        'coa_code' => $accountReceivable,
+                        'dc' => 'C',
+                        'debit' => 0,
+                        'credit' => $source->amount,
+                    ]);
+
+                    // Record debit in PrepaidAccount table
+                    PrepaidAccount::create([
+                        'code' => Code::auto('PA', $this->salesSettlement->date),
+                        'date' => $this->salesSettlement->date,
+                        'coa_code' => $prepaid->coa_code,
+                        'source_type' => get_class($this->salesSettlement),
+                        'source_code' => $this->salesSettlement->code,
+                        'contact_id' => $this->salesSettlement->contact_id,
+                        'supplier_id' => null,
+                        'debit' => $source->amount,
+                        'credit' => 0,
+                        'note' => 'Settlement: ' . $this->salesSettlement->code,
+                    ]);
+                }
+            }
+        }
+
         $this->salesSettlement->update([
             'status' => 'close'
         ]);
@@ -152,12 +223,29 @@ new class extends Component {
 
 <div
     x-data="{
-        init : function() {
+        hasUnsavedSources: @js($salesSettlement->saved == '0' && $salesSettlement->sources()->count() > 0),
+        init: function() {
             setTimeout(function () {
                 mask()
             }, 100);
+
+            // Add beforeunload warning if there are unsaved sources
+            if (this.hasUnsavedSources) {
+                window.addEventListener('beforeunload', this.handleBeforeUnload);
+            }
+        },
+        handleBeforeUnload: function(e) {
+            if ($wire.salesSettlement.saved == '0') {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Sources added will be locked and cannot be used in other settlements. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        },
+        destroy: function() {
+            window.removeEventListener('beforeunload', this.handleBeforeUnload);
         }
     }"
+    @source-added.window="hasUnsavedSources = true; window.addEventListener('beforeunload', handleBeforeUnload)"
 >
     <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0 pt-3">
         <x-header separator>
@@ -169,11 +257,14 @@ new class extends Component {
             </x-slot:title>
             <x-slot:actions>
                 <x-button label="Back" link="{{ route('sales-settlement.index') }}" icon="o-arrow-uturn-left" class="btn-soft" responsive />
+                @if ($salesSettlement->status == 'close')
+                <x-button label="Journal" icon="o-document-text" class="btn-accent" onclick="popupWindow('{{ route('print.journal', ['SalesSettlement', base64_encode($salesSettlement->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" responsive />
+                @endif
                 @if ($validityStatus AND $salesSettlement->status == 'open')
-                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" responsive />
+                <x-button label="Approve" icon="o-check" @click="$wire.closeConfirm=true" class="btn-success" :disabled="($date == '')" responsive />
                 @endif
                 @if ($open)
-                <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" responsive />
+                <x-button label="Save" icon="o-paper-airplane" wire:click="save" spinner="save" class="btn-primary" :disabled="($date == '')" responsive />
                 @endif
             </x-slot:actions>
         </x-header>
@@ -183,6 +274,9 @@ new class extends Component {
         <x-card>
             <x-form wire:submit="save">
                 <div class="space-y-4">
+                        @if (empty($date) && $open)
+                        <div class="text-sm text-error">Date is required.</div>
+                        @endif
                     <div class="space-y-4 lg:space-y-0 lg:grid grid-cols-3 gap-4">
                         <x-input label="Code" wire:model="code" readonly class="bg-base-200" :disabled="!$open" />
                         <x-datetime label="Date" wire:model="date" :disabled="!$open" />
