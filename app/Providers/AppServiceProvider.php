@@ -39,7 +39,17 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Gate::before(function ($user, $ability) {
-            return true;
+            // Grant full access to Super Admin role (Spatie Permission)
+            if ($user->hasRole('Super Admin')) {
+                return true;
+            }
+            
+            // Grant full access to legacy admin role (column-based)
+            if (isset($user->role) && $user->role === 'admin') {
+                return true;
+            }
+            
+            return null;
         });
 
         // if( ! app()->runningInConsole()) {
