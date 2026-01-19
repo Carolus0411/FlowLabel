@@ -84,7 +84,7 @@ new class extends Component {
 
     @if($batchId)
         <x-card title="Import Queued" class="bg-blue-50 border-blue-200">
-             <div class="p-4">
+             <div class="p-4 dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-gray-700">
                 <p class="text-blue-800 font-semibold text-lg mb-2">Import has been started in the background.</p>
                 <p class="mb-4">You can leave this page or upload another file. The system will process the PDF in the background.</p>
 

@@ -247,7 +247,7 @@ new class extends Component {
         $this->date2 = date('Y-m-t');
 
         $this->success('Filters cleared.');
-        $this->reset(['code','batch_no','status','print_status']);
+        $this->reset(['code','status','print_status']);
         $this->resetPage();
         $this->updateFilterCount();
     }
@@ -542,7 +542,7 @@ new class extends Component {
         </div>
     @else
         {{-- LIST VIEW (EXISTING) --}}
-        <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
+        <x-card wire:loading.class="bg-slate-200/50 text-slate-400 dark:bg-gray-800/50 dark:text-gray-400" class="overflow-x-auto">
             @if(!empty($batch_no))
                 <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -555,7 +555,7 @@ new class extends Component {
                         label="Back to All Batches"
                         wire:click="backToAllBatches"
                         icon="o-arrow-left"
-                        class="btn-xs btn-ghost"
+                        class="btn-xs btn-primary"
                     />
                 </div>
             @endif
@@ -679,7 +679,7 @@ new class extends Component {
                         <x-icon name="o-arrow-down-tray" class="w-3 h-3" />
                         Download
                     </a>
-                    
+
                     {{-- Always show Print button --}}
                     <button
                         onclick="printLabel({{ $orderLabel->id }}, '{{ \Illuminate\Support\Facades\Storage::url($orderLabel->file_path) }}')"
