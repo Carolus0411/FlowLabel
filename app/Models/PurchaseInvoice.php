@@ -39,6 +39,16 @@ class PurchaseInvoice extends Model
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id')->withDefault();
     }
 
+    public function purchaseReceival(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseReceival::class, 'purchase_receival_id', 'id')->withDefault();
+    }
+
+    public function pph(): BelongsTo
+    {
+        return $this->belongsTo(Pph::class, 'pph_id', 'id')->withDefault();
+    }
+
     // Purchase Settlement details connected to this invoice via purchase_invoice_code => code
     public function settlementDetails(): HasMany
     {

@@ -13,31 +13,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
-
-        $this->call(UserSeeder::class);
-        $this->call(SettingSeeder::class);
-        $this->call(PermissionSeeder::class);
-        $this->call(PpnSeeder::class);
-        $this->call(PphSeeder::class);
-        $this->call(ContactSeeder::class);
-        $this->call(CurrencySeeder::class);
-        $this->call(UomSeeder::class);
-        $this->call(CoaSeeder::class);
-        $this->call(ServiceChargeSeeder::class);
-        $this->call(BankSeeder::class);
-        $this->call(BankAccountSeeder::class);
-        $this->call(CashAccountSeeder::class);
-        $this->call(SalesInvoiceSeeder::class);
-        $this->call(BankInPermissionSeeder::class);
-        $this->call(BankOutPermissionSeeder::class);
-        $this->call(SupplierPermissionSeeder::class);
-        $this->call(SupplierSeeder::class);
-        $this->call(PurchasePermissionSeeder::class);
+        $this->call([
+            UsersSeeder::class,
+            RolesSeeder::class,
+            PermissionsSeeder::class,
+            ModelHasRolesSeeder::class,
+            CompaniesSeeder::class,
+            SettingsSeeder::class,
+        ]);
     }
 }

@@ -1,86 +1,176 @@
 <x-print-layout>
 
+<style>
+    .info-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        margin-bottom: 20px;
+        font-size: 12px;
+    }
+
+    .info-left, .info-right {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .info-right {
+        text-align: right;
+    }
+
+    .info-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    .info-label {
+        min-width: 120px;
+    }
+
+    .journal-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 11px;
+    }
+
+    .journal-table th, .journal-table td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+    }
+
+    .journal-table th {
+        background-color: white;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .center {
+        text-align: center;
+    }
+
+    .right {
+        text-align: right;
+    }
+
+    .total-row {
+        font-weight: bold;
+    }
+
+    .signature-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        margin-top: 40px;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .signature-box {
+        padding: 10px;
+    }
+
+    .signature-line {
+        margin-top: 60px;
+        border-bottom: 1px dotted black;
+        display: inline-block;
+        width: 150px;
+    }
+
+    .footer {
+        margin-top: 10px;
+        font-size: 10px;
+    }
+</style>
+
 <h1 class="mb-5 text-center font-bold">
-    JOURNAL
+    JURNAL
 </h1>
 
-<table class="mb-3 w-full">
-<tr>
-    <td class="w-1/2 sm:w-2/3 align-top">
-        <table class="table">
-        <tr>
-            <td class="w-[100px]">Type</td>
-            <td>:</td>
-            <td>{{ $journal->type }}</td>
-        </tr>
-        <tr>
-            <td>Ref. ID</td>
-            <td>:</td>
-            <td>{{ $journal->ref_id }}</td>
-        </tr>
-        <tr>
-            <td>Ref. Name</td>
-            <td>:</td>
-            <td>{{ $journal->ref_name }}</td>
-        </tr>
-        <tr>
-            <td>Note</td>
-            <td>:</td>
-            <td>{{ $journal->note }}</td>
-        </tr>
-        </table>
-    </td>
-    <td class="w-1/2 sm:w-1/3 align-top">
-        <table class="table">
-        <tr>
-            <td class="w-[120px]">Trans. No.</td>
-            <td>:</td>
-            <td class="font-semibold">{{ $journal->code }}</td>
-        </tr>
-        <tr>
-            <td>Trans. Date</td>
-            <td>:</td>
-            <td>{{ \App\Helpers\Cast::date($journal->date, 'd/m/Y') }}</td>
-        </tr>
-        </table>
-    </td>
-</tr>
-</table>
+<div class="info-section">
+    <div class="info-left">
+        <div class="info-row">
+            <span class="info-label">Tipe</span>
+            <span>: {{ ucfirst($journal->type) }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">No. Reff</span>
+            <span>: {{ $journal->ref_id }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Nama Reff</span>
+            <span>: {{ $journal->supplier->name ?? $journal->contact->name ?? $journal->ref_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Keterangan</span>
+            <span>: {{ $journal->note }}</span>
+        </div>
+    </div>
+    <div class="info-right">
+        <div class="info-row" style="justify-content: flex-end;">
+            <span class="info-label">No. Transaksi</span>
+            <span>: <strong>{{ $journal->code }}</strong></span>
+        </div>
+        <div class="info-row" style="justify-content: flex-end;">
+            <span class="info-label">Tanggal Transaksi</span>
+            <span>: {{ \App\Helpers\Cast::date($journal->date, 'd-M-Y') }}</span>
+        </div>
+    </div>
+</div>
 
-<div>
-    <table class="table-print text-sm">
+<table class="journal-table">
     <thead>
-    <tr>
-        <th class="text-left">Code</th>
-        <th class="text-left">Account</th>
-        <th class="text-left">Description</th>
-        <th class="text-right lg:w-[9rem]">Debit</th>
-        <th class="text-right lg:w-[9rem]">Credit</th>
-    </tr>
+        <tr>
+            <th>Kode</th>
+            <th>Nama Perkiraan</th>
+            <th>CC</th>
+            <th>Debet</th>
+            <th>Kredit</th>
+        </tr>
     </thead>
     <tbody>
-    @forelse ($journal->details ?? [] as $detail)
-    <tr class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
-        <td>{{ $detail->coa->code ?? '' }}</td>
-        <td>{{ $detail->coa->name ?? '' }}</td>
-        <td class="">{{ $detail->description }}</td>
-        <td class="text-right">{{ \App\Helpers\Cast::money($detail->debit, 2) }}</td>
-        <td class="text-right">{{ \App\Helpers\Cast::money($detail->credit, 2) }}</td>
-    </tr>
-    @empty
-    <tr class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
-        <td colspan="5" class="text-center">No record found.</td>
-    </tr>
-    @endforelse
+        @forelse ($journal->details ?? [] as $detail)
+        <tr>
+            <td>{{ $detail->coa->code ?? '' }}</td>
+            <td>
+                {{ $detail->coa->name ?? '' }}<br>
+                <small>{{ $detail->description }}</small>
+            </td>
+            <td class="center">GEN</td>
+            <td class="right">{{ \App\Helpers\Cast::money($detail->debit, 2) }}</td>
+            <td class="right">{{ \App\Helpers\Cast::money($detail->credit, 2) }}</td>
+        </tr>
+        @empty
+        <tr>
+            <td colspan="5" class="center">No record found.</td>
+        </tr>
+        @endforelse
+        <tr class="total-row">
+            <td colspan="3" class="right">Total</td>
+            <td class="right">{{ \App\Helpers\Cast::money($journal->debit_total, 2) }}</td>
+            <td class="right">{{ \App\Helpers\Cast::money($journal->credit_total, 2) }}</td>
+        </tr>
     </tbody>
-    <tfoot>
-    <tr class="border-t border-b border-black">
-        <td colspan="3" class="text-right font-bold">Total</td>
-        <td class="text-right font-bold">{{ \App\Helpers\Cast::money($journal->debit_total) }}</td>
-        <td class="text-right font-bold">{{ \App\Helpers\Cast::money($journal->credit_total) }}</td>
-    </tr>
-    </tfoot>
-    </table>
+</table>
+
+<div class="signature-section">
+    <div class="signature-box">
+        <div><strong>Diposting Oleh</strong></div>
+        <div class="signature-line"></div>
+    </div>
+    <div class="signature-box">
+        <div><strong>Diperiksa Oleh</strong></div>
+        <div class="signature-line"></div>
+    </div>
+    <div class="signature-box">
+        <div><strong>Dibuat Oleh</strong></div>
+        <div class="signature-line"></div>
+        <div style="margin-top: 5px;">{{ $journal->createdBy->name ?? '' }}</div>
+    </div>
+</div>
+
+<div class="footer">
+    Printed by: {{ auth()->user()->name ?? ($journal->createdBy->name ?? 'System') }} | Printed at: {{ now()->format('Y-m-d H:i:s') }}
 </div>
 
 </x-print-layout>

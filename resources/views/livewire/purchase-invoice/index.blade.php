@@ -165,6 +165,7 @@ new class extends Component {
             @scope('cell_act', $invoice)
             <x-dropdown class="btn-xs btn-soft">
                 <x-menu-item title="Edit" link="{{ route('purchase-invoice.edit', $invoice->id) }}" icon="o-pencil-square" />
+                <x-menu-item title="Print" @click="window.open('{{ route('print.purchase-invoice', $invoice->id) }}', 'printWindow', 'width=1000,height=700,scrollbars=yes,resizable=yes')" icon="o-printer" />
             </x-dropdown>
             @endscope
             @scope('cell_status', $invoice)

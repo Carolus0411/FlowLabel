@@ -39,6 +39,7 @@ new class extends Component {
     public function headers(): array
     {
         return [
+            ['key' => 'act', 'label' => '#', 'disableLink' => true, 'sortable' => false],
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'code', 'label' => 'Code'],
             ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y']],
@@ -168,6 +169,12 @@ new class extends Component {
     {{-- TABLE --}}
     <x-card wire:loading.class="bg-slate-200/50 text-slate-400">
         <x-table :headers="$headers" :rows="$purchaseSettlements" :sort-by="$sortBy" with-pagination per-page="perPage" show-empty-text :link="route('purchase-settlement.edit', ['purchaseSettlement' => '[id]'])">
+            @scope('cell_act', $purchaseSettlement)
+            <x-dropdown class="btn-xs btn-soft">
+                <x-menu-item title="Edit" link="{{ route('purchase-settlement.edit', $purchaseSettlement->id) }}" icon="o-pencil-square" />
+                <x-menu-item title="Print" @click="window.open('{{ route('print.purchase-settlement', $purchaseSettlement->id) }}', 'printWindow', 'width=1000,height=700,scrollbars=yes,resizable=yes')" icon="o-printer" />
+            </x-dropdown>
+            @endscope
             @scope('cell_status', $purchaseSettlement)
             <x-status-badge :status="$purchaseSettlement->status" />
             @endscope

@@ -47,6 +47,7 @@ class CashOutCreateJournal
                 'debit_total' => $cashOut->total_amount,
                 'credit_total' => $cashOut->total_amount,
                 'contact_id' => $cashOut->contact_id,
+                'supplier_id' => $cashOut->supplier_id ?? null,
                 'ref_name' => class_basename($cashOut),
                 'ref_id' => $cashOut->code,
                 'status' => 'close',

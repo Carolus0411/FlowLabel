@@ -9,6 +9,7 @@ use App\Models\Journal;
 use App\Models\CashIn;
 use App\Models\BankIn;
 use App\Models\BankOut;
+use App\Models\OtherPayableSettlement;
 
 class PrintController extends Controller
 {
@@ -17,14 +18,14 @@ class PrintController extends Controller
         if ($resource == 'journal') {
 
             $journal = Journal::query()
-                ->with('details.coa')
+                ->with(['details' => fn($q) => $q->orderBy('debit', 'desc'), 'details.coa', 'supplier', 'contact', 'createdBy'])
                 ->where('id', intval($id))
                 ->first();
 
         } else {
 
             $journal = Journal::query()
-                ->with('details.coa')
+                ->with(['details' => fn($q) => $q->orderBy('debit', 'desc'), 'details.coa', 'supplier', 'contact', 'createdBy'])
                 ->where('ref_name', $resource)
                 ->where('ref_id', base64_decode($id))
                 ->first();
@@ -63,6 +64,15 @@ class PrintController extends Controller
 
         return view('print.bank-out', [
             'bankOut' => $bankOut,
+        ]);
+    }
+
+    public function otherPayableSettlement(OtherPayableSettlement $otherPayableSettlement)
+    {
+        $otherPayableSettlement->load(['details','details.coa']);
+
+        return view('print.other-payable-settlement', [
+            'otherPayableSettlement' => $otherPayableSettlement,
         ]);
     }
 }

@@ -29,10 +29,13 @@ new class extends Component {
             'account_receivable_code' => 'Account Receivable',
             'account_payable_code' => 'Account Payable',
             'vat_out_code' => 'VAT Out',
+            'vat_in_code' => 'VAT In',
+            'pph_code' => 'PPH 23 Payable',
             'stamp_code' => 'Stamp',
             'cash_account_code' => 'Cash Account',
             'bank_account_code' => 'Bank Account',
             'ar_prepaid_code' => 'AR Prepaid',
+            'accrued_expenses_code' => 'Accrued Expenses',
         ];
 
         foreach (Coa::get() as $coa) {

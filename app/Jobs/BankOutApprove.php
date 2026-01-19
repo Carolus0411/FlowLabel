@@ -73,6 +73,7 @@ class BankOutApprove implements ShouldQueue
                 'debit_total' => $this->bankOut->total_amount,
                 'credit_total' => $this->bankOut->total_amount,
                 'contact_id' => $this->bankOut->contact_id,
+                'supplier_id' => $this->bankOut->supplier_id,
                 'ref_name' => class_basename($this->bankOut),
                 'ref_id' => $this->bankOut->code,
                 'status' => 'close',

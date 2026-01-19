@@ -52,6 +52,7 @@ new class extends Component {
             ->where('contact_id', $this->contact_id)
             ->where('balance_amount', '>', '0')
             ->whereNotIn('code', $existingInvoiceCodes)
+            ->where('invoice_type', '!=', 'AP')  // Only show regular sales invoices, not direct ones
             ->filterLike('code', $value)
             ->take(20)
             ->get()

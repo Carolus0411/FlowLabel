@@ -27,4 +27,9 @@ class PurchaseSettlementDetail extends Model
     {
         return $this->belongsTo(PurchaseInvoice::class, 'purchase_invoice_code', 'code')->withDefault();
     }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_code', 'code')->withDefault();
+    }
 }

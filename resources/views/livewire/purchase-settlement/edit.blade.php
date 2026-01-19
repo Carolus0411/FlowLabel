@@ -174,6 +174,7 @@ new class extends Component {
                         'debit_total' => $source->amount,
                         'credit_total' => $source->amount,
                         'saved' => 1,
+                        'supplier_id' => $this->purchaseSettlement->supplier_id ?? null,
                     ]);
 
                     // Debit: Trade Payable

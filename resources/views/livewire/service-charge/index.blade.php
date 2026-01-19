@@ -38,6 +38,7 @@ new class extends Component {
             ['key' => 'name', 'label' => 'Name'],
             ['key' => 'transport', 'label' => 'Transport'],
             ['key' => 'type', 'label' => 'Type'],
+            ['key' => 'group', 'label' => 'Group'],
             ['key' => 'is_active', 'label' => 'Active', 'class' => 'lg:w-[120px]'],
             // ['key' => 'created_at', 'label' => 'Created At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
             // ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'lg:w-[160px]', 'format' => ['date', 'd-M-y, H:i']],
@@ -50,6 +51,7 @@ new class extends Component {
         ->orderBy(...array_values($this->sortBy))
         ->filterLike('name', $this->name)
         ->active($this->is_active)
+        ->with(['group'])
         ->paginate($this->perPage);
     }
 
@@ -96,15 +98,15 @@ new class extends Component {
     {
         Gate::authorize('delete service-charge');
         $servicecharge->delete();
-        $this->success('ServiceCharge has been deleted.');
+        $this->success('Items Master has been deleted.');
     }
 
     public function export()
     {
         Gate::authorize('export service-charge');
 
-        $serviceCharges = ServiceCharge::with(['coaBuying','coaSelling'])->orderBy('id','asc')->get();
-        $writer = SimpleExcelWriter::streamDownload('Service Charge.xlsx');
+        $serviceCharges = ServiceCharge::with(['coaBuying','coaSelling','group'])->orderBy('id','asc')->get();
+        $writer = SimpleExcelWriter::streamDownload('Items Master.xlsx');
         foreach ( $serviceCharges->lazy() as $serviceCharge ) {
             $writer->addRow([
                 'id' => $serviceCharge->id ?? '',
@@ -114,29 +116,30 @@ new class extends Component {
                 'type' => $serviceCharge->type ?? '',
                 'coa_buying' => $serviceCharge->coaBuying->code,
                 'coa_selling' => $serviceCharge->coaSelling->code,
+                'group' => $serviceCharge->group?->code,
                 'is_active' => $serviceCharge->is_active ?? '',
             ]);
         }
         return response()->streamDownload(function() use ($writer){
             $writer->close();
-        }, 'Service Charge.xlsx');
+        }, 'Items Master.xlsx');
     }
 }; ?>
 
 <div>
     {{-- HEADER --}}
     <div class="lg:top-[65px] lg:sticky z-10 bg-base-200 pb-0.5 pt-3">
-    <x-header title="Service Charge" separator progress-indicator>
+    <x-header title="Items Master" separator progress-indicator>
         <x-slot:actions>
             @can('export service-charge')
             <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
             @endcan
             @can('import service-charge')
-            <x-button label="Import" link="{{ route('service-charge.import') }}" icon="o-arrow-up-tray" />
+            <x-button label="Import" link="{{ route('items-master.import') }}" icon="o-arrow-up-tray" />
             @endcan
             <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
             @can('create service-charge')
-            <x-button label="Create" link="{{ route('service-charge.create') }}" icon="o-plus" class="btn-primary" />
+            <x-button label="Create" link="{{ route('items-master.create') }}" icon="o-plus" class="btn-primary" />
             @endcan
         </x-slot:actions>
     </x-header>
@@ -148,13 +151,16 @@ new class extends Component {
             @scope('cell_is_active', $serviceCharge)
             <x-active-badge :status="$serviceCharge->is_active" />
             @endscope
+            @scope('cell_group', $serviceCharge)
+            {{ $serviceCharge->group?->name }}
+            @endscope
             @scope('actions', $serviceCharge)
             <div class="flex gap-1.5">
                 @can('delete service-charge')
                 <x-button wire:click="delete({{ $serviceCharge->id }})" spinner="delete({{ $serviceCharge->id }})" wire:confirm="Are you sure you want to delete this row?" icon="o-trash" class="btn btn-sm" />
                 @endcan
                 @can('update service-charge')
-                <x-button link="{{ route('service-charge.edit', $serviceCharge->id) }}" icon="o-pencil-square" class="btn btn-sm" />
+                <x-button link="{{ route('items-master.edit', $serviceCharge->id) }}" icon="o-pencil-square" class="btn btn-sm" />
                 @endcan
             </div>
             @endscope

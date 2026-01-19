@@ -84,68 +84,16 @@
             {{-- MENU --}}
             <x-menu activate-by-route class="text-[13px] font-light">
 
-                <x-menu-item title="Home" icon="o-sparkles" link="{{ route('dashboard') }}" />
-                <x-menu-item title="Request" icon="o-inbox-arrow-down" link="{{ route('request.index') }}" />
-
-                    <x-menu-sub title="Sales" icon="o-shopping-cart">
-                    <x-menu-item title="Sales Invoice" link="{{ route('sales-invoice.index') }}" :hidden="auth()->user()->cannot('view sales-invoice')" />
-                    <x-menu-item title="Sales Settlement" link="{{ route('sales-settlement.index') }}" :hidden="auth()->user()->cannot('view sales-settlement')" />
-                        <x-menu-item title="AR Outstanding" link="{{ route('sales.ar-outstanding') }}" :hidden="auth()->user()->cannot('view sales-invoice')" />
-                </x-menu-sub>
-
-                    <x-menu-sub title="Purchase" icon="o-shopping-cart">
-                        <x-menu-item title="Purchase Invoice" link="{{ route('purchase-invoice.index') }}" :hidden="auth()->user()->cannot('view purchase-invoice')" />
-                        <x-menu-item title="Purchase Settlement" link="{{ route('purchase-settlement.index') }}" :hidden="auth()->user()->cannot('view purchase-settlement')" />
-                        <x-menu-item title="AP Outstanding" link="{{ route('purchase.ap-outstanding') }}" :hidden="auth()->user()->cannot('view purchase-invoice')" />
-                    </x-menu-sub>
-
-                <x-menu-sub title="Cash And Bank" icon="o-banknotes">
-                    <x-menu-item title="Cash In" link="{{ route('cash-in.index') }}" :hidden="auth()->user()->cannot('view cash-in')" />
-                    <x-menu-item title="Cash Out" link="{{ route('cash-out.index') }}" :hidden="auth()->user()->cannot('view cash-out')" />
-                    <x-menu-item title="Bank In" link="{{ route('bank-in.index') }}" :hidden="auth()->user()->cannot('view bank-in')" />
-                    <x-menu-item title="Bank Out" link="{{ route('bank-out.index') }}" :hidden="auth()->user()->cannot('view bank-out')" />
-                    <x-menu-item title="Prepaid Account" link="{{ route('prepaid-account.index') }}" :hidden="auth()->user()->cannot('view prepaid-account')" />
-                </x-menu-sub>
-
-                <x-menu-sub title="General Ledger" icon="o-clipboard-document-list">
-                    <x-menu-item title="Journal" link="{{ route('journal.index') }}" :hidden="auth()->user()->cannot('view journal')" />
-                    <x-menu-item title="Opening Balance" link="{{ route('opening-balance.index') }}" :hidden="auth()->user()->cannot('view opening-balance')" />
-                </x-menu-sub>
-
-                <x-menu-sub title="Report" icon="o-chart-pie">
-                    <x-menu-sub title="Financial">
-                        <x-menu-item title="General Ledger" link="{{ route('report.general-ledger') }}" :hidden="auth()->user()->cannot('view general-ledger-report')" />
-                        <x-menu-item title="Trial Balance" link="{{ route('report.trial-balance') }}" :hidden="auth()->user()->cannot('view trial-balance')" />
-                        <x-menu-item title="Balance Sheet" link="{{ route('report.balance-sheet') }}" :hidden="auth()->user()->cannot('view balance-sheet')" />
-                        <x-menu-item title="Profit Loss" link="{{ route('report.profit-loss') }}" :hidden="auth()->user()->cannot('view profit-loss')" />
-                    </x-menu-sub>
-                </x-menu-sub>
-
-                <x-menu-sub title="Master" icon="o-circle-stack">
-                    <x-menu-item title="Contact" link="{{ route('contact.index') }}" :hidden="auth()->user()->cannot('view contact')" />
-                    <x-menu-item title="Supplier" link="{{ route('supplier.index') }}" :hidden="auth()->user()->cannot('view supplier')" />
-                    <x-menu-item title="PPN" link="{{ route('ppn.index') }}" :hidden="auth()->user()->cannot('view ppn')" />
-                    <x-menu-item title="PPH" link="{{ route('pph.index') }}" :hidden="auth()->user()->cannot('view pph')" />
-                    <x-menu-item title="Chart Of Account" link="{{ route('coa.index') }}" :hidden="auth()->user()->cannot('view coa')" />
-                    <x-menu-item title="Service Charge" link="{{ route('service-charge.index') }}" :hidden="auth()->user()->cannot('view service charge')" />
-                    <x-menu-item title="Currency" link="{{ route('currency.index') }}" :hidden="auth()->user()->cannot('view currency')" />
-                    <x-menu-item title="Uom" link="{{ route('uom.index') }}" :hidden="auth()->user()->cannot('view uom')" />
-                    <x-menu-sub title="Cash And Bank">
-                        <x-menu-item title="Bank" link="{{ route('bank.index') }}" :hidden="auth()->user()->cannot('view bank')" />
-                        <x-menu-item title="Bank Account" link="{{ route('bank-account.index') }}" :hidden="auth()->user()->cannot('view bank-account')" />
-                        <x-menu-item title="Cash Account" link="{{ route('cash-account.index') }}" :hidden="auth()->user()->cannot('view cash-account')" />
-                    </x-menu-sub>
-                </x-menu-sub>
+                <x-menu-item title="Order Label" icon="o-document-text" link="{{ route('order-label.index') }}" :hidden="auth()->user()->cannot('view order-label')" />
 
                 <x-menu-sub title="Setup" icon="o-cog-6-tooth">
+                    <x-menu-item title="3PL" link="{{ route('three-pl.index') }}" :hidden="auth()->user()->cannot('view three-pl')" />
                     <x-menu-item title="Settings" link="{{ route('setting.general') }}" :hidden="auth()->user()->cannot('view general-setting')" />
-                    <x-menu-item title="Account Mapping" link="{{ route('setting.account-mapping') }}" :hidden="auth()->user()->cannot('view account-mapping')" />
-                    <x-menu-item title="Code" link="{{ route('setting.code') }}" :hidden="auth()->user()->cannot('view setting-code')" />
-                    <x-menu-item title="Draft" link="{{ route('setting.draft') }}" :hidden="auth()->user()->cannot('view draft')" />
-                    <x-menu-item title="Send Test Mail" link="{{ route('mail.test') }}" :hidden="auth()->user()->cannot('send test-mail')" />
+                    <x-menu-item title="Queue Log" link="{{ route('settings.queue-log') }}" />
                 </x-menu-sub>
 
                 <x-menu-sub title="Users" icon="o-users">
+                    <x-menu-item title="User Management" link="{{ route('user-management') }}" :hidden="!auth()->user()->hasRole('Super Admin')" />
                     <x-menu-item title="Users" link="{{ route('users.index') }}" :hidden="auth()->user()->cannot('view users')" />
                     <x-menu-item title="Roles" link="{{ route('roles.index') }}" :hidden="auth()->user()->cannot('view roles')" />
                     <x-menu-item title="Permissions" link="{{ route('permissions.index') }}" :hidden="auth()->user()->cannot('view permissions')" />

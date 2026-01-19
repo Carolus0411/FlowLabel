@@ -84,30 +84,34 @@ class CashIn extends Model
     protected static function booted(): void
     {
         static::creating(function (Model $model) {
-            $model->created_by = auth()->user()->id;
-            $model->updated_by = auth()->user()->id;
+            $model->created_by = auth()->id() ?? 0;
+            $model->updated_by = auth()->id() ?? 0;
         });
 
         static::updating(function (Model $model) {
-            $model->updated_by = auth()->user()->id;
+            $model->updated_by = auth()->id() ?? 0;
         });
 
         static::updated(function (Model $model) {
-            auth()->user()->logs()->create([
-                'resource' => class_basename($model),
-                'action' => $model->isDirty('code') ? 'create' : 'update',
-                'ref_id' => $model->code,
-                'data' => json_encode($model)
-            ]);
+            if (auth()->check()) {
+                auth()->user()->logs()->create([
+                    'resource' => class_basename($model),
+                    'action' => $model->isDirty('code') ? 'create' : 'update',
+                    'ref_id' => $model->code,
+                    'data' => json_encode($model)
+                ]);
+            }
         });
 
         static::deleted(function (Model $model) {
-            auth()->user()->logs()->create([
-                'resource' => class_basename($model),
-                'action' => 'delete',
-                'ref_id' => $model->code,
-                'data' => json_encode($model)
-            ]);
+            if (auth()->check()) {
+                auth()->user()->logs()->create([
+                    'resource' => class_basename($model),
+                    'action' => 'delete',
+                    'ref_id' => $model->code,
+                    'data' => json_encode($model)
+                ]);
+            }
         });
     }
 }

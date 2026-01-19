@@ -20,7 +20,7 @@ class PermissionSeeder extends Seeder
             $data['resource'] = strtolower($row['resource']);
             $data['name'] = strtolower($row['name']);
 
-            Permission::create($data);
+            Permission::firstOrCreate($data);
         });
     }
 }

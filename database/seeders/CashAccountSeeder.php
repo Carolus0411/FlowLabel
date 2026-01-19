@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Spatie\SimpleExcel\SimpleExcelReader;
 use Illuminate\Database\Seeder;
-use App\Models\CashAccount;
+use Illuminate\Support\Facades\DB;
 
 class CashAccountSeeder extends Seeder
 {
@@ -13,16 +12,64 @@ class CashAccountSeeder extends Seeder
      */
     public function run(): void
     {
-        $rows = SimpleExcelReader::create(__DIR__.'/data/CashAccount.xlsx')->getRows();
-        $rows->each(function(array $row) {
-
-            $data['code'] = $row['code'];
-            $data['name'] = $row['name'];
-            $data['currency_id'] = $row['currency_id'];
-            $data['coa_code'] = $row['coa_code'];
-            $data['is_active'] = $row['is_active'];
-
-            CashAccount::create($data);
-        });
+        // Disable foreign key checks to avoid errors during truncation
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
+        DB::table('cash_account')->truncate();
+        
+        DB::table('cash_account')->insert([
+            [
+  'id' => 1,
+  'code' => 'COHB',
+  'name' => 'CASH ON HAND BDR',
+  'currency_id' => 1,
+  'coa_code' => '101-003',
+  'is_active' => 1,
+  'created_at' => '2025-12-03 09:43:55',
+  'updated_at' => '2025-12-03 09:43:55',
+],
+            [
+  'id' => 2,
+  'code' => 'COHM',
+  'name' => 'CASH ON HAND MKR',
+  'currency_id' => 1,
+  'coa_code' => '101-004',
+  'is_active' => 1,
+  'created_at' => '2025-12-03 09:43:55',
+  'updated_at' => '2025-12-03 09:43:55',
+],
+            [
+  'id' => 3,
+  'code' => 'COHO',
+  'name' => 'CASH ON HAND IDR',
+  'currency_id' => 1,
+  'coa_code' => '101-001',
+  'is_active' => 1,
+  'created_at' => '2025-12-03 09:43:55',
+  'updated_at' => '2025-12-03 09:43:55',
+],
+            [
+  'id' => 4,
+  'code' => 'COHR',
+  'name' => 'CASH ON HAND RMB',
+  'currency_id' => 3,
+  'coa_code' => '101-009',
+  'is_active' => 1,
+  'created_at' => '2025-12-03 09:43:55',
+  'updated_at' => '2025-12-03 09:43:55',
+],
+            [
+  'id' => 5,
+  'code' => 'COHU',
+  'name' => 'CASH ON HAND USD',
+  'currency_id' => 2,
+  'coa_code' => '101-002',
+  'is_active' => 1,
+  'created_at' => '2025-12-03 09:43:55',
+  'updated_at' => '2025-12-03 09:43:55',
+]
+        ]);
+        
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 }

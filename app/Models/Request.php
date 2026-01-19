@@ -32,11 +32,11 @@ class Request extends Model
     protected static function booted(): void
     {
         static::creating(function (Model $model) {
-            $model->created_by = auth()->user()->id;
+            $model->created_by = auth()->id() ?? 0;
         });
 
         static::updating(function (Model $model) {
-            $model->updated_by = auth()->user()->id;
+            $model->updated_by = auth()->id() ?? 0;
         });
     }
 }

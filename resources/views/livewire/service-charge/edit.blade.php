@@ -15,6 +15,7 @@ new class extends Component {
     public $code = '';
     public $name = '';
     public $transport = '';
+    public $service_charge_group_id = '';
     public $type = '';
     public $buying_coa_id = '';
     public $selling_coa_id = '';
@@ -22,6 +23,7 @@ new class extends Component {
 
     public Collection $buyingCoaSearchable;
     public Collection $sellingCoaSearchable;
+    public Collection $serviceChargeGroups;
 
     public function mount(): void
     {
@@ -30,6 +32,7 @@ new class extends Component {
 
         $this->searchBuyingCoa();
         $this->searchSellingCoa();
+        $this->searchGroup();
     }
 
     public function searchBuyingCoa(string $value = ''): void
@@ -54,13 +57,24 @@ new class extends Component {
             ->merge($selectedOption);
     }
 
+    public function searchGroup(string $value = ''): void
+    {
+        $selected = \App\Models\ServiceChargeGroup::where('id', intval($this->service_charge_group_id))->get();
+        $this->serviceChargeGroups = \App\Models\ServiceChargeGroup::query()
+            ->filterLike('name', $value)
+            ->take(50)
+            ->get()
+            ->merge($selected);
+    }
+
     public function save(): void
     {
         $data = $this->validate([
             'code' => 'required|unique:service_charge,code,'.$this->serviceCharge->id,
             'name' => 'required',
-            'transport' => 'required',
-            'type' => 'required',
+            'transport' => 'nullable',
+            'service_charge_group_id' => 'nullable|exists:service_charge_group,id',
+            'type' => 'nullable',
             'buying_coa_id' => 'required',
             'selling_coa_id' => 'required',
             'is_active' => 'boolean',
@@ -68,14 +82,14 @@ new class extends Component {
 
         $this->serviceCharge->update($data);
 
-        $this->success('Service charge successfully updated.', redirectTo: route('service-charge.index'));
+        $this->success('Items Master successfully updated.', redirectTo: route('items-master.index'));
     }
 }; ?>
 
 <div>
-    <x-header title="Update Service Charge" separator>
+    <x-header title="Update Items Master" separator>
         <x-slot:actions>
-            <x-button label="Back" link="{{ route('service-charge.index') }}" icon="o-arrow-uturn-left" />
+            <x-button label="Back" link="{{ route('items-master.index') }}" icon="o-arrow-uturn-left" />
         </x-slot:actions>
     </x-header>
 
@@ -85,6 +99,17 @@ new class extends Component {
                 <x-input label="Code" wire:model="code" />
                 <x-input label="Name" wire:model="name" />
                 <x-select label="Transport" wire:model="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" />
+                <x-choices
+                    label="Group"
+                    wire:model="service_charge_group_id"
+                    :options="$serviceChargeGroups"
+                    search-function="searchGroup"
+                    option-label="name"
+                    single
+                    searchable
+                    clearable
+                    placeholder="-- Select --"
+                />
                 <x-select label="Type" wire:model="type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" />
                 <x-choices label="Buying Coa" wire:model="buying_coa_id" :options="$buyingCoaSearchable" search-function="searchBuyingCoa" option-label="full_name" single searchable values-as-string placeholder="-- Select --" />
                 <x-choices label="Selling Coa" wire:model="selling_coa_id" :options="$sellingCoaSearchable" search-function="searchSellingCoa" option-label="full_name" single searchable values-as-string placeholder="-- Select --" />
@@ -92,7 +117,7 @@ new class extends Component {
             </div>
         </x-card>
         <x-slot:actions>
-            <x-button label="Cancel" link="{{ route('service-charge.index') }}" />
+            <x-button label="Cancel" link="{{ route('items-master.index') }}" />
             <x-button label="Save" icon="o-paper-airplane" spinner="save" type="submit" class="btn-primary" />
         </x-slot:actions>
         {{-- <div class="lg:bottom-0 lg:sticky p-5 bg-base-300 flex justify-center items-center gap-3 border-t-2 border-t-base-300">

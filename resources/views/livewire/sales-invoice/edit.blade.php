@@ -21,8 +21,6 @@ new class extends Component {
     public $code = '';
     public $invoice_date = '';
     public $due_date = '';
-    public $transport = '';
-    public $service_type = '';
     public $invoice_type = '';
     public $note = '';
     public $contact_id = '';
@@ -110,8 +108,6 @@ new class extends Component {
             'code' => 'required',
             'invoice_date' => 'required',
             'due_date' => 'required',
-            'transport' => 'required',
-            'service_type' => 'required',
             'invoice_type' => 'required',
             'note' => 'nullable',
             'contact_id' => 'required',
@@ -160,14 +156,9 @@ new class extends Component {
             $this->calculate();
         }
 
-        if ( in_array($property, ['transport']))
+        if ( in_array($property, ['contact_id']))
         {
-            $this->dispatch('transport-changed', value: $value);
-        }
-
-        if ( in_array($property, ['service_type']))
-        {
-            $this->dispatch('service-type-changed', value: $value);
+            $this->dispatch('contact-changed', value: $value);
         }
     }
 
@@ -260,8 +251,6 @@ new class extends Component {
                         <x-input label="Code" wire:model="code" readonly class="bg-base-200" />
                         <x-datetime label="Invoice Date" wire:model="invoice_date" :disabled="!$open" />
                         <x-datetime label="Due Date" wire:model="due_date" :disabled="!$open" />
-                        <x-select label="Transport" wire:model.live="transport" :options="\App\Enums\Transport::toSelect()" placeholder="-- Select --" :disabled="!$open" wire:loading.attr="disabled" />
-                        <x-select label="Service Type" wire:model.live="service_type" :options="\App\Enums\ServiceType::toSelect()" placeholder="-- Select --" :disabled="!$open" wire:loading.attr="disabled" />
                         <x-select label="Invoice Type" wire:model="invoice_type" :options="$invoiceTypes" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Customer"
@@ -324,8 +313,7 @@ new class extends Component {
         <div class="overflow-x-auto">
             <livewire:sales-invoice.detail
                 :id="$salesInvoice->id"
-                :transport="$transport"
-                :service_type="$service_type"
+                :contact_id="$contact_id"
             />
         </div>
 

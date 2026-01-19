@@ -24,7 +24,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     {
         // It is logged in
         if (auth()->check()) {
-            return redirect()->intended('/');
+            return redirect()->route('order-label.index');
         }
 
         if (app()->environment('local')) {
@@ -54,7 +54,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 
-        $this->redirectIntended(default: route('home', absolute: false), navigate: true);
+        $this->redirectIntended(default: route('order-label.index', absolute: false), navigate: true);
     }
 
     /**

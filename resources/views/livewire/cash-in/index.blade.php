@@ -194,7 +194,7 @@ new class extends Component {
             <x-dropdown class="btn-xs btn-soft">
                 <x-menu-item title="Edit" link="{{ route('cash-in.edit', $cashIn->id) }}" icon="o-pencil-square" />
                 <x-menu-item title="Show Journal" onclick="popupWindow('{{ route('print.journal', ['CashIn', base64_encode($cashIn->code)]) }}', 'journal', '1000', '460', 'yes', 'center')" icon="o-magnifying-glass" />
-                <x-menu-item title="Print" onclick="popupWindow('{{ route('print.cash-in', $cashIn->id) }}', 'cash-in', '1000', '560', 'yes', 'center')" icon="o-printer" />
+                <x-menu-item title="Print" @click="window.open('{{ route('print.cash-in', $cashIn->id) }}', 'printWindow', 'width=1000,height=700,scrollbars=yes,resizable=yes')" icon="o-printer" />
             </x-dropdown>
             @endscope
             @scope('cell_status', $cashIn)

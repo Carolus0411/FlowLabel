@@ -249,7 +249,7 @@ new class extends Component {
                         <x-select label="Invoice Type" wire:model="invoice_type" :options="[['id' => 'AP','name' => 'AP']]" placeholder="-- Select --" :disabled="!$open" />
                         <x-choices
                             label="Supplier"
-                            wire:model="supplier_id"
+                            wire:model.live="supplier_id"
                             :options="$suppliers"
                             search-function="searchSupplier"
                             option-label="name"
@@ -306,6 +306,7 @@ new class extends Component {
                 :id="$purchaseInvoice->id"
                 :transport="$transport"
                 :service_type="$service_type"
+                :supplier_id="$supplier_id"
             />
         </div>
 

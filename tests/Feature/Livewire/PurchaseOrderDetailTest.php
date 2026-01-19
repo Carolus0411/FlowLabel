@@ -1,0 +1,37 @@
+<?php
+
+namespace Tests\Feature\Livewire;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+use App\Models\PurchaseOrder;
+use Illuminate\Support\Carbon;
+use App\Models\Supplier;
+
+class PurchaseOrderDetailTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_edit_page_shows_detail_component_and_supplier_field()
+    {
+        $supplier = Supplier::create([
+            'code' => 'SUP-001',
+            'name' => 'Supplier A',
+        ]);
+
+        $order = PurchaseOrder::create([
+            'code' => 'PO-100',
+            'order_date' => Carbon::now(),
+            'due_date' => Carbon::now()->addDays(30),
+            'top' => 30,
+            'status' => 'open',
+            'supplier_id' => $supplier->id,
+        ]);
+
+        $response = $this->get(route('purchase-order.edit', ['purchaseOrder' => $order->id]));
+        $response->assertStatus(200);
+        $response->assertSee('Items Master');
+        $response->assertSee('Supplier');
+    }
+}
+

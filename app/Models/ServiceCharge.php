@@ -18,11 +18,15 @@ class ServiceCharge extends Model
     protected static function booted(): void
     {
         static::creating(function (Model $model) {
-            $model->full_name = $model->code . ', ' . $model->name;
+            $model->load('group');
+            $groupCode = $model->group?->code ?? '';
+            $model->full_name = $model->code . ', ' . $model->name . ($groupCode ? ' [' . $groupCode . ']' : '');
         });
 
         static::updating(function (Model $model) {
-            $model->full_name = $model->code . ', ' . $model->name;
+            $model->load('group');
+            $groupCode = $model->group?->code ?? '';
+            $model->full_name = $model->code . ', ' . $model->name . ($groupCode ? ' [' . $groupCode . ']' : '');
         });
     }
 
@@ -38,13 +42,18 @@ class ServiceCharge extends Model
     #[Scope]
     protected function export(Builder $query): void
     {
-        $query->whereIn('type', ['import','']);
+        $query->whereIn('type', ['export','']);
     }
 
     #[Scope]
     protected function import(Builder $query): void
     {
-        $query->whereIn('type', ['export','']);
+        $query->whereIn('type', ['import','']);
+    }
+
+    public function itemType(): BelongsTo
+    {
+        return $this->belongsTo(ItemType::class);
     }
 
     #[Scope]
@@ -67,5 +76,15 @@ class ServiceCharge extends Model
     public function coaSelling(): BelongsTo
     {
         return $this->belongsTo(Coa::class,'selling_coa_id','id')->withDefault();
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\ServiceChargeGroup::class, 'service_charge_group_id', 'id')->withDefault();
+    }
+
+    public function recipes()
+    {
+        return $this->hasMany(Recipe::class, 'product_id');
     }
 }

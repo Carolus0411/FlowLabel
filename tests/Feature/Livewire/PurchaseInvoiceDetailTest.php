@@ -30,7 +30,7 @@ class PurchaseInvoiceDetailTest extends TestCase
 
         $response = $this->get(route('purchase-invoice.edit', ['purchaseInvoice' => $invoice->id]));
         $response->assertStatus(200);
-        $response->assertSee('Service Charge');
+        $response->assertSee('Items Master');
         $response->assertSee('Supplier');
     }
 }

@@ -99,8 +99,8 @@ class SalesInvoice extends Model
     protected static function booted(): void
     {
         static::creating(function (Model $model) {
-            $model->created_by = auth()->user()->id;
-            $model->updated_by = auth()->user()->id;
+            $model->created_by = auth()->id() ?? 0;
+            $model->updated_by = auth()->id() ?? 0;
 
             // Determine initial payment status if any settlement details are present
             $payment_status = 'unpaid';
@@ -140,26 +140,35 @@ class SalesInvoice extends Model
             }
 
             $model->payment_status = $payment_status;
-            $model->updated_by = auth()->user()->id;
+            $model->updated_by = auth()->id() ?? 0;
         });
 
         static::updated(function (Model $model) {
-            auth()->user()->logs()->create([
-                'resource' => class_basename($model),
-                'action' => $model->isDirty('code') ? 'create' : 'update',
-                'ref_id' => $model->code,
-                'data' => json_encode($model)
-            ]);
+            if (auth()->check()) {
+                auth()->user()->logs()->create([
+                    'resource' => class_basename($model),
+                    'action' => $model->isDirty('code') ? 'create' : 'update',
+                    'ref_id' => $model->code,
+                    'data' => json_encode($model)
+                ]);
+            }
         });
 
         static::deleted(function (Model $model) {
-            auth()->user()->logs()->create([
-                'resource' => class_basename($model),
-                'action' => 'delete',
-                'ref_id' => $model->code,
-                'data' => json_encode($model)
-            ]);
+            if (auth()->check()) {
+                auth()->user()->logs()->create([
+                    'resource' => class_basename($model),
+                    'action' => 'delete',
+                    'ref_id' => $model->code,
+                    'data' => json_encode($model)
+                ]);
+            }
         });
+    }
+
+    public function deliveryOrder(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryOrder::class);
     }
 
     // Sales Settlement details connected to this invoice via sales_invoice_code => code

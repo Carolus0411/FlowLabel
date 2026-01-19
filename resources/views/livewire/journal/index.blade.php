@@ -57,6 +57,7 @@ new class extends Component {
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'code', 'label' => 'Code'],
             ['key' => 'date', 'label' => 'Date', 'format' => ['date', 'd/m/Y']],
+            ['key' => 'supplier.name', 'label' => 'Supplier', 'sortable' => false, 'class' => 'truncate max-w-[300px]'],
             ['key' => 'contact.name', 'label' => 'Contact', 'sortable' => false, 'class' => 'truncate max-w-[300px]'],
             ['key' => 'debit_total', 'label' => 'Debit Total', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
             ['key' => 'credit_total', 'label' => 'Credit Total', 'class' => 'text-right', 'format' => ['currency', '2.,', '']],
@@ -82,7 +83,7 @@ new class extends Component {
     {
         return Journal::stored()
             ->whereDateBetween('DATE(date)', $this->date1, $this->date2)
-            ->with(['contact','updatedBy'])
+            ->with(['contact','supplier','updatedBy'])
             ->orderBy(...array_values($this->sortBy))
             ->filterLike('code', $this->code)
             ->filterWhere('status', $this->status)

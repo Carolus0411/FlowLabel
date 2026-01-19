@@ -73,6 +73,7 @@ class CashOutApprove implements ShouldQueue
                 'debit_total' => $this->cashOut->total_amount,
                 'credit_total' => $this->cashOut->total_amount,
                 'contact_id' => $this->cashOut->contact_id,
+                'supplier_id' => $this->cashOut->supplier_id ?? null,
                 'ref_name' => class_basename($this->cashOut),
                 'ref_id' => $this->cashOut->code,
                 'status' => 'close',

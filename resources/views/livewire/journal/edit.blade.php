@@ -9,6 +9,7 @@ use App\Traits\ContactChoice;
 use App\Helpers\Cast;
 use App\Helpers\Code;
 use App\Models\Contact;
+use App\Models\Supplier;
 use App\Models\Journal;
 
 new class extends Component {
@@ -20,6 +21,7 @@ new class extends Component {
     public $date = '';
     public $note = '';
     public $contact_id = '';
+    public $supplier_id = '';
     public $type = '';
     public $status = '';
     public $ref_name = '';
@@ -33,11 +35,13 @@ new class extends Component {
     public $validityMessage = '';
 
     public $details;
+    public \Illuminate\Support\Collection $suppliers;
 
     public function mount(): void
     {
         Gate::authorize('update journal');
         $this->fill($this->journal);
+        $this->searchSupplier();
         $this->validity();
     }
 
@@ -45,21 +49,40 @@ new class extends Component {
     {
         $this->open = $this->journal->status == 'open';
         $this->contact_id = $this->contact_id ?? '';
+        $this->supplier_id = $this->supplier_id ?? '';
         return [];
+    }
+
+    public function searchSupplier(string $value = ''): void
+    {
+        $selected = Supplier::where('id', intval($this->supplier_id))->get();
+        $this->suppliers = Supplier::query()
+            ->filterLike('name', $value)
+            ->isActive()
+            ->orderBy('name')
+            ->take(20)
+            ->get()
+            ->merge($selected);
     }
 
     public function save($close = false): void
     {
         $this->closeConfirm = false;
 
-        $data = $this->validate([
+        // Validate - contact_id is required only if supplier_id is not set
+        $rules = [
             'code' => 'required',
             'date' => 'required',
             'note' => 'nullable',
-            'contact_id' => 'required',
             'type' => 'required',
             'details' => new \App\Rules\JournalDetailCheck($this->journal),
-        ]);
+        ];
+
+        if (empty($this->supplier_id)) {
+            $rules['contact_id'] = 'required';
+        }
+
+        $data = $this->validate($rules);
 
         unset($data['details']);
 
@@ -176,6 +199,18 @@ new class extends Component {
                             wire:model="contact_id"
                             :options="$contactChoice"
                             search-function="searchContact"
+                            option-label="name"
+                            single
+                            searchable
+                            clearable
+                            placeholder="-- Select --"
+                            :disabled="!$open"
+                        />
+                        <x-choices
+                            label="Supplier"
+                            wire:model="supplier_id"
+                            :options="$suppliers"
+                            search-function="searchSupplier"
                             option-label="name"
                             single
                             searchable
