@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
+use App\Enums\ActiveStatus;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Hash;
@@ -87,19 +88,21 @@ class SuperAdminSeeder extends Seeder
         $superAdminRole->syncPermissions($allPermissions);
 
         // Create or update Super Admin user
-        $superAdmin = User::firstOrCreate(
+        $superAdmin = User::updateOrCreate(
             ['email' => 'superadmin@labsysflow.com'],
             [
                 'name' => 'Super Admin',
                 'password' => Hash::make('password'),
-                'status' => 'active',
+                'status' => ActiveStatus::active,
             ]
         );
 
-        // Assign Super Admin role to user
-        $superAdmin->assignRole($superAdminRole);
+        // Ensure Super Admin role is assigned (in case user existed before)
+        if (!$superAdmin->hasRole('Super Admin')) {
+            $superAdmin->assignRole($superAdminRole);
+        }
 
-        $this->command->info('✓ Super Admin user created successfully!');
+        $this->command->info('✓ Super Admin user created/updated successfully!');
         $this->command->info('  Email: superadmin@labsysflow.com');
         $this->command->info('  Password: password');
         $this->command->info('  Role: Super Admin');

@@ -3,6 +3,7 @@
 use Livewire\Volt\Component;
 use Livewire\WithPagination;
 use App\Models\User;
+use App\Enums\ActiveStatus;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
 
@@ -38,6 +39,7 @@ new class extends Component {
                 ->latest()
                 ->paginate(10),
             'roles' => Role::all(),
+            'statuses' => ActiveStatus::toSelect(),
         ];
     }
 
@@ -54,7 +56,7 @@ new class extends Component {
         $this->userId = $user->id;
         $this->name = $user->name;
         $this->email = $user->email;
-        $this->status = $user->status;
+        $this->status = $user->status->value;
         $this->selectedRoles = $user->roles->pluck('id')->toArray();
         $this->editMode = true;
         $this->showModal = true;
@@ -78,7 +80,7 @@ new class extends Component {
         $data = [
             'name' => $this->name,
             'email' => $this->email,
-            'status' => $this->status,
+            'status' => ActiveStatus::from($this->status),
         ];
 
         if ($this->password) {
@@ -211,8 +213,8 @@ new class extends Component {
                                             @endforelse
                                         </td>
                                         <td>
-                                            <span class="badge {{ $user->status === 'active' ? 'badge-success' : 'badge-error' }}">
-                                                {{ ucfirst($user->status) }}
+                                            <span class="badge {{ $user->status->value === 'active' ? 'badge-success' : 'badge-error' }}">
+                                                {{ ucfirst($user->status->value) }}
                                             </span>
                                         </td>
                                         <td>{{ $user->created_at->format('M d, Y') }}</td>
@@ -289,8 +291,9 @@ new class extends Component {
                             <span class="label-text">Status</span>
                         </label>
                         <select wire:model="status" class="select select-bordered w-full @error('status') select-error @enderror">
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            @foreach ($statuses as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
                         </select>
                         @error('status') <span class="text-error text-sm">{{ $message }}</span> @enderror
                     </div>

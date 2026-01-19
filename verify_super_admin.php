@@ -16,7 +16,7 @@ if ($superAdmin) {
     echo "  ID: {$superAdmin->id}\n";
     echo "  Name: {$superAdmin->name}\n";
     echo "  Email: {$superAdmin->email}\n";
-    echo "  Status: {$superAdmin->status}\n";
+    echo "  Status: " . ($superAdmin->status->value ?? $superAdmin->status) . "\n";
     echo "\nRoles:\n";
     foreach ($superAdmin->roles as $role) {
         echo "  - {$role->name}\n";

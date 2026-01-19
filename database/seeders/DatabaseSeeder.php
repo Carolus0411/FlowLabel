@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RolesSeeder::class,
             PermissionsSeeder::class,
             ModelHasRolesSeeder::class,
+            SuperAdminSeeder::class,  // Super Admin dengan role dan permissions lengkap
             CompaniesSeeder::class,
             SettingsSeeder::class,
         ]);

@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Enums\ActiveStatus;
 
 class UsersSeeder extends Seeder
 {
@@ -12,27 +14,19 @@ class UsersSeeder extends Seeder
      */
     public function run(): void
     {
-        // Disable foreign key checks to avoid errors during truncation
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
-        DB::table('users')->truncate();
-        
-        DB::table('users')->insert([
+        // Only create admin user if doesn't exist
+        User::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
             [
-  'id' => 1,
-  'name' => 'Admin',
-  'email' => 'admin@gmail.com',
-  'email_verified_at' => NULL,
-  'password' => '$2y$12$btW/8XffgPdXgMt1rSDGTO/m/OXdzSydpY/9uGhboitZ8X0KHff/m',
-  'remember_token' => 'I6xnJMMw6ZzypKEkKD76NOS2iDCdcz2FM2El60ngSjIVKuY5LfVzEwd65xkE',
-  'created_at' => '2025-12-03 09:43:44',
-  'updated_at' => '2025-12-03 09:43:44',
-  'avatar' => NULL,
-  'role' => 'admin',
-  'status' => 'active',
-]
-        ]);
+                'id' => 1,
+                'name' => 'Admin',
+                'password' => '$2y$12$btW/8XffgPdXgMt1rSDGTO/m/OXdzSydpY/9uGhboitZ8X0KHff/m',
+                'remember_token' => 'I6xnJMMw6ZzypKEkKD76NOS2iDCdcz2FM2El60ngSjIVKuY5LfVzEwd65xkE',
+                'status' => ActiveStatus::active,
+                'role' => 'admin',
+            ]
+        );
         
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        $this->command->info('✓ Admin user seeded');
     }
 }
