@@ -53,13 +53,6 @@ new class extends Component {
         // Print efficiency (percentage of printed orders)
         $printEfficiency = $totalOrders > 0 ? round(($totalPrinted / $totalOrders) * 100, 2) : 0;
 
-        // Status breakdown
-        $statusBreakdown = (clone $query)
-            ->select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->status => $item->count]);
-
         // Recent printed orders (last 10)
         $recentPrinted = OrderLabel::query()
             ->where('saved', 1)
@@ -131,7 +124,6 @@ new class extends Component {
             'totalBatches' => $totalBatches,
             'avgPrintCount' => round($avgPrintCount, 1),
             'printEfficiency' => $printEfficiency,
-            'statusBreakdown' => $statusBreakdown,
             'recentPrinted' => $recentPrinted,
             'topBatches' => $topBatches,
             'dailyStats' => $dailyStats,
@@ -267,42 +259,6 @@ new class extends Component {
 
         {{-- Sidebar Section - Takes 1 column --}}
         <div class="space-y-6">
-            {{-- Status Breakdown --}}
-            <x-card title="Status Breakdown" class="shadow-lg">
-                <div class="space-y-3">
-                    @forelse($statusBreakdown as $status => $count)
-                    <div class="flex items-center justify-between p-3 rounded-lg hover:bg-base-200 transition-colors">
-                        <div class="flex items-center gap-3">
-                            @if($status === 'open')
-                            <div class="badge badge-info gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                {{ ucfirst($status) }}
-                            </div>
-                            @elseif($status === 'close')
-                            <div class="badge badge-success gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                {{ ucfirst($status) }}
-                            </div>
-                            @else
-                            <div class="badge badge-error gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                {{ ucfirst($status) }}
-                            </div>
-                            @endif
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-2xl font-bold">{{ number_format($count) }}</span>
-                            @if($totalOrders > 0)
-                            <span class="text-sm text-gray-500">({{ round(($count / $totalOrders) * 100, 1) }}%)</span>
-                            @endif
-                        </div>
-                    </div>
-                    @empty
-                    <div class="text-center text-gray-500 py-8">No data available</div>
-                    @endforelse
-                </div>
-            </x-card>
-
             {{-- Print Efficiency Radial Progress --}}
             <x-card title="Print Efficiency" class="shadow-lg">
                 <div class="flex flex-col items-center py-6">

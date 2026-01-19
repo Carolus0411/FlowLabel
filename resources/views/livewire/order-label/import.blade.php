@@ -50,7 +50,7 @@ new class extends Component {
             // We cannot use /tmp because queue worker might be separate (though local here it's fine)
             // Storing in 'app/import-temp'
             $path = $uploadedFile->storeAs('import-temp', uniqid() . '_' . $originalName);
-            
+
             // Create a batch so we can track it
             // We'll dispatch a single job inside a batch for better tracking
             $batch = Bus::batch([
@@ -60,9 +60,9 @@ new class extends Component {
 
             $this->batchId = $batch->id;
             $this->processing = false;
-            
+
             $this->success("Import queued! You can track progress in the Queue Log.");
-            
+
         } catch (\Exception $e) {
             $this->processing = false;
             $this->error('Failed to queue PDF: ' . $e->getMessage());
@@ -87,7 +87,7 @@ new class extends Component {
              <div class="p-4">
                 <p class="text-blue-800 font-semibold text-lg mb-2">Import has been started in the background.</p>
                 <p class="mb-4">You can leave this page or upload another file. The system will process the PDF in the background.</p>
-                
+
                 <div class="flex gap-3">
                     <x-button label="Check Progress in Queue Log" link="{{ route('settings.queue-log') }}" class="btn-primary" />
                     <x-button label="Upload Another" wire:click="resetForm" class="btn-outline" />
@@ -98,7 +98,7 @@ new class extends Component {
         <x-card>
             <x-form wire:submit="save">
 
-                <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200">
                     <h3 class="font-semibold text-blue-800 mb-2">PDF Import Instructions:</h3>
                     <ul class=Select Platform (3PL) first</li>
                         <li>• Upload a PDF file (max 10MB)</li>
