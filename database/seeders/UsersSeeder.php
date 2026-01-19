@@ -26,7 +26,7 @@ class UsersSeeder extends Seeder
                 'role' => 'admin',
             ]
         );
-        
+
         $this->command->info('✓ Admin user seeded');
     }
 }

@@ -43,12 +43,12 @@ class AppServiceProvider extends ServiceProvider
             if ($user->hasRole('Super Admin')) {
                 return true;
             }
-            
+
             // Grant full access to legacy admin role (column-based)
             if (isset($user->role) && $user->role === 'admin') {
                 return true;
             }
-            
+
             return null;
         });
 

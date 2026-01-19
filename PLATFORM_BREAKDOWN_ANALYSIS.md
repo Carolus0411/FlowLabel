@@ -1,6 +1,7 @@
 # Order Label Dashboard - Platform Breakdown Analysis
 
 ## Overview
+
 Dashboard telah diubah dari menampilkan "Status Breakdown" menjadi "Platform Breakdown" yang menampilkan distribusi order berdasarkan platform e-commerce.
 
 ## Architecture Diagram
@@ -127,6 +128,7 @@ Dashboard telah diubah dari menampilkan "Status Breakdown" menjadi "Platform Bre
 ## Platform Breakdown Implementation
 
 ### 1. Database Query
+
 ```php
 $platformBreakdown = (clone $query)
     ->select('platform', DB::raw('count(*) as count'))
@@ -137,6 +139,7 @@ $platformBreakdown = (clone $query)
 ```
 
 **Output Example:**
+
 ```php
 [
     'Lazada' => 1234,
@@ -147,20 +150,22 @@ $platformBreakdown = (clone $query)
 ```
 
 ### 2. Platform Color Mapping
+
 ```javascript
 const platformColors = {
-    'Lazada':     'hsl(var(--p))',   // Primary (Blue)
-    'Shopee':     'hsl(var(--s))',   // Secondary (Purple)
-    'TikTok':     'hsl(var(--a))',   // Accent (Pink)
-    'Tokopedia':  'hsl(var(--su))',  // Success (Green)
-    'Bukalapak':  'hsl(var(--er))',  // Error (Red)
-    'Blibli':     'hsl(var(--wa))',  // Warning (Orange)
+    Lazada: "hsl(var(--p))", // Primary (Blue)
+    Shopee: "hsl(var(--s))", // Secondary (Purple)
+    TikTok: "hsl(var(--a))", // Accent (Pink)
+    Tokopedia: "hsl(var(--su))", // Success (Green)
+    Bukalapak: "hsl(var(--er))", // Error (Red)
+    Blibli: "hsl(var(--wa))", // Warning (Orange)
 };
 ```
 
 ### 3. UI Components
 
 #### A. Platform List with Badges
+
 ```blade
 @foreach($platformBreakdown as $platform => $count)
     <div class="flex items-center justify-between">
@@ -174,27 +179,29 @@ const platformColors = {
 ```
 
 #### B. Doughnut Chart
+
 - **Type**: Doughnut (donut chart)
 - **Size**: Responsive with 60% cutout
 - **Features**:
-  - Platform-specific colors
-  - Hover effect (offset: 10px)
-  - Tooltip with count and percentage
-  - No legend (shown in list below)
+    - Platform-specific colors
+    - Hover effect (offset: 10px)
+    - Tooltip with count and percentage
+    - No legend (shown in list below)
 
 ## Platform Badge Icons
 
-| Platform   | Badge Color | Icon               |
-|------------|-------------|-------------------|
-| Lazada     | Primary     | Shopping Bag      |
-| Shopee     | Secondary   | Shopping Cart     |
-| TikTok     | Accent      | Video Play        |
-| Tokopedia  | Success     | Lightning Bolt    |
-| Others     | Neutral     | Book/Generic      |
+| Platform  | Badge Color | Icon           |
+| --------- | ----------- | -------------- |
+| Lazada    | Primary     | Shopping Bag   |
+| Shopee    | Secondary   | Shopping Cart  |
+| TikTok    | Accent      | Video Play     |
+| Tokopedia | Success     | Lightning Bolt |
+| Others    | Neutral     | Book/Generic   |
 
 ## Comparison: Before vs After
 
 ### Before (Status Breakdown)
+
 ```
 ┌────────────────────────┐
 │  Status Breakdown      │
@@ -206,6 +213,7 @@ const platformColors = {
 ```
 
 ### After (Platform Breakdown)
+
 ```
 ┌──────────────────────────┐
 │  Platform Breakdown      │
@@ -224,24 +232,24 @@ const platformColors = {
 ## Benefits of Platform Breakdown
 
 1. **Business Intelligence**
-   - See which platform generates most orders
-   - Identify top-performing channels
-   - Make data-driven decisions
+    - See which platform generates most orders
+    - Identify top-performing channels
+    - Make data-driven decisions
 
 2. **Resource Allocation**
-   - Focus on high-volume platforms
-   - Allocate printing resources efficiently
-   - Optimize fulfillment process
+    - Focus on high-volume platforms
+    - Allocate printing resources efficiently
+    - Optimize fulfillment process
 
 3. **Trend Analysis**
-   - Compare platform performance over time
-   - Identify seasonal patterns per platform
-   - Track growth/decline by channel
+    - Compare platform performance over time
+    - Identify seasonal patterns per platform
+    - Track growth/decline by channel
 
 4. **Visual Clarity**
-   - Doughnut chart provides instant overview
-   - Color-coded platform identification
-   - Percentage breakdown at a glance
+    - Doughnut chart provides instant overview
+    - Color-coded platform identification
+    - Percentage breakdown at a glance
 
 ## Technical Stack
 
@@ -254,41 +262,41 @@ const platformColors = {
 ## Performance Considerations
 
 1. **Query Optimization**
-   - Single query with GROUP BY
-   - Indexed platform column
-   - Cloned query for different aggregations
+    - Single query with GROUP BY
+    - Indexed platform column
+    - Cloned query for different aggregations
 
 2. **Caching Opportunity**
-   - Platform breakdown changes infrequently
-   - Consider caching for 5-15 minutes
-   - Invalidate on new order creation
+    - Platform breakdown changes infrequently
+    - Consider caching for 5-15 minutes
+    - Invalidate on new order creation
 
 3. **Chart Performance**
-   - Lazy loading Chart.js
-   - Doughnut chart is lightweight
-   - No real-time updates needed
+    - Lazy loading Chart.js
+    - Doughnut chart is lightweight
+    - No real-time updates needed
 
 ## Future Enhancements
 
 1. **Platform Filtering**
-   - Click platform badge to filter main table
-   - Show platform-specific statistics
-   - Drill-down analysis
+    - Click platform badge to filter main table
+    - Show platform-specific statistics
+    - Drill-down analysis
 
 2. **Comparison Mode**
-   - Compare periods (this week vs last week)
-   - Year-over-year comparison
-   - Platform growth trends
+    - Compare periods (this week vs last week)
+    - Year-over-year comparison
+    - Platform growth trends
 
 3. **Export**
-   - Export platform report to PDF/Excel
-   - Include chart image
-   - Detailed breakdown per platform
+    - Export platform report to PDF/Excel
+    - Include chart image
+    - Detailed breakdown per platform
 
 4. **Alerts**
-   - Alert if platform orders drop significantly
-   - Monitor platform API health
-   - Notify on unusual patterns
+    - Alert if platform orders drop significantly
+    - Monitor platform API health
+    - Notify on unusual patterns
 
 ## Related Files
 
@@ -299,15 +307,18 @@ const platformColors = {
 ## API Reference
 
 ### Livewire Component Properties
+
 - `$period` (string): 'today' | 'week' | 'month' | 'all'
 
 ### Computed Properties (with() method)
+
 - `$platformBreakdown` (Collection): Platform => Count mapping
 - `$totalOrders` (int): Total order count
 - `$totalPrinted` (int): Printed order count
 - `$printEfficiency` (float): Percentage of printed orders
 
 ### Chart Configuration
+
 - Chart ID: `platformChart`
 - Chart Type: `doughnut`
 - Cutout: `60%`

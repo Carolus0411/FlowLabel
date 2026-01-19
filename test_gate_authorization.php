@@ -17,10 +17,10 @@ if ($superAdmin) {
     echo "Super Admin User:\n";
     echo "  Email: {$superAdmin->email}\n";
     echo "  Roles: " . $superAdmin->roles->pluck('name')->join(', ') . "\n";
-    
+
     // Test some permissions
     auth()->setUser($superAdmin);
-    
+
     $testPermissions = [
         'view users',
         'create users',
@@ -30,7 +30,7 @@ if ($superAdmin) {
         'view three-pl',
         'update general-setting',
     ];
-    
+
     echo "\nPermission Tests:\n";
     foreach ($testPermissions as $permission) {
         $canDo = Gate::allows($permission);
@@ -44,10 +44,10 @@ if ($admin) {
     echo "Admin User:\n";
     echo "  Email: {$admin->email}\n";
     echo "  Role: {$admin->role}\n";
-    
+
     // Test admin user
     auth()->setUser($admin);
-    
+
     echo "\nPermission Tests:\n";
     foreach ($testPermissions as $permission) {
         $canDo = Gate::allows($permission);

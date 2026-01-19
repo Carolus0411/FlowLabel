@@ -98,7 +98,7 @@ new class extends Component {
         <x-card>
             <x-form wire:submit="save">
 
-                <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200">
+                <div class="mb-4 p-4 bg-blue-50 dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-gray-700">
                     <h3 class="font-semibold text-blue-800 mb-2">PDF Import Instructions:</h3>
                     <ul class=Select Platform (3PL) first</li>
                         <li>• Upload a PDF file (max 10MB)</li>

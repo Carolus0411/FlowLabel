@@ -17,7 +17,7 @@ $tiktokCount = 0;
 foreach ($orders as $o) {
     $platform = DB::table('three_pl')->where('id', $o->three_pl_id)->value('name');
     echo "ID: {$o->id} | Platform: " . ($platform ?? 'NULL') . " | Code: {$o->code} | File: {$o->original_filename}\n";
-    
+
     if ($platform === 'Shopee') $shopeeCount++;
     if ($platform === 'TikTok') $tiktokCount++;
 }

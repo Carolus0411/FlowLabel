@@ -18,7 +18,7 @@ $updated = 0;
 foreach ($orders as $order) {
     $platformId = null;
     $platformName = null;
-    
+
     // Priority 1: Check code pattern first (more reliable than filename)
     // TikTok pattern: 260101T + alphanumeric (TikTok order codes)
     if (preg_match('/^260\d{3}T[A-Z0-9]{7,}$/i', $order->code)) {
@@ -30,11 +30,11 @@ foreach ($orders as $order) {
         $platformId = 2;
         $platformName = 'Shopee';
     }
-    
+
     // Priority 2: Check original filename if not detected from code
     if (!$platformId) {
         $originalLower = strtolower($order->original_filename);
-        
+
         if (preg_match('/shopee/i', $order->original_filename)) {
             $platformId = 2;
             $platformName = 'Shopee';
@@ -55,12 +55,12 @@ foreach ($orders as $order) {
             $platformName = 'Blibli';
         }
     }
-    
+
     if ($platformId && $platformId != $order->three_pl_id) {
         DB::table('order_label')
             ->where('id', $order->id)
             ->update(['three_pl_id' => $platformId]);
-        
+
         echo "✓ Order #{$order->id} ({$order->code}) updated to {$platformName}\n";
         $updated++;
     } else {

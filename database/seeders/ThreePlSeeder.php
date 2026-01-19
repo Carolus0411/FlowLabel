@@ -14,7 +14,7 @@ class ThreePlSeeder extends Seeder
     public function run(): void
     {
         $now = Carbon::now();
-        
+
         $platforms = [
             ['id' => 1, 'name' => 'Lazada', 'code' => 'LZD', 'created_at' => $now, 'updated_at' => $now],
             ['id' => 2, 'name' => 'Shopee', 'code' => 'SPE', 'created_at' => $now, 'updated_at' => $now],

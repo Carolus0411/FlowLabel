@@ -27,7 +27,7 @@ $platforms = DB::table('order_label')
 if ($platforms->isEmpty()) {
     echo "No data found with JOIN.\n";
     echo "\nTrying LEFT JOIN...\n\n";
-    
+
     $platforms = DB::table('order_label')
         ->leftJoin('three_pl', 'order_label.three_pl_id', '=', 'three_pl.id')
         ->select(DB::raw('COALESCE(three_pl.name, \'Unknown\') as platform'), DB::raw('count(*) as count'))

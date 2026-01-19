@@ -21,13 +21,13 @@ foreach ($orders as $order) {
     echo "  Filename: {$order->split_filename}\n";
     echo "  Original: {$order->original_filename}\n";
     echo "  Current 3PL ID: {$order->three_pl_id}\n";
-    
+
     // Detect platform from filename or code
     $detectedPlatform = null;
     $platformId = null;
-    
+
     $text = strtolower($order->split_filename . ' ' . $order->code . ' ' . $order->extracted_text);
-    
+
     if (preg_match('/shopee|spe/i', $text)) {
         $detectedPlatform = 'Shopee';
         $platformId = 2;
@@ -47,13 +47,13 @@ foreach ($orders as $order) {
         $detectedPlatform = 'Blibli';
         $platformId = 6;
     }
-    
+
     echo "  Detected: " . ($detectedPlatform ?? 'Unknown') . " (ID: " . ($platformId ?? 'NULL') . ")\n";
-    
+
     if ($platformId && $platformId != $order->three_pl_id) {
         echo "  ⚠️ MISMATCH! Should update to {$detectedPlatform}\n";
     }
-    
+
     echo "\n";
 }
 

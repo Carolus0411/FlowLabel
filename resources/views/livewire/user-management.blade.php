@@ -14,7 +14,7 @@ new class extends Component {
     public $showModal = false;
     public $editMode = false;
     public $userId;
-    
+
     public $name;
     public $email;
     public $password;
@@ -260,7 +260,7 @@ new class extends Component {
         <div class="modal modal-open">
             <div class="modal-box max-w-2xl">
                 <h3 class="font-bold text-lg mb-4">{{ $editMode ? 'Edit User' : 'Add New User' }}</h3>
-                
+
                 <form wire:submit="save">
                     <div class="form-control w-full mb-4">
                         <label class="label">

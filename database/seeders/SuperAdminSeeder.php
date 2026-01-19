@@ -33,20 +33,20 @@ class SuperAdminSeeder extends Seeder
                 'create users',
                 'update users',
                 'delete users',
-                
+
                 // Role Management
                 'view roles',
                 'create roles',
                 'update roles',
                 'delete roles',
                 'assign roles',
-                
+
                 // Permission Management
                 'view permissions',
                 'create permissions',
                 'update permissions',
                 'delete permissions',
-                
+
                 // Order Label
                 'view order-label',
                 'create order-label',
@@ -55,20 +55,20 @@ class SuperAdminSeeder extends Seeder
                 'import order-label',
                 'export order-label',
                 'print order-label',
-                
+
                 // 3PL Management
                 'view three-pl',
                 'create three-pl',
                 'update three-pl',
                 'delete three-pl',
-                
+
                 // Settings
                 'view general-setting',
                 'update general-setting',
-                
+
                 // User Logs
                 'view user logs',
-                
+
                 // System
                 'access all features',
                 'manage system',

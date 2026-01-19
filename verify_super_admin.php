@@ -21,13 +21,13 @@ if ($superAdmin) {
     foreach ($superAdmin->roles as $role) {
         echo "  - {$role->name}\n";
     }
-    
+
     echo "\nPermissions count: " . $superAdmin->getAllPermissions()->count() . "\n";
     echo "\nSample Permissions (first 10):\n";
     foreach ($superAdmin->getAllPermissions()->take(10) as $permission) {
         echo "  - {$permission->name}\n";
     }
-    
+
     echo "\nCan assign roles: " . ($superAdmin->can('assign roles') ? 'YES' : 'NO') . "\n";
     echo "Has Super Admin role: " . ($superAdmin->hasRole('Super Admin') ? 'YES' : 'NO') . "\n";
 } else {

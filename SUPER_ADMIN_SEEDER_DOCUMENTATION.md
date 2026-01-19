@@ -1,9 +1,11 @@
 # Super Admin Seeder - Documentation
 
 ## Overview
+
 Sistem Super Admin yang otomatis dibuat saat database seeding. User Super Admin tidak akan hilang saat melakukan migrate atau migrate:fresh dengan seed.
 
 ## Credentials
+
 ```
 Email: superadmin@labsysflow.com
 Password: password
@@ -12,7 +14,9 @@ Password: password
 ## Cara Kerja
 
 ### 1. Otomatis Seeding
+
 SuperAdminSeeder telah ditambahkan ke `DatabaseSeeder.php` sehingga akan otomatis dijalankan setiap kali:
+
 ```bash
 php artisan db:seed
 php artisan migrate:fresh --seed
@@ -20,14 +24,18 @@ php artisan migrate --seed
 ```
 
 ### 2. Idempotent (Aman dijalankan berkali-kali)
+
 Seeder menggunakan `updateOrCreate()` dan `firstOrCreate()` sehingga:
+
 - ✅ Jika user belum ada → akan dibuat
 - ✅ Jika user sudah ada → akan diupdate (password tetap 'password')
 - ✅ Tidak akan error duplicate entry
 - ✅ Aman dijalankan berkali-kali
 
 ### 3. Role & Permissions
+
 Seeder secara otomatis:
+
 - Membuat role "Super Admin" jika belum ada
 - Membuat 29 permissions dasar jika belum ada
 - Assign semua permissions ke role Super Admin
@@ -36,12 +44,14 @@ Seeder secara otomatis:
 ## Struktur Permissions (29 total)
 
 ### User Management (4)
+
 - view users
 - create users
 - update users
 - delete users
 
 ### Role Management (5)
+
 - view roles
 - create roles
 - update roles
@@ -49,12 +59,14 @@ Seeder secara otomatis:
 - assign roles
 
 ### Permission Management (4)
+
 - view permissions
 - create permissions
 - update permissions
 - delete permissions
 
 ### Order Label (7)
+
 - view order-label
 - create order-label
 - update order-label
@@ -64,25 +76,30 @@ Seeder secara otomatis:
 - print order-label
 
 ### 3PL Management (4)
+
 - view three-pl
 - create three-pl
 - update three-pl
 - delete three-pl
 
 ### Settings (2)
+
 - view general-setting
 - update general-setting
 
 ### User Logs (1)
+
 - view user logs
 
 ### System (2)
+
 - access all features
 - manage system
 
 ## Files Modified
 
 ### 1. database/seeders/DatabaseSeeder.php
+
 ```php
 $this->call([
     UsersSeeder::class,
@@ -96,12 +113,14 @@ $this->call([
 ```
 
 ### 2. database/seeders/SuperAdminSeeder.php
+
 - Menggunakan `updateOrCreate()` untuk user
 - Menggunakan `firstOrCreate()` untuk role & permissions
 - Otomatis sync semua permissions ke Super Admin role
 - Check role assignment sebelum assign (avoid duplicate)
 
 ### 3. database/seeders/UsersSeeder.php
+
 - Diubah dari `truncate()` ke `firstOrCreate()`
 - Menghilangkan `SET FOREIGN_KEY_CHECKS` (tidak kompatibel PostgreSQL)
 - Menggunakan Eloquent model untuk insert
@@ -109,31 +128,40 @@ $this->call([
 ## Usage
 
 ### Fresh Install
+
 ```bash
 php artisan migrate:fresh --seed
 ```
+
 Super Admin akan otomatis dibuat dengan 29 permissions.
 
 ### Update Database
+
 ```bash
 php artisan migrate
 php artisan db:seed
 ```
+
 Super Admin akan tetap ada atau dibuat jika belum ada.
 
 ### Manual Run
+
 ```bash
 php artisan db:seed --class=SuperAdminSeeder
 ```
+
 Bisa dijalankan kapan saja tanpa error.
 
 ### Verify Super Admin
+
 ```bash
 php verify_super_admin.php
 ```
+
 Script untuk verifikasi Super Admin exists dengan role dan permissions.
 
 ### Test Persistence
+
 ```bash
 # Windows PowerShell
 .\test_super_admin_persistence.ps1
@@ -141,20 +169,22 @@ Script untuk verifikasi Super Admin exists dengan role dan permissions.
 # Linux/Mac
 ./test_super_admin_persistence.sh
 ```
+
 Test lengkap untuk memastikan Super Admin persist setelah migrate:fresh.
 
 ## Login Super Admin
 
 1. Buka aplikasi di browser
 2. Login dengan:
-   - Email: `superadmin@labsysflow.com`
-   - Password: `password`
+    - Email: `superadmin@labsysflow.com`
+    - Password: `password`
 3. Navigate ke **Users > User Management**
 4. Kelola user dan assign roles
 
 ## Features Super Admin
 
 ### User Management Interface
+
 - View semua users dengan pagination
 - Search users by name atau email
 - Create user baru dengan multiple roles
@@ -163,6 +193,7 @@ Test lengkap untuk memastikan Super Admin persist setelah migrate:fresh.
 - Set status active/inactive
 
 ### Super Admin Capabilities
+
 - Full access ke semua permissions
 - Dapat assign role apapun ke user
 - Akses ke User Management page (hanya Super Admin)
@@ -171,6 +202,7 @@ Test lengkap untuk memastikan Super Admin persist setelah migrate:fresh.
 ## Security
 
 ### Route Protection
+
 ```php
 Route::middleware('role:Super Admin')->group(function () {
     Volt::route('/user-management', 'user-management')
@@ -179,6 +211,7 @@ Route::middleware('role:Super Admin')->group(function () {
 ```
 
 ### Component Protection
+
 ```php
 public function mount()
 {
@@ -189,6 +222,7 @@ public function mount()
 ```
 
 ### User Protection
+
 - User tidak bisa delete diri sendiri
 - Password selalu di-hash dengan bcrypt
 - Status menggunakan Enum untuk type safety
@@ -196,6 +230,7 @@ public function mount()
 ## Troubleshooting
 
 ### Super Admin tidak ada setelah migrate
+
 ```bash
 # Jalankan seeder manual
 php artisan db:seed --class=SuperAdminSeeder
@@ -205,17 +240,20 @@ php verify_super_admin.php
 ```
 
 ### Permission tidak lengkap
+
 ```bash
 # Re-run seeder untuk sync permissions
 php artisan db:seed --class=SuperAdminSeeder
 ```
 
 ### Error saat login
+
 - Pastikan password: `password`
 - Pastikan email: `superadmin@labsysflow.com`
 - Check status user: harus `active`
 
 ### Menu tidak muncul
+
 - Pastikan user memiliki role "Super Admin"
 - Clear cache: `php artisan cache:clear`
 - Check sidebar menu visibility logic
@@ -231,20 +269,25 @@ php artisan db:seed --class=SuperAdminSeeder
 ## Production Considerations
 
 ### Change Default Password
+
 Edit `SuperAdminSeeder.php`:
+
 ```php
 'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'password')),
 ```
 
 Tambahkan di `.env`:
+
 ```
 SUPER_ADMIN_PASSWORD=YourStrongPassword123!
 ```
 
 ### Email Notification
+
 Tambahkan email notification saat Super Admin dibuat atau diupdate.
 
 ### Audit Log
+
 Implement audit logging untuk tracking Super Admin activities.
 
 ## Related Files
@@ -260,6 +303,7 @@ Implement audit logging untuk tracking Super Admin activities.
 ## Support
 
 Jika ada masalah:
+
 1. Check error log: `storage/logs/laravel.log`
 2. Run verification: `php verify_super_admin.php`
 3. Check database manually: `psql` atau `pgAdmin`

@@ -22,7 +22,7 @@ if ($threePls->isEmpty()) {
 echo "\n=== Testing JOIN manually ===\n\n";
 
 $result = DB::select("
-    SELECT 
+    SELECT
         three_pl.name as platform,
         COUNT(*) as count
     FROM order_label
