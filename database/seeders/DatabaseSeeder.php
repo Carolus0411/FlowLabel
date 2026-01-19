@@ -14,13 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            UsersSeeder::class,
-            RolesSeeder::class,
-            PermissionsSeeder::class,
-            ModelHasRolesSeeder::class,
-            SuperAdminSeeder::class,  // Super Admin dengan role dan permissions lengkap
-            CompaniesSeeder::class,
-            SettingsSeeder::class,
+            SuperAdminSeeder::class,
         ]);
     }
 }

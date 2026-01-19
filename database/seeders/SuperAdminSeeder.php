@@ -89,10 +89,10 @@ class SuperAdminSeeder extends Seeder
 
         // Create or update Super Admin user
         $superAdmin = User::updateOrCreate(
-            ['email' => 'superadmin@labsysflow.com'],
+            ['email' => 'admin@admin.com'],
             [
                 'name' => 'Super Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('q1w2e3r4'),
                 'status' => ActiveStatus::active,
             ]
         );
@@ -103,8 +103,8 @@ class SuperAdminSeeder extends Seeder
         }
 
         $this->command->info('✓ Super Admin user created/updated successfully!');
-        $this->command->info('  Email: superadmin@labsysflow.com');
-        $this->command->info('  Password: password');
+        $this->command->info('  Email: admin@admin.com');
+        $this->command->info('  Password: q1w2e3r4');
         $this->command->info('  Role: Super Admin');
         $this->command->info('  Permissions: ' . $allPermissions->count() . ' permissions assigned');
     }

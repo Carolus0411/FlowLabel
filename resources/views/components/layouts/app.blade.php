@@ -93,7 +93,6 @@
                 </x-menu-sub>
 
                 <x-menu-sub title="Users" icon="o-users">
-                    <x-menu-item title="User Management" link="{{ route('user-management') }}" :hidden="!auth()->user()->hasRole('Super Admin')" />
                     <x-menu-item title="Users" link="{{ route('users.index') }}" :hidden="auth()->user()->cannot('view users')" />
                     <x-menu-item title="Roles" link="{{ route('roles.index') }}" :hidden="auth()->user()->cannot('view roles')" />
                     <x-menu-item title="Permissions" link="{{ route('permissions.index') }}" :hidden="auth()->user()->cannot('view permissions')" />

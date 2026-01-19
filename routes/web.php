@@ -237,7 +237,9 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/sales-order/import', 'sales-order.import')->name('sales-order.import');
 
     // User Management (Super Admin Only)
-    Volt::route('/user-management', 'user-management')->name('user-management')->middleware('role:Super Admin');
+    Volt::route('/user-management', 'user-management')
+        ->name('user-management')
+        ->middleware(\Spatie\Permission\Middleware\RoleMiddleware::class . ':Super Admin');
 
     Volt::route('/order-label', 'order-label.index')->name('order-label.index');
     Volt::route('/order-label/dashboard', 'order-label.dashboard')->name('order-label.dashboard');
