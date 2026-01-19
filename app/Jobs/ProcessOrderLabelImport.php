@@ -133,23 +133,33 @@ class ProcessOrderLabelImport implements ShouldQueue
 
     private function getGhostscriptPath(): ?string
     {
-        // List of common paths for Ghostscript on Windows
-        $paths = [
-            'gswin64c.exe', // If in PATH
-            'gswin32c.exe',
-            'gs',
-            'C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe',
-            // Add other paths as seen in previous steps if needed
-        ];
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        
+        // List of common paths for Ghostscript
+        $paths = $isWindows 
+            ? [
+                'gswin64c.exe',
+                'gswin32c.exe',
+                'C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe',
+                'C:\Program Files\gs\gs10.06.0\bin\gswin64c.exe',
+            ]
+            : [
+                'gs', // Linux/Ubuntu standard path
+                '/usr/bin/gs',
+                '/usr/local/bin/gs',
+            ];
 
         foreach ($paths as $path) {
-            if (strpos($path, ':') !== false) {
-                 if (file_exists($path)) return $path;
+            // Check absolute paths directly
+            if (strpos($path, ':') !== false || strpos($path, '/') === 0) {
+                if (file_exists($path)) return $path;
             } else {
+                // Check in PATH using platform-specific command
                 $output = [];
                 $returnVar = 0;
-                exec("where $path 2>nul", $output, $returnVar);
-                if ($returnVar === 0 && !empty($output)) return $output[0];
+                $cmd = $isWindows ? "where $path 2>nul" : "which $path 2>/dev/null";
+                exec($cmd, $output, $returnVar);
+                if ($returnVar === 0 && !empty($output)) return trim($output[0]);
             }
         }
         return null;
@@ -303,6 +313,17 @@ class ProcessOrderLabelImport implements ShouldQueue
                 $now = now();
                 $usedFilenames = [];
 
+                // Try Ghostscript for splitting if available
+                $ghostscriptSuccess = false;
+                if ($this->isGhostscriptAvailable()) {
+                    \Log::info("Fallback: Attempting Ghostscript split for {$pageCount} pages");
+                    try {
+                        $ghostscriptSuccess = $this->splitWithGhostscript($filePath, $outputDir, $pageCount);
+                    } catch (\Exception $e) {
+                        \Log::warning("Ghostscript split failed in fallback: " . $e->getMessage());
+                    }
+                }
+
                 foreach ($pages as $pageIndex => $page) {
                     $pageNumber = $pageIndex + 1;
 
@@ -335,6 +356,24 @@ class ProcessOrderLabelImport implements ShouldQueue
                     // Get batch folder name for file_path
                     $batchFolderName = str_replace('/', '-', $this->batchNo);
 
+                    // If Ghostscript succeeded, rename the split file to proper filename
+                    $ghostscriptPageFile = $outputDir . 'page_' . $pageNumber . '.pdf';
+                    $actualFilePath = $fallbackFileName; // Default to original
+                    
+                    if ($ghostscriptSuccess && file_exists($ghostscriptPageFile)) {
+                        // Rename from page_X.pdf to actual order ID filename
+                        $targetFilePath = $outputDir . $displayFilename;
+                        
+                        // If target file already exists, keep the temp name
+                        if (file_exists($targetFilePath)) {
+                            $displayFilename = 'page_' . $pageNumber . '.pdf';
+                            $actualFilePath = $displayFilename;
+                        } else {
+                            rename($ghostscriptPageFile, $targetFilePath);
+                            $actualFilePath = $displayFilename; // Use renamed file
+                        }
+                    }
+
                     $records[] = [
                         'batch_no' => $this->batchNo,
                         'three_pl_id' => $this->threePlId,
@@ -344,7 +383,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                         'original_filename' => $originalName,
                         'split_filename' => $displayFilename,
                         'page_number' => $pageNumber,
-                        'file_path' => 'order-label-splits/' . $batchFolderName . '/' . $fallbackFileName,
+                        'file_path' => 'order-label-splits/' . $batchFolderName . '/' . $actualFilePath,
                         'extracted_text' => $text,
                         'status' => 'open',
                         'saved' => 1,
@@ -502,5 +541,64 @@ class ProcessOrderLabelImport implements ShouldQueue
         }
 
         return null;
+    }
+
+    /**
+     * Check if Ghostscript is available on the system
+     */
+    private function isGhostscriptAvailable(): bool
+    {
+        return $this->getGhostscriptPath() !== null;
+    }
+
+    /**
+     * Split PDF using Ghostscript command
+     * This is used as fallback when FPDI fails
+     */
+    private function splitWithGhostscript($filePath, $outputDir, $pageCount): bool
+    {
+        $gsPath = $this->getGhostscriptPath();
+        if (!$gsPath) {
+            \Log::warning("Ghostscript not found for fallback split");
+            return false;
+        }
+
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+        try {
+            \Log::info("Splitting PDF with Ghostscript: $pageCount pages");
+            
+            // Split each page individually
+            for ($i = 1; $i <= $pageCount; $i++) {
+                $outputFile = $outputDir . 'page_' . $i . '.pdf';
+                
+                // Escape paths for shell command
+                $escapedGsPath = $isWindows ? '"' . $gsPath . '"' : escapeshellarg($gsPath);
+                $escapedOutput = $isWindows ? '"' . $outputFile . '"' : escapeshellarg($outputFile);
+                $escapedInput = $isWindows ? '"' . $filePath . '"' : escapeshellarg($filePath);
+                
+                $cmd = sprintf(
+                    '%s -sDEVICE=pdfwrite -dFirstPage=%d -dLastPage=%d -dNOPAUSE -dQUIET -dBATCH -sOutputFile=%s %s 2>&1',
+                    $escapedGsPath,
+                    $i,
+                    $i,
+                    $escapedOutput,
+                    $escapedInput
+                );
+
+                exec($cmd, $output, $returnVar);
+
+                if ($returnVar !== 0 || !file_exists($outputFile)) {
+                    \Log::error("Ghostscript failed to split page $i. Return code: $returnVar. Output: " . implode("\n", $output));
+                    return false;
+                }
+            }
+
+            \Log::info("Ghostscript successfully split $pageCount pages");
+            return true;
+        } catch (\Exception $e) {
+            \Log::error("Ghostscript split exception: " . $e->getMessage());
+            return false;
+        }
     }
 }
