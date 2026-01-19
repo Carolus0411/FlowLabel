@@ -667,38 +667,27 @@ new class extends Component {
 
             @scope('cell_file_download', $orderLabel)
             @if($orderLabel->file_path)
-                @php
-                    $isVirtualSplit = str_contains($orderLabel->file_path, '_original.pdf') && $orderLabel->page_number;
-                @endphp
-
                 <div class="flex gap-1">
-                    @if($isVirtualSplit)
-                        <button
-                            onclick="downloadPage('{{ \Illuminate\Support\Facades\Storage::url($orderLabel->file_path) }}', {{ $orderLabel->page_number }}, '{{ ($orderLabel->split_filename ?? 'Page_' . $orderLabel->page_number . '.pdf') }}', this)"
-                            class="btn btn-xs btn-outline btn-warning"
-                            title="Extract & Download Page (Client-Side Extraction)">
-                            <x-icon name="o-arrow-down-tray" class="w-3 h-3" />
-                             Extract {{ $orderLabel->page_number }}
-                        </button>
-                    @else
-                        <a href="{{ route('order-label.download', [
-                            'path' => urlencode($orderLabel->file_path),
-                            'page' => $orderLabel->page_number,
-                            'label_id' => $orderLabel->id
-                        ]) }}"
-                           class="btn btn-xs btn-primary"
-                           title="Download Page {{ $orderLabel->page_number }} - {{ $orderLabel->split_filename ?? basename($orderLabel->file_path) }}">
-                            <x-icon name="o-arrow-down-tray" class="w-3 h-3" />
-                            Download
-                        </a>
-                        <button
-                            onclick="printLabel({{ $orderLabel->id }}, '{{ \Illuminate\Support\Facades\Storage::url($orderLabel->file_path) }}')"
-                            class="btn btn-xs btn-outline btn-success"
-                            title="Print PDF Page {{ $orderLabel->page_number }}">
-                            <x-icon name="o-printer" class="w-3 h-3" />
-                            Print
-                        </button>
-                    @endif
+                    {{-- Always show Download button --}}
+                    <a href="{{ route('order-label.download', [
+                        'path' => urlencode($orderLabel->file_path),
+                        'page' => $orderLabel->page_number,
+                        'label_id' => $orderLabel->id
+                    ]) }}"
+                       class="btn btn-xs btn-primary"
+                       title="Download Page {{ $orderLabel->page_number }} - {{ $orderLabel->split_filename ?? basename($orderLabel->file_path) }}">
+                        <x-icon name="o-arrow-down-tray" class="w-3 h-3" />
+                        Download
+                    </a>
+                    
+                    {{-- Always show Print button --}}
+                    <button
+                        onclick="printLabel({{ $orderLabel->id }}, '{{ \Illuminate\Support\Facades\Storage::url($orderLabel->file_path) }}')"
+                        class="btn btn-xs btn-outline btn-success"
+                        title="Print PDF Page {{ $orderLabel->page_number }}">
+                        <x-icon name="o-printer" class="w-3 h-3" />
+                        Print
+                    </button>
                 </div>
             @else
                 <span class="text-gray-400">-</span>
