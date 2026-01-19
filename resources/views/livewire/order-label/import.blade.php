@@ -37,7 +37,7 @@ new class extends Component {
 
         $this->validate([
             'three_pl_id' => 'required|exists:three_pls,id',
-            'file' => 'required|file|mimes:pdf|max:10240', // 10MB max
+            'file' => 'required|file|mimes:pdf|max:102400', // 10MB max
         ]);
 
         $this->processing = true;
@@ -119,7 +119,7 @@ new class extends Component {
 
                 @if($three_pl_id)
                     <x-file wire:model="file" label="PDF File"
-                           hint="Select PDF file to split (max 10MB)"
+                           hint="Select PDF file to split (max 100MB)"
                            accept=".pdf"
                            wire:target="save"
                            wire:loading.attr="disabled" />
