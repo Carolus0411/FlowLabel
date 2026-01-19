@@ -37,7 +37,7 @@ new class extends Component {
 
         $this->validate([
             'three_pl_id' => 'required|exists:three_pls,id',
-            'file' => 'required|file|mimes:pdf|max:102400', // 10MB max
+            'file' => 'required|file|mimes:pdf|max:102400', // 100MB max
         ]);
 
         $this->processing = true;
@@ -101,7 +101,7 @@ new class extends Component {
                 <div class="mb-4 p-4 bg-blue-50 dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-gray-700">
                     <h3 class="font-semibold text-blue-800 mb-2">PDF Import Instructions:</h3>
                     <ul class=Select Platform (3PL) first</li>
-                        <li>• Upload a PDF file (max 10MB)</li>
+                        <li>• Upload a PDF file (max 100MB)</li>
                         <li>• The file will be processed in the background (Queue)</li>
                         <li>• Large files (500+ pages) may take several minutes</li>
                     </ul>
