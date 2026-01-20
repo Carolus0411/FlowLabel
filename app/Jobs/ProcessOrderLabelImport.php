@@ -286,7 +286,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                     'split_filename' => $splitFileName,
                     'page_number' => $i,
                     'file_path' => 'order-label-splits/' . $batchFolderName . '/' . $splitFileName,
-                    'extracted_text' => $pageText,
+                    'extracted_text' => $this->sanitizeText($pageText),
                     'status' => 'open',
                     'saved' => 1,
                     'created_by' => $this->userId,
@@ -297,13 +297,21 @@ class ProcessOrderLabelImport implements ShouldQueue
                 \Log::warning("Page $i failed in FPDI: " . $pageError->getMessage());
                 
                 // Store failed page info for fallback processing
-                $pageText = isset($pages[$i - 1]) ? $pages[$i - 1]->getText() : '';
+                try {
+                    $pageText = isset($pages[$i - 1]) ? $pages[$i - 1]->getText() : '';
+                } catch (\Exception $textError) {
+                    \Log::warning("Page $i text extraction also failed: " . $textError->getMessage());
+                    $pageText = 'Text extraction failed';
+                }
+                
                 $failedPages[$i] = [
                     'page_number' => $i,
                     'text' => $pageText,
                     'order_id' => $this->extractOrderId($pageText),
                     'error' => $pageError->getMessage()
                 ];
+                
+                \Log::info("Page $i added to failed pages queue for Ghostscript fallback");
             }
         }
 
@@ -404,7 +412,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                         'split_filename' => $displayFilename,
                         'page_number' => $pageNumber,
                         'file_path' => 'order-label-splits/' . $batchFolderName . '/' . $actualFilePath,
-                        'extracted_text' => $text,
+                        'extracted_text' => $this->sanitizeText($text),
                         'status' => 'open',
                         'saved' => 1,
                         'created_by' => $this->userId,
@@ -431,7 +439,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                     'split_filename' => $fallbackFileName,
                     'page_number' => 1,
                     'file_path' => 'order-label-splits/' . $batchFolderName . '/' . $fallbackFileName,
-                    'extracted_text' => $pdf->getText(),
+                    'extracted_text' => $this->sanitizeText($pdf->getText()),
                     'status' => 'open',
                     'saved' => 1,
                     'created_by' => $this->userId,
@@ -499,8 +507,9 @@ class ProcessOrderLabelImport implements ShouldQueue
 
         // TIKTOK or default format: Numeric Order ID
         // 1. PRIORITY: TT Order ID or Order Id with long numeric value (18+ digits)
-        // Matches: "TT Order ID : 582108769742652773" or "Order Id : 582107959496574940"
-        if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\.]?\s*(\d{15,})/i', $text, $matches)) {
+        // Matches: "TT Order ID : 582108769742652773" or "TT Order ID ：582107960589780854" (with full-width colon)
+        // Also matches: "Order Id : 582107959496574940"
+        if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\s：\.]*\s*(\d{15,})/iu', $text, $matches)) {
             return $matches[1];
         }
 
@@ -521,6 +530,25 @@ class ProcessOrderLabelImport implements ShouldQueue
         }
 
         return null;
+    }
+
+    /**
+     * Sanitize text to prevent database encoding errors
+     * Removes or replaces special characters that cause WIN1252 encoding issues
+     */
+    private function sanitizeText(string $text): string
+    {
+        // Replace full-width characters with ASCII equivalents
+        $text = str_replace('：', ':', $text);
+        $text = str_replace('（', '(', $text);
+        $text = str_replace('）', ')', $text);
+        $text = str_replace('　', ' ', $text); // Full-width space
+        
+        // Remove any remaining non-ASCII characters that might cause issues
+        // Keep common punctuation and alphanumeric
+        $text = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
+        
+        return $text;
     }
 
     /**
@@ -644,7 +672,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                     'split_filename' => $splitFileName,
                     'page_number' => $pageNumber,
                     'file_path' => 'order-label-splits/' . $batchFolderName . '/' . ($saved ? $splitFileName : 'FAILED_' . $splitFileName),
-                    'extracted_text' => $pageText,
+                    'extracted_text' => $this->sanitizeText($pageText),
                     'status' => 'open',
                     'saved' => $saved,
                     'created_by' => $this->userId,
