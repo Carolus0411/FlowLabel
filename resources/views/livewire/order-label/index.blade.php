@@ -5,6 +5,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Spatie\SimpleExcel\SimpleExcelWriter;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Font;
 use Livewire\Attributes\Session;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Volt\Component;
@@ -409,7 +412,6 @@ new class extends Component {
         try {
             logger('Export started');
 
-            $rows = [];
             $orderLabels = OrderLabel::stored()
                 ->with('threePl')
                 ->whereDateBetween('DATE(order_date)', $this->date1, $this->date2)
@@ -429,16 +431,55 @@ new class extends Component {
                 return;
             }
 
+            // Create new Spreadsheet
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Set headers
+            $headers = ['Batch No', 'Platform', 'Code', 'Print Status', 'Print Count', 'Order Date', 'Page', 'PDF Link'];
+            $sheet->fromArray($headers, null, 'A1');
+
+            // Style header row
+            $headerStyle = $sheet->getStyle('A1:H1');
+            $headerStyle->getFont()->setBold(true);
+            $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFE0E0E0');
+
+            // Add data rows
+            $row = 2;
             foreach ($orderLabels as $orderLabel) {
-                $rows[] = [
-                    'Batch No' => $orderLabel->batch_no ?? '',
-                    'Platform' => $orderLabel->threePl?->name ?? '',
-                    'Code' => $orderLabel->code,
-                    'Print Status' => $orderLabel->printed_at ? 'Printed' : 'Not Printed',
-                    'Print Count' => $orderLabel->print_count ?? 0,
-                    'Order Date' => $orderLabel->order_date ? \Carbon\Carbon::parse($orderLabel->order_date)->format('d-m-Y') : '',
-                    'Page' => $orderLabel->page_number ?? '',
-                ];
+                $pdfUrl = '';
+                if ($orderLabel->file_path) {
+                    $pdfUrl = 'https://label.flowgistik.co.id/storage/' . $orderLabel->file_path;
+                }
+
+                $sheet->setCellValue('A' . $row, $orderLabel->batch_no ?? '');
+                $sheet->setCellValue('B' . $row, $orderLabel->threePl?->name ?? '');
+                $sheet->setCellValue('C' . $row, $orderLabel->code);
+                $sheet->setCellValue('D' . $row, $orderLabel->printed_at ? 'Printed' : 'Not Printed');
+                $sheet->setCellValue('E' . $row, $orderLabel->print_count ?? 0);
+                $sheet->setCellValue('F' . $row, $orderLabel->order_date ? \Carbon\Carbon::parse($orderLabel->order_date)->format('d-m-Y') : '');
+                $sheet->setCellValue('G' . $row, $orderLabel->page_number ?? '');
+
+                // Add hyperlink with styling
+                if ($pdfUrl) {
+                    $sheet->setCellValue('H' . $row, 'Download PDF');
+                    $sheet->getCell('H' . $row)->getHyperlink()->setUrl($pdfUrl);
+
+                    // Style the hyperlink: blue, underline, bold
+                    $linkStyle = $sheet->getStyle('H' . $row);
+                    $linkStyle->getFont()
+                        ->setUnderline(Font::UNDERLINE_SINGLE)
+                        ->setBold(true)
+                        ->getColor()->setARGB('FF0000FF');
+                }
+
+                $row++;
+            }
+
+            // Auto-size columns
+            foreach (range('A', 'H') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
             }
 
             $batchInfo = !empty($this->batch_no) ? '-batch-' . str_replace('/', '-', $this->batch_no) : '';
@@ -447,10 +488,12 @@ new class extends Component {
 
             logger('Creating Excel file: ' . $filename);
 
-            return response()->streamDownload(function () use ($rows) {
-                $writer = SimpleExcelWriter::streamDownload('export.xlsx');
-                $writer->addRows($rows);
-            }, $filename);
+            // Create temporary file
+            $tempFile = tempnam(sys_get_temp_dir(), 'excel');
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($tempFile);
+
+            return response()->download($tempFile, $filename)->deleteFileAfterSend(true);
 
         } catch (\Exception $e) {
             logger('Export error: ' . $e->getMessage());

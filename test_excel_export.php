@@ -43,7 +43,7 @@ if (file_exists($filename)) {
     echo "\n✅ Excel file created successfully!\n";
     echo "   Location: $filename\n";
     echo "   Size: " . round($size / 1024, 2) . " KB\n";
-    
+
     // Clean up
     unlink($filename);
     echo "   Test file deleted.\n";

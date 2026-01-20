@@ -40,7 +40,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     public function login(): void
     {
         logger('Login attempt for email: ' . $this->email);
-        
+
         $this->validate();
 
         $this->ensureIsNotRateLimited();
