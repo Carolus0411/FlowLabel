@@ -79,7 +79,7 @@
     <x-main with-nav full-width>
 
         {{-- SIDEBAR --}}
-        <x-slot:sidebar drawer="main-drawer" class="bg-base-100 lg:bg-white lg:border-r lg:border-gray-200 dark:lg:bg-inherit dark:lg:border-none">
+        <x-slot:sidebar drawer="main-drawer" collapsible class="bg-base-100 lg:bg-white lg:border-r lg:border-gray-200 dark:lg:bg-inherit dark:lg:border-none">
 
             {{-- MENU --}}
             <x-menu activate-by-route class="text-[13px] font-light">

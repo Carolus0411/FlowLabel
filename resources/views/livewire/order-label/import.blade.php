@@ -83,7 +83,7 @@ new class extends Component {
     <x-header title="Import PDF - Order Label" separator />
 
     @if($batchId)
-        <x-card title="Import Queued" class="bg-blue-50 border-blue-200">
+        <x-card title="Import Queued" class="bg-blue-50 dark:bg-gray-800 border-blue-200 dark:border-gray-700">
              <div class="p-4 dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-gray-700">
                 <p class="text-blue-800 font-semibold text-lg mb-2">Import has been started in the background.</p>
                 <p class="mb-4">You can leave this page or upload another file. The system will process the PDF in the background.</p>
@@ -130,7 +130,9 @@ new class extends Component {
                              wire:target="save" wire:loading.attr="disabled" />
                     <x-button label="Start Import Process" icon="o-rocket-launch"
                              spinner="save" type="submit" class="btn-primary"
-                             :disabled="$processing" />
+                             :disabled="$processing"
+                             wire:loading.attr="disabled"
+                             wire:target="file" />
                 </x-slot:actions>
             </x-form>
         </x-card>

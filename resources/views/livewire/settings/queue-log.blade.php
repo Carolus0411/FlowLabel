@@ -18,8 +18,8 @@ new class extends Component {
             ['key' => 'pending_jobs', 'label' => 'Pending'],
             ['key' => 'failed_jobs', 'label' => 'Failed'],
             ['key' => 'progress', 'label' => 'Progress'],
-            ['key' => 'created_at', 'label' => 'Created At'],
-            ['key' => 'finished_at', 'label' => 'Finished At'],
+            ['key' => 'duration', 'label' => 'Lama Durasi Import'],
+            ['key' => 'created_at', 'label' => 'Tanggal dan Jam Import'],
         ];
     }
 
@@ -58,12 +58,19 @@ new class extends Component {
         Artisan::call('queue:flush');
         $this->success('Failed jobs flushed!');
     }
+
+    public function clearHistory(): void
+    {
+        DB::table('job_batches')->whereNotNull('finished_at')->delete();
+        $this->success('History cleared!');
+    }
 };
 ?>
 
 <div>
     <x-header title="Queue Log" separator>
         <x-slot:actions>
+             <x-button label="Clear History" icon="o-trash" wire:click="clearHistory" class="btn-sm btn-error" wire:confirm="Are you sure you want to clear completed batches?" />
              <x-button label="Refresh" icon="o-arrow-path" wire:click="$refresh" class="btn-sm" />
              @if($jobsCount > 0)
                 <x-badge value="{{ $jobsCount }} Pending Jobs" class="badge-warning" />
@@ -88,15 +95,15 @@ new class extends Component {
                 </div>
                 <div class="text-xs text-center mt-1">{{ $percentage }}%</div>
             @endscope
-            @scope('cell_created_at', $batch)
-                {{ \Carbon\Carbon::parse($batch->created_at)->diffForHumans() }}
-            @endscope
-            @scope('cell_finished_at', $batch)
+            @scope('cell_duration', $batch)
                 @if($batch->finished_at)
-                    {{ \Carbon\Carbon::parse($batch->finished_at)->diffForHumans() }}
+                    {{ \Carbon\Carbon::parse($batch->created_at)->diff(\Carbon\Carbon::parse($batch->finished_at))->format('%H:%I:%S') }}
                 @else
-                    <span class="text-yellow-600">Running...</span>
+                    -
                 @endif
+            @endscope
+            @scope('cell_created_at', $batch)
+                {{ \Carbon\Carbon::parse($batch->created_at)->format('d-m-Y H:i:s') }}
             @endscope
         </x-table>
     </div>

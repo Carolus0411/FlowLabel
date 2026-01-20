@@ -172,10 +172,16 @@ class ProcessOrderLabelImport implements ShouldQueue
 
         $baseName = pathinfo($originalName, PATHINFO_FILENAME);
         $repairedPath = $outputDir . $baseName . '_repaired.pdf';
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 
         try {
-            $cmd = sprintf('"%s" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile="%s" "%s"',
-                $gsPath, $repairedPath, $filePath);
+            // Proper escaping for both Windows and Linux
+            $escapedGsPath = $isWindows ? '"' . $gsPath . '"' : escapeshellarg($gsPath);
+            $escapedOutput = $isWindows ? '"' . $repairedPath . '"' : escapeshellarg($repairedPath);
+            $escapedInput = $isWindows ? '"' . $filePath . '"' : escapeshellarg($filePath);
+            
+            $cmd = sprintf('%s -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=%s %s 2>&1',
+                $escapedGsPath, $escapedOutput, $escapedInput);
 
             exec($cmd, $output, $returnVar);
 
@@ -216,6 +222,7 @@ class ProcessOrderLabelImport implements ShouldQueue
         $usedFilenames = [];
         $startTime = microtime(true);
         $timeLimitSafe = 550; // Use a comfortable limit slightly less than job timeout
+        $failedPages = []; // Track failed pages for Ghostscript fallback
 
         for ($i = 1; $i <= $pageCount; $i++) {
 
@@ -287,10 +294,23 @@ class ProcessOrderLabelImport implements ShouldQueue
                 ]);
 
             } catch (\Exception $pageError) {
-                // Log and simple fallback logic for individual page fail inside FPDI loop?
-                // For simplicity, rely on parent catch for major errors, but maybe we should separate logic
-                \Log::warning("Page $i failed in Job: " . $pageError->getMessage());
+                \Log::warning("Page $i failed in FPDI: " . $pageError->getMessage());
+                
+                // Store failed page info for fallback processing
+                $pageText = isset($pages[$i - 1]) ? $pages[$i - 1]->getText() : '';
+                $failedPages[$i] = [
+                    'page_number' => $i,
+                    'text' => $pageText,
+                    'order_id' => $this->extractOrderId($pageText),
+                    'error' => $pageError->getMessage()
+                ];
             }
+        }
+
+        // Process failed pages with Ghostscript fallback
+        if (!empty($failedPages)) {
+            \Log::info("Processing " . count($failedPages) . " failed pages with Ghostscript fallback");
+            $this->processFailedPagesWithGhostscript($filePath, $outputDir, $failedPages, $baseName, $usedFilenames);
         }
     }
 
@@ -549,6 +569,92 @@ class ProcessOrderLabelImport implements ShouldQueue
     private function isGhostscriptAvailable(): bool
     {
         return $this->getGhostscriptPath() !== null;
+    }
+
+    /**
+     * Process failed FPDI pages using Ghostscript
+     */
+    private function processFailedPagesWithGhostscript($filePath, $outputDir, $failedPages, $baseName, &$usedFilenames): void
+    {
+        $gsPath = $this->getGhostscriptPath();
+        $batchFolderName = str_replace('/', '-', $this->batchNo);
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+        foreach ($failedPages as $pageInfo) {
+            $pageNumber = $pageInfo['page_number'];
+            $pageText = $pageInfo['text'];
+            $orderId = $pageInfo['order_id'];
+
+            try {
+                // Generate filename based on order ID
+                if ($orderId) {
+                    $fileNameBase = $orderId;
+                    if (isset($usedFilenames[$fileNameBase])) {
+                        $usedFilenames[$fileNameBase]++;
+                        $finalName = $fileNameBase . '_' . $usedFilenames[$fileNameBase];
+                        $uniqueCode = $orderId . '_' . $usedFilenames[$fileNameBase];
+                    } else {
+                        $usedFilenames[$fileNameBase] = 0;
+                        $finalName = $fileNameBase;
+                        $uniqueCode = $orderId;
+                    }
+                    $splitFileName = $finalName . '.pdf';
+                } else {
+                    $splitFileName = $baseName . '_page_' . $pageNumber . '.pdf';
+                    $uniqueCode = $baseName . '_' . $pageNumber . '_' . time();
+                }
+
+                $outputFile = $outputDir . $splitFileName;
+                $saved = 0; // Mark as not saved if Ghostscript fails
+
+                // Try Ghostscript split if available
+                if ($gsPath) {
+                    $escapedGsPath = $isWindows ? '"' . $gsPath . '"' : escapeshellarg($gsPath);
+                    $escapedOutput = $isWindows ? '"' . $outputFile . '"' : escapeshellarg($outputFile);
+                    $escapedInput = $isWindows ? '"' . $filePath . '"' : escapeshellarg($filePath);
+
+                    $cmd = sprintf(
+                        '%s -sDEVICE=pdfwrite -dFirstPage=%d -dLastPage=%d -dNOPAUSE -dQUIET -dBATCH -sOutputFile=%s %s 2>&1',
+                        $escapedGsPath,
+                        $pageNumber,
+                        $pageNumber,
+                        $escapedOutput,
+                        $escapedInput
+                    );
+
+                    $output = [];
+                    exec($cmd, $output, $returnVar);
+
+                    if ($returnVar === 0 && file_exists($outputFile)) {
+                        $saved = 1;
+                        \Log::info("Ghostscript successfully split page $pageNumber");
+                    } else {
+                        \Log::error("Ghostscript failed for page $pageNumber");
+                    }
+                }
+
+                // Create record even if file save failed
+                OrderLabel::create([
+                    'batch_no' => $this->batchNo,
+                    'three_pl_id' => $this->threePlId,
+                    'code' => $uniqueCode,
+                    'order_date' => now(),
+                    'note' => $orderId ? "Order ID: $orderId (Recovered)" : ('PDF Page (Recovered): ' . $pageNumber),
+                    'original_filename' => $this->originalName,
+                    'split_filename' => $splitFileName,
+                    'page_number' => $pageNumber,
+                    'file_path' => 'order-label-splits/' . $batchFolderName . '/' . ($saved ? $splitFileName : 'FAILED_' . $splitFileName),
+                    'extracted_text' => $pageText,
+                    'status' => 'open',
+                    'saved' => $saved,
+                    'created_by' => $this->userId,
+                    'updated_by' => $this->userId,
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error("Failed to process page $pageNumber in Ghostscript fallback: " . $e->getMessage());
+            }
+        }
     }
 
     /**

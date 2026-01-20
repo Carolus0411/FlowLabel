@@ -75,8 +75,6 @@ new class extends Component {
             ['key' => 'code', 'label' => 'Code', 'searchable' => true],
             ['key' => 'print_status', 'label' => 'Status', 'sortable' => false, 'disableLink' => true],
             ['key' => 'order_date', 'label' => 'Order Date', 'format' => ['date', 'd-m-Y']],
-            ['key' => 'original_filename', 'label' => 'Original File', 'sortable' => false, 'class' => 'max-w-[150px] truncate'],
-            ['key' => 'split_filename', 'label' => 'Split File', 'sortable' => false, 'class' => 'max-w-[150px] truncate'],
             ['key' => 'page_number', 'label' => 'Page', 'class' => 'text-center'],
             ['key' => 'file_download', 'label' => 'Download', 'disableLink' => true, 'sortable' => false, 'class' => 'text-center'],
             ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'whitespace-nowrap', 'format' => ['date', 'd-M-y, H:i']],
@@ -445,7 +443,7 @@ new class extends Component {
         <x-slot:actions>
             <x-button label="Dashboard" link="{{ route('order-label.dashboard') }}" icon="o-chart-bar" class="btn-outline" />
             <x-button label="Download Selected" wire:click="downloadSelected" spinner="downloadSelected" icon="o-arrow-down-tray" class="btn-success" :disabled="count($selectedItems) === 0" />
-            <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" />
+            {{-- <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" /> --}}
             <x-button label="Import PDF" link="{{ route('order-label.import') }}"
                      icon="o-document-arrow-up" class="btn-primary" />
             <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
@@ -457,54 +455,61 @@ new class extends Component {
         <div class="space-y-4">
             @forelse($batches as $batch)
                 <x-card class="hover:shadow-lg transition-shadow border-l-4 border-blue-500">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-4">
+                    {{-- Header with badges and info - responsive flex wrap --}}
+                    <div class="flex flex-wrap items-start gap-3 mb-4">
+                        <div class="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
                             <div>
-                                <x-badge value="{{ $batch->batch_no }}" class="badge-info badge-lg font-mono" />
+                                <x-badge value="{{ $batch->batch_no }}" class="badge-info badge-md font-mono" />
                             </div>
                             @if($batch->threePl && $batch->threePl->name)
                             <div>
-                                <x-badge value="{{ $batch->threePl->name }}" class="badge-primary badge-lg" />
+                                <x-badge value="{{ $batch->threePl->name }}" class="badge-primary badge-md" />
                             </div>
                             @endif
-                            <div class="border-l pl-4">
+                            <div class="border-l pl-3">
                                 <div class="text-xs text-gray-500">Import Date</div>
-                                <div class="font-semibold text-gray-700">{{ \Carbon\Carbon::parse($batch->import_date)->format('d-M-Y H:i') }}</div>
+                                <div class="font-semibold text-sm text-gray-700">{{ \Carbon\Carbon::parse($batch->import_date)->format('d-M-Y H:i') }}</div>
                             </div>
-                            <div class="border-l pl-4">
+                            <div class="border-l pl-3">
                                 <div class="text-xs text-gray-500">Original File</div>
-                                <div class="font-medium max-w-[300px] truncate text-gray-700" title="{{ $batch->original_filename }}">
+                                <div class="font-medium text-sm max-w-[200px] lg:max-w-[300px] truncate text-gray-700" title="{{ $batch->original_filename }}">
                                     {{ $batch->original_filename }}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-6">
-                            <div class="text-center px-3">
-                                <div class="text-3xl font-bold text-blue-600">{{ $batch->total_pages }}</div>
-                                <div class="text-xs text-gray-500 uppercase">Pages</div>
+                        {{-- Stats and Actions - separate row on small screens --}}
+                        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto lg:ml-auto">
+                            {{-- Statistics --}}
+                            <div class="flex items-center gap-2 lg:gap-4">
+                                <div class="text-center px-2">
+                                    <div class="text-2xl lg:text-3xl font-bold text-blue-600">{{ $batch->total_pages }}</div>
+                                    <div class="text-xs text-gray-500 uppercase">Pages</div>
+                                </div>
+                                <div class="text-center px-2 border-l">
+                                    <div class="text-2xl lg:text-3xl font-bold text-green-600">{{ $batch->printed_count }}</div>
+                                    <div class="text-xs text-gray-500 uppercase">Printed</div>
+                                </div>
+                                <div class="text-center px-2 border-l">
+                                    <div class="text-2xl lg:text-3xl font-bold text-orange-600">{{ $batch->total_pages - $batch->printed_count }}</div>
+                                    <div class="text-xs text-gray-500 uppercase">Pending</div>
+                                </div>
                             </div>
-                            <div class="text-center px-3 border-l">
-                                <div class="text-3xl font-bold text-green-600">{{ $batch->printed_count }}</div>
-                                <div class="text-xs text-gray-500 uppercase">Printed</div>
-                            </div>
-                            <div class="text-center px-3 border-l">
-                                <div class="text-3xl font-bold text-orange-600">{{ $batch->total_pages - $batch->printed_count }}</div>
-                                <div class="text-xs text-gray-500 uppercase">Pending</div>
-                            </div>
-                            <div class="flex gap-2 border-l pl-4">
+
+                            {{-- Action Buttons --}}
+                            <div class="flex gap-2 border-l pl-3">
                                 <x-button
                                     label="Download"
                                     wire:click="downloadBatch('{{ $batch->batch_no }}')"
                                     icon="o-arrow-down-tray"
                                     spinner="downloadBatch"
-                                    class="btn-sm btn-success"
+                                    class="btn-xs lg:btn-sm btn-success"
                                 />
                                 <x-button
                                     label="Details"
                                     wire:click="viewBatchDetail('{{ $batch->batch_no }}')"
                                     icon="o-eye"
-                                    class="btn-sm btn-primary"
+                                    class="btn-xs lg:btn-sm btn-primary"
                                 />
                             </div>
                         </div>
@@ -544,10 +549,10 @@ new class extends Component {
         {{-- LIST VIEW (EXISTING) --}}
         <x-card wire:loading.class="bg-slate-200/50 text-slate-400 dark:bg-gray-800/50 dark:text-gray-400" class="overflow-x-auto">
             @if(!empty($batch_no))
-                <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                <div class="mb-4 p-3 dark:bg-gray-800 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <x-icon name="o-funnel" class="w-5 h-5 text-blue-600" />
-                        <span class="text-sm text-blue-800">
+                        <x-icon name="o-funnel" class="w-5 h-5 text-black-600" />
+                        <span class="text-sm text-black-800">
                             Viewing batch: <strong class="font-mono">{{ $batch_no }}</strong>
                         </span>
                     </div>
@@ -634,26 +639,6 @@ new class extends Component {
                 </div>
             @else
                 <x-badge value="Not Printed" class="badge-ghost badge-sm" />
-            @endif
-            @endscope
-
-            @scope('cell_original_filename', $orderLabel)
-            @if($orderLabel->original_filename)
-                <div class="text-sm text-gray-600" title="{{ $orderLabel->original_filename }}">
-                    {{ Str::limit($orderLabel->original_filename, 20) }}
-                </div>
-            @else
-                <span class="text-gray-400">-</span>
-            @endif
-            @endscope
-
-            @scope('cell_split_filename', $orderLabel)
-            @if($orderLabel->split_filename)
-                <div class="text-sm font-medium" title="{{ $orderLabel->split_filename }}">
-                    {{ Str::limit($orderLabel->split_filename, 20) }}
-                </div>
-            @else
-                <span class="text-gray-400">-</span>
             @endif
             @endscope
 
