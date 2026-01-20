@@ -448,9 +448,14 @@ new class extends Component {
             // Add data rows
             $row = 2;
             foreach ($orderLabels as $orderLabel) {
+                // Generate secure download URL with encoded path parameter
                 $pdfUrl = '';
                 if ($orderLabel->file_path) {
-                    $pdfUrl = 'https://label.flowgistik.co.id/storage/' . $orderLabel->file_path;
+                    $pdfUrl = route('order-label.download', [
+                        'path' => urlencode($orderLabel->file_path),
+                        'page' => $orderLabel->page_number,
+                        'label_id' => $orderLabel->id
+                    ]);
                 }
 
                 $sheet->setCellValue('A' . $row, $orderLabel->batch_no ?? '');
