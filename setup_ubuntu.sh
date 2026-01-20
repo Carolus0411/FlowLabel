@@ -11,7 +11,7 @@ echo "=========================================="
 echo ""
 
 # Check if running as root
-if [ "$EUID" -ne 0 ]; then 
+if [ "$EUID" -ne 0 ]; then
     echo "Please run with sudo: sudo bash setup_ubuntu.sh"
     exit 1
 fi
@@ -69,7 +69,7 @@ if [ -f "$PHP_FPM_INI" ]; then
     sed -i 's/max_execution_time = .*/max_execution_time = 600/' "$PHP_FPM_INI"
     sed -i 's/post_max_size = .*/post_max_size = 100M/' "$PHP_FPM_INI"
     sed -i 's/upload_max_filesize = .*/upload_max_filesize = 100M/' "$PHP_FPM_INI"
-    
+
     systemctl restart php$PHP_VERSION-fpm
     echo "✓ PHP-FPM configured and restarted"
 fi

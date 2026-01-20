@@ -3,6 +3,7 @@
 ## Prerequisites
 
 ### 1. Install Ghostscript (Required for PDF Processing)
+
 ```bash
 sudo apt-get update
 sudo apt-get install ghostscript -y
@@ -12,11 +13,13 @@ gs --version
 ```
 
 ### 2. Install PHP Extensions
+
 ```bash
 sudo apt-get install php-cli php-mbstring php-xml php-zip php-gd php-curl php-mysql -y
 ```
 
 ### 3. Configure PHP Settings
+
 Edit `/etc/php/8.x/cli/php.ini` and `/etc/php/8.x/fpm/php.ini`:
 
 ```ini
@@ -27,6 +30,7 @@ upload_max_filesize = 100M
 ```
 
 Restart PHP-FPM:
+
 ```bash
 sudo systemctl restart php8.x-fpm
 ```
@@ -34,6 +38,7 @@ sudo systemctl restart php8.x-fpm
 ## Storage Permissions
 
 Set proper permissions for Laravel storage:
+
 ```bash
 cd /var/www/labsysflow
 
@@ -52,11 +57,13 @@ sudo usermod -a -G www-data ubuntu
 ### Option 1: Supervisor (Recommended)
 
 #### Install Supervisor
+
 ```bash
 sudo apt-get install supervisor -y
 ```
 
 #### Create Supervisor Configuration
+
 Create file: `/etc/supervisor/conf.d/labsysflow-worker.conf`
 
 ```ini
@@ -75,6 +82,7 @@ stopwaitsecs=3600
 ```
 
 #### Start Supervisor
+
 ```bash
 sudo supervisorctl reread
 sudo supervisorctl update
@@ -85,6 +93,7 @@ sudo supervisorctl status
 ```
 
 #### Useful Supervisor Commands
+
 ```bash
 # Restart workers
 sudo supervisorctl restart labsysflow-worker:*
@@ -119,6 +128,7 @@ WantedBy=multi-user.target
 ```
 
 Enable and start:
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable labsysflow-worker
@@ -140,6 +150,7 @@ sudo crontab -e -u www-data
 ```
 
 Add this line:
+
 ```
 * * * * * cd /var/www/labsysflow && php artisan schedule:run >> /dev/null 2>&1
 ```
@@ -147,18 +158,21 @@ Add this line:
 ## Testing the Setup
 
 ### 1. Test Ghostscript
+
 ```bash
 gs --version
 which gs
 ```
 
 ### 2. Test PHP Configuration
+
 ```bash
 php -i | grep memory_limit
 php -i | grep max_execution_time
 ```
 
 ### 3. Test Queue Worker
+
 ```bash
 # Run manually first
 cd /var/www/labsysflow
@@ -169,6 +183,7 @@ tail -f storage/logs/laravel.log
 ```
 
 ### 4. Test File Permissions
+
 ```bash
 # Try creating a file in storage
 sudo -u www-data touch storage/app/test.txt
@@ -180,6 +195,7 @@ sudo rm storage/app/test.txt
 ## Troubleshooting
 
 ### Permission Denied Errors
+
 ```bash
 # Reset all permissions
 sudo chown -R www-data:www-data /var/www/labsysflow
@@ -189,6 +205,7 @@ sudo chmod -R 775 /var/www/labsysflow/bootstrap/cache
 ```
 
 ### Queue Worker Not Processing
+
 ```bash
 # Check supervisor status
 sudo supervisorctl status
@@ -202,6 +219,7 @@ php artisan queue:restart
 ```
 
 ### Ghostscript Not Found
+
 ```bash
 # Install ghostscript
 sudo apt-get install ghostscript
@@ -212,6 +230,7 @@ gs --version
 ```
 
 ### Memory Issues
+
 ```bash
 # Increase PHP memory limit
 sudo sed -i 's/memory_limit = .*/memory_limit = 1024M/' /etc/php/8.x/cli/php.ini
@@ -225,6 +244,7 @@ sudo supervisorctl restart labsysflow-worker:*
 ## Monitoring
 
 ### Check Worker Status
+
 ```bash
 # Supervisor
 sudo supervisorctl status
@@ -234,6 +254,7 @@ sudo systemctl status labsysflow-worker
 ```
 
 ### View Logs
+
 ```bash
 # Laravel logs
 tail -f storage/logs/laravel.log
@@ -246,6 +267,7 @@ sudo journalctl -u labsysflow-worker -f
 ```
 
 ### Check Queue Status
+
 ```bash
 php artisan queue:listen --timeout=0
 ```
@@ -253,6 +275,7 @@ php artisan queue:listen --timeout=0
 ## Performance Optimization
 
 ### 1. Use Redis for Queues (Optional)
+
 ```bash
 # Install Redis
 sudo apt-get install redis-server php-redis
@@ -262,13 +285,17 @@ QUEUE_CONNECTION=redis
 ```
 
 ### 2. Increase Worker Processes
+
 Edit supervisor config to increase `numprocs`:
+
 ```ini
 numprocs=4  # Increase based on server capacity
 ```
 
 ### 3. Enable OPcache
+
 Edit `/etc/php/8.x/fpm/php.ini`:
+
 ```ini
 opcache.enable=1
 opcache.memory_consumption=256

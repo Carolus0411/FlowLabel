@@ -48,7 +48,7 @@ $startTime = time();
 while (!$batch->finished() && (time() - $startTime) < $timeout) {
     sleep(5);
     $batch = $batch->fresh();
-    
+
     $progress = $batch->totalJobs > 0 ? round((($batch->totalJobs - $batch->pendingJobs) / $batch->totalJobs) * 100) : 0;
     echo "\rProgress: $progress% ({$batch->processedJobs()}/{$batch->totalJobs})";
 }
@@ -57,41 +57,41 @@ echo "\n\n";
 
 if ($batch->finished()) {
     echo "✓ Batch completed!\n\n";
-    
+
     // Check results
     $records = OrderLabel::where('original_filename', basename($sourcePath))->get();
     echo "Total records created: " . $records->count() . "\n";
-    
+
     // Check for missing pages
     $pageNumbers = $records->pluck('page_number')->toArray();
     $maxPage = max($pageNumbers);
     $minPage = min($pageNumbers);
-    
+
     $missingPages = [];
     for ($i = $minPage; $i <= $maxPage; $i++) {
         if (!in_array($i, $pageNumbers)) {
             $missingPages[] = $i;
         }
     }
-    
+
     if (empty($missingPages)) {
         echo "✓ No missing pages! All 599 pages imported successfully.\n";
     } else {
         echo "✗ Missing pages (" . count($missingPages) . "): " . implode(', ', $missingPages) . "\n";
     }
-    
+
     // Check saved status
     $notSaved = $records->where('saved', 0)->count();
     if ($notSaved > 0) {
         echo "\n⚠ Warning: $notSaved pages could not be saved as files (FPDI compression issue)\n";
         echo "These pages are recorded in database but file generation failed.\n";
     }
-    
+
     // Show failed pages
     if ($batch->failedJobs > 0) {
         echo "\n✗ Failed jobs: " . $batch->failedJobs . "\n";
     }
-    
+
 } else {
     echo "✗ Batch timeout or incomplete\n";
 }

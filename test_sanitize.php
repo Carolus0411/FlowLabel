@@ -9,11 +9,11 @@ function sanitizeText(string $text): string
     $text = str_replace("\u{ff08}", '(', $text); // Full-width (
     $text = str_replace("\u{ff09}", ')', $text); // Full-width )
     $text = str_replace("\u{3000}", ' ', $text); // Full-width space
-    
+
     // Remove any remaining non-ASCII characters that might cause issues
     // Keep common punctuation and alphanumeric
     $text = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
-    
+
     return $text;
 }
 
@@ -32,14 +32,14 @@ foreach ($testCases as $index => $text) {
     $testNum = $index + 1;
     echo "Test $testNum:\n";
     echo "Original: \"$text\"\n";
-    
+
     $sanitized = sanitizeText($text);
     echo "Sanitized: \"$sanitized\"\n";
-    
+
     // Check for non-ASCII
     $hasNonAscii = preg_match('/[^\x20-\x7E\r\n\t]/', $sanitized);
     echo "Has non-ASCII: " . ($hasNonAscii ? "YES ❌" : "NO ✓") . "\n";
-    
+
     echo "\n";
 }
 

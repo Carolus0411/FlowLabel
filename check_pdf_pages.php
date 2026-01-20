@@ -13,9 +13,9 @@ try {
     $pdf = $parser->parseFile($pdfPath);
     $pages = $pdf->getPages();
     $pageCount = count($pages);
-    
+
     echo "Total pages detected: $pageCount\n\n";
-    
+
     // Check first 5 pages for order ID
     echo "Checking first 5 pages for order ID extraction:\n";
     for ($i = 0; $i < min(5, $pageCount); $i++) {
@@ -24,7 +24,7 @@ try {
         try {
             $text = $pages[$i]->getText();
             echo "Text length: " . strlen($text) . " chars\n";
-            
+
             // Extract order ID using TikTok pattern
             if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\.]?\s*(\d{15,})/i', $text, $matches)) {
                 echo "Order ID found: " . $matches[1] . "\n";
@@ -38,7 +38,7 @@ try {
             echo "Error extracting text: " . $e->getMessage() . "\n";
         }
     }
-    
+
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
 }

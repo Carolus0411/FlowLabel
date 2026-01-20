@@ -134,9 +134,9 @@ class ProcessOrderLabelImport implements ShouldQueue
     private function getGhostscriptPath(): ?string
     {
         $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-        
+
         // List of common paths for Ghostscript
-        $paths = $isWindows 
+        $paths = $isWindows
             ? [
                 'gswin64c.exe',
                 'gswin32c.exe',
@@ -179,7 +179,7 @@ class ProcessOrderLabelImport implements ShouldQueue
             $escapedGsPath = $isWindows ? '"' . $gsPath . '"' : escapeshellarg($gsPath);
             $escapedOutput = $isWindows ? '"' . $repairedPath . '"' : escapeshellarg($repairedPath);
             $escapedInput = $isWindows ? '"' . $filePath . '"' : escapeshellarg($filePath);
-            
+
             $cmd = sprintf('%s -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=%s %s 2>&1',
                 $escapedGsPath, $escapedOutput, $escapedInput);
 
@@ -295,7 +295,7 @@ class ProcessOrderLabelImport implements ShouldQueue
 
             } catch (\Exception $pageError) {
                 \Log::warning("Page $i failed in FPDI: " . $pageError->getMessage());
-                
+
                 // Store failed page info for fallback processing
                 try {
                     $pageText = isset($pages[$i - 1]) ? $pages[$i - 1]->getText() : '';
@@ -303,14 +303,14 @@ class ProcessOrderLabelImport implements ShouldQueue
                     \Log::warning("Page $i text extraction also failed: " . $textError->getMessage());
                     $pageText = 'Text extraction failed';
                 }
-                
+
                 $failedPages[$i] = [
                     'page_number' => $i,
                     'text' => $pageText,
                     'order_id' => $this->extractOrderId($pageText),
                     'error' => $pageError->getMessage()
                 ];
-                
+
                 \Log::info("Page $i added to failed pages queue for Ghostscript fallback");
             }
         }
@@ -387,11 +387,11 @@ class ProcessOrderLabelImport implements ShouldQueue
                     // If Ghostscript succeeded, rename the split file to proper filename
                     $ghostscriptPageFile = $outputDir . 'page_' . $pageNumber . '.pdf';
                     $actualFilePath = $fallbackFileName; // Default to original
-                    
+
                     if ($ghostscriptSuccess && file_exists($ghostscriptPageFile)) {
                         // Rename from page_X.pdf to actual order ID filename
                         $targetFilePath = $outputDir . $displayFilename;
-                        
+
                         // If target file already exists, keep the temp name
                         if (file_exists($targetFilePath)) {
                             $displayFilename = 'page_' . $pageNumber . '.pdf';
@@ -543,11 +543,11 @@ class ProcessOrderLabelImport implements ShouldQueue
         $text = str_replace('（', '(', $text);
         $text = str_replace('）', ')', $text);
         $text = str_replace('　', ' ', $text); // Full-width space
-        
+
         // Remove any remaining non-ASCII characters that might cause issues
         // Keep common punctuation and alphanumeric
         $text = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
-        
+
         return $text;
     }
 
@@ -701,16 +701,16 @@ class ProcessOrderLabelImport implements ShouldQueue
 
         try {
             \Log::info("Splitting PDF with Ghostscript: $pageCount pages");
-            
+
             // Split each page individually
             for ($i = 1; $i <= $pageCount; $i++) {
                 $outputFile = $outputDir . 'page_' . $i . '.pdf';
-                
+
                 // Escape paths for shell command
                 $escapedGsPath = $isWindows ? '"' . $gsPath . '"' : escapeshellarg($gsPath);
                 $escapedOutput = $isWindows ? '"' . $outputFile . '"' : escapeshellarg($outputFile);
                 $escapedInput = $isWindows ? '"' . $filePath . '"' : escapeshellarg($filePath);
-                
+
                 $cmd = sprintf(
                     '%s -sDEVICE=pdfwrite -dFirstPage=%d -dLastPage=%d -dNOPAUSE -dQUIET -dBATCH -sOutputFile=%s %s 2>&1',
                     $escapedGsPath,

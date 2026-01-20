@@ -16,23 +16,23 @@ try {
     $parser = new Parser();
     $pdf = $parser->parseFile($pdfPath);
     $pages = $pdf->getPages();
-    
+
     // Updated regex pattern that handles full-width colon
     $pattern = '/(?:TT\s*)?Order\s*Id\s*[:\s：\.]*\s*(\d{15,})/iu';
-    
+
     foreach ($testPages as $pageNum) {
         $pageIndex = $pageNum - 1;
-        
+
         echo "Page $pageNum:\n";
-        
+
         if (isset($pages[$pageIndex])) {
             $text = $pages[$pageIndex]->getText();
-            
+
             // Show relevant part of text
             if (preg_match('/(.{0,30}Order\s*Id.{0,50})/iu', $text, $context)) {
                 echo "Context: \"" . trim($context[0]) . "\"\n";
             }
-            
+
             // Try to extract Order ID
             if (preg_match($pattern, $text, $matches)) {
                 echo "✓ Order ID found: {$matches[1]}\n";
@@ -44,10 +44,10 @@ try {
         } else {
             echo "✗ Page not found in PDF\n";
         }
-        
+
         echo "\n";
     }
-    
+
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
 }

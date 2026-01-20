@@ -52,7 +52,7 @@ new class extends Component {
         Artisan::call('queue:retry', ['all' => true]);
         $this->success('Retry command dispatched!');
     }
-    
+
     public function clearFailed(): void
     {
         Artisan::call('queue:flush');
@@ -117,7 +117,7 @@ new class extends Component {
                     <x-button label="Clear All" icon="o-trash" wire:click="clearFailed" class="btn-sm btn-error" />
                 </div>
             </div>
-            
+
             <x-table :headers="$this->failedHeaders()" :rows="$failedJobs" with-pagination pagination-key="failed_page">
                 @scope('cell_exception', $job)
                     <div class="truncate max-w-xs" title="{{ Str::limit($job->exception, 1000) }}">

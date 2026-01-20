@@ -19,8 +19,8 @@ echo "2. Testing Ghostscript Detection:\n";
 function testGetGhostscriptPath(): ?string
 {
     $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
-    
-    $paths = $isWindows 
+
+    $paths = $isWindows
         ? [
             'gswin64c.exe',
             'gswin32c.exe',
@@ -56,7 +56,7 @@ function testGetGhostscriptPath(): ?string
 $gsPath = testGetGhostscriptPath();
 if ($gsPath) {
     echo "   Ghostscript is available: $gsPath\n";
-    
+
     // Test Ghostscript version
     $cmd = $isWindows ? "\"$gsPath\" --version 2>&1" : escapeshellarg($gsPath) . " --version 2>&1";
     $version = shell_exec($cmd);
@@ -78,7 +78,7 @@ foreach ($testPaths as $testPath) {
     $dir = dirname($testPath);
     $base = basename($testPath);
     $filename = pathinfo($testPath, PATHINFO_FILENAME);
-    
+
     echo "   Path: $testPath\n";
     echo "   - dirname: $dir\n";
     echo "   - basename: $base\n";
@@ -114,17 +114,17 @@ try {
         mkdir($tempDir, 0755, true);
         echo "   ✓ Created temp directory: $tempDir\n";
         echo "   Permissions: " . substr(sprintf('%o', fileperms($tempDir)), -4) . "\n";
-        
+
         // Test file creation
         $testFile = $tempDir . '/test.txt';
         file_put_contents($testFile, 'test');
-        
+
         if (file_exists($testFile)) {
             echo "   ✓ File creation successful\n";
             echo "   File permissions: " . substr(sprintf('%o', fileperms($testFile)), -4) . "\n";
             unlink($testFile);
         }
-        
+
         rmdir($tempDir);
     }
 } catch (Exception $e) {
@@ -155,20 +155,20 @@ if (!$isWindows) {
     echo "1. Install Ghostscript:\n";
     echo "   sudo apt-get update\n";
     echo "   sudo apt-get install ghostscript\n\n";
-    
+
     echo "2. Set proper storage permissions:\n";
     echo "   sudo chown -R www-data:www-data storage/\n";
     echo "   sudo chmod -R 775 storage/\n\n";
-    
+
     echo "3. Increase PHP limits in php.ini:\n";
     echo "   memory_limit = 1024M\n";
     echo "   max_execution_time = 600\n";
     echo "   post_max_size = 100M\n";
     echo "   upload_max_filesize = 100M\n\n";
-    
+
     echo "4. Setup queue worker as systemd service:\n";
     echo "   Create: /etc/systemd/system/laravel-worker.service\n\n";
-    
+
     echo "5. Install supervisor for queue management:\n";
     echo "   sudo apt-get install supervisor\n";
     echo "   Create config: /etc/supervisor/conf.d/labsysflow.conf\n\n";

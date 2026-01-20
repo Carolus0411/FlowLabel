@@ -404,34 +404,58 @@ new class extends Component {
         }
     }
 
-    public function export(): void
+    public function export()
     {
-        $rows = [];
-        $orderLabels = OrderLabel::stored()
-            ->whereDateBetween('DATE(order_date)', $this->date1, $this->date2)
-            ->when(!empty($this->code), fn($q) => $q->where('code', 'like', '%' . $this->code . '%'))
-            ->when(!empty($this->batch_no), fn($q) => $q->where('batch_no', 'like', '%' . $this->batch_no . '%'))
-            ->when(!empty($this->status), fn($q) => $q->where('status', $this->status))
-            ->when($this->print_status === 'printed', fn($q) => $q->whereNotNull('printed_at'))
-            ->when($this->print_status === 'not_printed', fn($q) => $q->whereNull('printed_at'))
-            ->get();
+        try {
+            logger('Export started');
 
-        foreach ($orderLabels as $orderLabel) {
-            $rows[] = [
-                'Batch No' => $orderLabel->batch_no ?? '',
-                'Code' => $orderLabel->code,
-                'Date' => $orderLabel->order_date,
-                'Original File' => $orderLabel->original_filename ?? '',
-                'Split File' => $orderLabel->split_filename ?? '',
-                'Page' => $orderLabel->page_number ?? 'Original',
-                'Status' => $orderLabel->status,
-            ];
+            $rows = [];
+            $orderLabels = OrderLabel::stored()
+                ->with('threePl')
+                ->whereDateBetween('DATE(order_date)', $this->date1, $this->date2)
+                ->when(!empty($this->code), fn($q) => $q->where('code', 'like', '%' . $this->code . '%'))
+                ->when(!empty($this->batch_no), fn($q) => $q->where('batch_no', 'like', '%' . $this->batch_no . '%'))
+                ->when(!empty($this->status), fn($q) => $q->where('status', $this->status))
+                ->when($this->print_status === 'printed', fn($q) => $q->whereNotNull('printed_at'))
+                ->when($this->print_status === 'not_printed', fn($q) => $q->whereNull('printed_at'))
+                ->orderBy('batch_no')
+                ->orderBy('page_number')
+                ->get();
+
+            logger('Found ' . $orderLabels->count() . ' records');
+
+            if ($orderLabels->isEmpty()) {
+                $this->warning('No data to export.');
+                return;
+            }
+
+            foreach ($orderLabels as $orderLabel) {
+                $rows[] = [
+                    'Batch No' => $orderLabel->batch_no ?? '',
+                    'Platform' => $orderLabel->threePl?->name ?? '',
+                    'Code' => $orderLabel->code,
+                    'Print Status' => $orderLabel->printed_at ? 'Printed' : 'Not Printed',
+                    'Print Count' => $orderLabel->print_count ?? 0,
+                    'Order Date' => $orderLabel->order_date ? \Carbon\Carbon::parse($orderLabel->order_date)->format('d-m-Y') : '',
+                    'Page' => $orderLabel->page_number ?? '',
+                ];
+            }
+
+            $batchInfo = !empty($this->batch_no) ? '-batch-' . str_replace('/', '-', $this->batch_no) : '';
+            $printInfo = $this->print_status === 'printed' ? '-printed' : ($this->print_status === 'not_printed' ? '-not-printed' : '');
+            $filename = 'order-labels' . $batchInfo . $printInfo . '-' . date('Y-m-d-His') . '.xlsx';
+
+            logger('Creating Excel file: ' . $filename);
+
+            return response()->streamDownload(function () use ($rows) {
+                $writer = SimpleExcelWriter::streamDownload('export.xlsx');
+                $writer->addRows($rows);
+            }, $filename);
+
+        } catch (\Exception $e) {
+            logger('Export error: ' . $e->getMessage());
+            $this->error('Export failed: ' . $e->getMessage());
         }
-
-        $writer = SimpleExcelWriter::streamDownload('order-labels.xlsx')
-            ->addRows($rows);
-
-        $writer->toBrowser();
     }
 }; ?>
 
@@ -443,7 +467,6 @@ new class extends Component {
         <x-slot:actions>
             <x-button label="Dashboard" link="{{ route('order-label.dashboard') }}" icon="o-chart-bar" class="btn-outline" />
             <x-button label="Download Selected" wire:click="downloadSelected" spinner="downloadSelected" icon="o-arrow-down-tray" class="btn-success" :disabled="count($selectedItems) === 0" />
-            {{-- <x-button label="Export" wire:click="export" spinner="export" icon="o-arrow-down-tray" /> --}}
             <x-button label="Import PDF" link="{{ route('order-label.import') }}"
                      icon="o-document-arrow-up" class="btn-primary" />
             <x-button label="Filters" @click="$wire.drawer = true" icon="o-funnel" badge="{{ $filterCount }}" />
@@ -591,7 +614,7 @@ new class extends Component {
                 class="max-w-xs"
             />
             <x-select
-                placeholder="Print Status"
+                placeholder="All Status"
                 wire:model.live="print_status"
                 :options="[
                     ['id' => 'not_printed', 'name' => 'Not Printed'],
@@ -599,6 +622,13 @@ new class extends Component {
                 ]"
                 icon="o-printer"
                 class="max-w-xs"
+            />
+            <x-button
+                label="Export to Excel"
+                wire:click="export"
+                spinner="export"
+                icon="o-arrow-down-tray"
+                class="btn-sm btn-success"
             />
             @if(!empty($code))
                 <x-button

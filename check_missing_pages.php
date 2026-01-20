@@ -43,7 +43,7 @@ for ($i = $minPage; $i <= $maxPage; $i++) {
 if (!empty($missingPages)) {
     echo "❌ MISSING PAGES (" . count($missingPages) . "):\n";
     echo implode(', ', $missingPages) . "\n\n";
-    
+
     // Check if these pages should have been created with Ghostscript fallback
     echo "Expected pages (should have been recovered by Ghostscript):\n";
     foreach ($missingPages as $pageNum) {

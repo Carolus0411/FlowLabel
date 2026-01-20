@@ -14,17 +14,17 @@ try {
     $parser = new Parser();
     $pdf = $parser->parseFile($pdfPath);
     $pages = $pdf->getPages();
-    
+
     foreach ($missingPages as $pageNum) {
         echo "--- Testing Page $pageNum ---\n";
-        
+
         try {
             // Test text extraction
             $pageIndex = $pageNum - 1;
             if (isset($pages[$pageIndex])) {
                 $text = $pages[$pageIndex]->getText();
                 echo "Text extraction: OK (length: " . strlen($text) . ")\n";
-                
+
                 // Try to extract order ID
                 if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\.]?\s*(\d{15,})/i', $text, $matches)) {
                     echo "Order ID: " . $matches[1] . "\n";
@@ -37,21 +37,21 @@ try {
             } else {
                 echo "Page not found in parser!\n";
             }
-            
+
             // Test FPDI
             $fpdi = new Fpdi();
             $fpdi->setSourceFile($pdfPath);
             $tplId = $fpdi->importPage($pageNum);
             $size = $fpdi->getTemplateSize($tplId);
             echo "FPDI import: OK (size: {$size['width']}x{$size['height']})\n";
-            
+
         } catch (Exception $e) {
             echo "ERROR: " . $e->getMessage() . "\n";
         }
-        
+
         echo "\n";
     }
-    
+
 } catch (Exception $e) {
     echo "Fatal error: " . $e->getMessage() . "\n";
 }

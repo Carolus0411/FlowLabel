@@ -25,14 +25,14 @@ foreach ($testCases as $index => $text) {
     $testNum = $index + 1;
     echo "Test $testNum:\n";
     echo "Input:  \"$text\"\n";
-    
+
     if (preg_match($pattern, $text, $matches)) {
         echo "Result: ✓ Matched\n";
         echo "Order ID: {$matches[1]}\n";
     } else {
         echo "Result: ✗ NOT Matched\n";
     }
-    
+
     echo "\n";
 }
 
