@@ -448,10 +448,10 @@ new class extends Component {
             // Add data rows
             $row = 2;
             foreach ($orderLabels as $orderLabel) {
-                // Generate secure download URL with encoded path parameter
+                // Generate public download URL (no auth required)
                 $pdfUrl = '';
                 if ($orderLabel->file_path) {
-                    $pdfUrl = route('order-label.download', [
+                    $pdfUrl = route('order-label.public-download', [
                         'path' => urlencode($orderLabel->file_path),
                         'page' => $orderLabel->page_number,
                         'label_id' => $orderLabel->id

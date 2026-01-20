@@ -27,6 +27,11 @@ Route::get('/livewire/update', function () {
     abort(404);
 });
 
+// Public route for downloading order label PDF (no auth required)
+Route::get('/order-label-download/{path}', [\App\Http\Controllers\OrderLabelController::class, 'publicDownload'])
+    ->where('path', '.*')
+    ->name('order-label.public-download');
+
 Route::prefix('cp')->middleware(['auth'])->group(function () {
 
     Route::get('/', function () {

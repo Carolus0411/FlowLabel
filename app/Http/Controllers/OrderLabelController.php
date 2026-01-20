@@ -210,4 +210,27 @@ class OrderLabelController extends Controller
 
         return view('order-label.show', compact('orderLabel'));
     }
+
+    /**
+     * Public download method - no authentication required
+     * Used for Excel export links
+     */
+    public function publicDownload($path)
+    {
+        // Decode the path parameter that was URL encoded
+        $decodedPath = urldecode($path);
+
+        if (!Storage::disk('public')->exists($decodedPath)) {
+            abort(404, 'File not found');
+        }
+
+        $fullPath = Storage::disk('public')->path($decodedPath);
+
+        // Check if this is a request for individual page extraction
+        if (request()->has('page') && request()->has('label_id')) {
+            return $this->downloadPage($fullPath, request()->get('page'), request()->get('label_id'));
+        }
+
+        return Response::download($fullPath);
+    }
 }
