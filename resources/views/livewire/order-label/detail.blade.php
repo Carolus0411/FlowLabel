@@ -213,18 +213,18 @@ new class extends Component {
             @endif
         </x-slot:menu>
 
-        <div class="overflow-x-auto">
-            <table class="table">
+        <div class="overflow-x-auto w-full">
+            <table class="table w-full">
             <thead>
             <tr>
-                <th class="text-left">Items Master</th>
-                <th class="text-right lg:w-16">Qty</th>
-                <th class="text-right lg:w-16">Unit</th>
-                <th class="text-right lg:w-24">Price</th>
-                <th class="text-right lg:w-12">Currency</th>
-                <th class="text-right lg:w-24">Rate</th>
-                <th class="text-right lg:w-36">FG Amount</th>
-                <th class="text-right lg:w-36">IDR Amount</th>
+                <th class="text-left min-w-[200px]">Items Master</th>
+                <th class="text-right whitespace-nowrap lg:w-16">Qty</th>
+                <th class="text-right whitespace-nowrap lg:w-16">Unit</th>
+                <th class="text-right whitespace-nowrap lg:w-24">Price</th>
+                <th class="text-right whitespace-nowrap lg:w-12">Currency</th>
+                <th class="text-right whitespace-nowrap lg:w-24">Rate</th>
+                <th class="text-right whitespace-nowrap lg:w-36">FG Amount</th>
+                <th class="text-right whitespace-nowrap lg:w-36">IDR Amount</th>
                 @if ($open)
                 <th class="lg:w-16"></th>
                 @endif
@@ -236,13 +236,13 @@ new class extends Component {
             @if ($open)
             <tr wire:key="table-row-{{ $detail->id }}" wire:loading.class="cursor-wait" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800 cursor-pointer">
                 <td wire:click="edit('{{ $detail->id }}')" class=""><b>{{ $detail->serviceCharge->code ?? '' }}</b>, {{ $detail->serviceCharge->name ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right whitespace-nowrap">{{ Cast::money($detail->qty, 2) }}</td>
                 <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->uom->code ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->price, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right whitespace-nowrap">{{ Cast::money($detail->price, 2) }}</td>
                 <td wire:click="edit('{{ $detail->id }}')" class="">{{ $detail->currency->code ?? '' }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
-                <td wire:click="edit('{{ $detail->id }}')" class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right whitespace-nowrap">{{ Cast::money($detail->currency_rate, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right whitespace-nowrap">{{ Cast::money($detail->foreign_amount, 2) }}</td>
+                <td wire:click="edit('{{ $detail->id }}')" class="text-right whitespace-nowrap">{{ Cast::money($detail->amount, 2) }}</td>
                 <td>
                 <div class="flex items-center">
                     <x-button icon="o-x-mark" wire:click="delete('{{ $detail->id }}')" spinner="delete('{{ $detail->id }}')" wire:confirm="Are you sure ?" class="btn-xs btn-ghost text-xs -m-1 text-error" />
@@ -252,13 +252,13 @@ new class extends Component {
             @else
             <tr wire:key="table-row-{{ $detail->id }}" class="divide-x divide-gray-200 dark:divide-gray-900 hover:bg-yellow-50 dark:hover:bg-gray-800">
                 <td class="">{{ $detail->serviceCharge->code ?? '' }}; {{ $detail->serviceCharge->name ?? '' }}</td>
-                <td class="text-right">{{ Cast::money($detail->qty, 2) }}</td>
+                <td class="text-right whitespace-nowrap">{{ Cast::money($detail->qty, 2) }}</td>
                 <td class="">{{ $detail->uom->code ?? '' }}</td>
-                <td class="text-right">{{ Cast::money($detail->price, 2) }}</td>
+                <td class="text-right whitespace-nowrap">{{ Cast::money($detail->price, 2) }}</td>
                 <td class="">{{ $detail->currency->code ?? '' }}</td>
-                <td class="text-right">{{ Cast::money($detail->currency_rate, 2) }}</td>
-                <td class="text-right">{{ Cast::money($detail->foreign_amount, 2) }}</td>
-                <td class="text-right">{{ Cast::money($detail->amount, 2) }}</td>
+                <td class="text-right whitespace-nowrap">{{ Cast::money($detail->currency_rate, 2) }}</td>
+                <td class="text-right whitespace-nowrap">{{ Cast::money($detail->foreign_amount, 2) }}</td>
+                <td class="text-right whitespace-nowrap">{{ Cast::money($detail->amount, 2) }}</td>
             </tr>
             @endif
             @empty

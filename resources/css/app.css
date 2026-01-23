@@ -133,3 +133,48 @@ x-cloak {
 .filepond--credits {
     display: none;
 }
+
+/* Fix mobile drawer sidebar positioning and z-index layering */
+@media (max-width: 1023px) {
+    /* Drawer sidebar - highest z-index to appear above navbar */
+    .drawer-side {
+        position: fixed !important;
+        top: 65px !important;
+        left: 0 !important;
+        height: calc(100vh - 65px) !important;
+        z-index: 1000 !important; /* Above navbar (z-50) */
+        transition: transform 0.3s ease;
+    }
+    
+    .drawer-side > * {
+        top: 65px !important;
+        height: calc(100vh - 65px) !important;
+    }
+    
+    /* Backdrop/overlay for drawer */
+    .drawer-overlay {
+        z-index: 999 !important; /* Below sidebar, above navbar */
+        background: rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    /* Ensure navbar stays below sidebar */
+    #nav {
+        z-index: 50 !important;
+    }
+    
+    /* Main content - lowest z-index */
+    .drawer-content {
+        z-index: 1 !important;
+    }
+}
+
+/* Desktop view - reset z-index for normal stacking */
+@media (min-width: 1024px) {
+    .drawer-side {
+        z-index: auto;
+    }
+    
+    #nav {
+        z-index: 50;
+    }
+}
