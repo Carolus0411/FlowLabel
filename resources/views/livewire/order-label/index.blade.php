@@ -125,7 +125,7 @@ new class extends Component {
     public function batches()
     {
         if (! Schema::hasTable('order_label')) {
-            return collect([]);
+            return new LengthAwarePaginator([], 0, 4);
         }
 
         // Batch statistics are not affected by print_status or status filters
@@ -146,7 +146,7 @@ new class extends Component {
             ->groupBy('batch_no', 'three_pl_id')
             ->orderBy('import_date', 'desc');
 
-        return $query->get();
+        return $query->paginate(4);
     }
 
     public function with(): array
@@ -281,6 +281,7 @@ new class extends Component {
     public function toggleViewMode(): void
     {
         $this->viewMode = $this->viewMode === 'grouped' ? 'list' : 'grouped';
+        $this->resetPage();
     }
 
     public function viewBatchDetail(string $batchNo): void
@@ -615,6 +616,11 @@ new class extends Component {
                     </div>
                 </x-card>
             @endforelse
+
+            {{-- Pagination for grouped view --}}
+            <div class="mt-6">
+                {{ $batches->links() }}
+            </div>
         </div>
     @else
         {{-- LIST VIEW (EXISTING) --}}
