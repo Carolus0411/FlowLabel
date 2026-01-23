@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('order_label', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
+            $table->string('code')->nullable();
             $table->date('order_date')->nullable();
             $table->date('due_date')->nullable();
             $table->string('transport')->index()->nullable();
