@@ -19,7 +19,10 @@ new class extends Component {
     use Toast, WithPagination;
 
     #[Session(key: 'orderlabel_per_page')]
-    public int $perPage = 10;
+    public int $perPage = 5;
+
+    #[Session(key: 'orderlabel_batches_per_page')]
+    public int $batchesPerPage = 5;
 
     #[Session(key: 'orderlabel_date1')]
     public string $date1 = '';
@@ -54,7 +57,15 @@ new class extends Component {
         if (in_array($property, ['code', 'batch_no', 'status', 'print_status'])) {
             $this->updateFilterCount();
             $this->resetPage();
+            // Also reset batches pager when filters change
+            $this->resetPage('batches_page');
         }
+    }
+
+    public function updatedBatchesPerPage(): void
+    {
+        // Reset the batches pager when per-page setting changes
+        $this->resetPage('batches_page');
     }
 
     public function mount(): void
@@ -125,7 +136,7 @@ new class extends Component {
     public function batches()
     {
         if (! Schema::hasTable('order_label')) {
-            return collect([]);
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $this->batchesPerPage);
         }
 
         // Batch statistics are not affected by print_status or status filters
@@ -146,7 +157,18 @@ new class extends Component {
             ->groupBy('batch_no', 'three_pl_id')
             ->orderBy('import_date', 'desc');
 
-        return $query->get();
+        // Execute grouped query and paginate the resulting collection manually
+        $all = $query->get();
+
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage('batches_page');
+        $perPage = $this->batchesPerPage;
+        $total = $all->count();
+        $items = $all->forPage($currentPage, $perPage)->values();
+
+        return new \Illuminate\Pagination\LengthAwarePaginator($items, $total, $perPage, $currentPage, [
+            'path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+            'pageName' => 'batches_page',
+        ]);
     }
 
     public function with(): array
@@ -523,6 +545,32 @@ new class extends Component {
 
     @if($viewMode === 'grouped')
         {{-- GROUPED VIEW BY BATCH --}}
+
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-600">Per page:</label>
+                <x-select
+                    wire:model.live="batchesPerPage"
+                    :options="[
+                        ['id' => 5, 'name' => '5'],
+                        ['id' => 10, 'name' => '10'],
+                        ['id' => 25, 'name' => '25'],
+                        ['id' => 50, 'name' => '50']
+                    ]"
+                    class="w-24"
+                />
+            </div>
+
+            <div>
+                {{-- Pagination links for batches (separate page parameter 'batches_page') --}}
+                @if(method_exists(
+                    $batches ?? null, 'links'
+                ))
+                    <div class="text-sm text-gray-600">{{ $batches->links() }}</div>
+                @endif
+            </div>
+        </div>
+
         <div class="space-y-4">
             @forelse($batches as $batch)
                 <x-card class="hover:shadow-lg transition-shadow border-l-4 border-blue-500">

@@ -12,6 +12,7 @@ use App\Models\OrderLabel;
 use Illuminate\Support\Facades\Storage;
 use Smalot\PdfParser\Parser;
 use setasign\Fpdi\Fpdi;
+use thiagoalessio\TesseractOCR\TesseractOCR;
 use Throwable;
 
 class ProcessOrderLabelImport implements ShouldQueue
@@ -241,6 +242,19 @@ class ProcessOrderLabelImport implements ShouldQueue
 
                 $orderId = $this->extractOrderId($pageText);
 
+                // If no order id found, attempt OCR on the page (use Ghostscript or Imagick to render)
+                if (!$orderId) {
+                    try {
+                        $ocrText = $this->ocrPageText($filePath, $i, 'eng');
+                        if ($ocrText) {
+                            $pageText .= "\n" . $ocrText;
+                            $orderId = $this->extractOrderId($pageText);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning("OCR failed for page $i: " . $e->getMessage());
+                    }
+                }
+
                 $fpdi = new Fpdi();
                 $fpdi->setSourceFile($filePath);
 
@@ -362,6 +376,19 @@ class ProcessOrderLabelImport implements ShouldQueue
                     }
 
                     $orderId = $this->extractOrderId($text);
+
+                    // If we still don't have an order ID, try OCR (use a simple English default)
+                    if (!$orderId) {
+                        try {
+                            $ocr = $this->ocrPageText($filePath, $pageNumber, 'eng');
+                            if ($ocr) {
+                                $text .= "\n" . $ocr;
+                                $orderId = $this->extractOrderId($text);
+                            }
+                        } catch (\Exception $e) {
+                            \Log::warning("Fallback OCR failed for page $pageNumber: " . $e->getMessage());
+                        }
+                    }
 
                     // Generate unique code and filename
                     if ($orderId) {
@@ -552,6 +579,78 @@ class ProcessOrderLabelImport implements ShouldQueue
     }
 
     /**
+     * OCR a single PDF page to plain text using Ghostscript (preferred) or Imagick as fallback
+     */
+    private function ocrPageText(string $filePath, int $pageNumber, string $lang = 'eng'): ?string
+    {
+        $tempDir = sys_get_temp_dir();
+        $pngPath = tempnam($tempDir, 'ocr_page_') . '.png';
+
+        $gsPath = $this->getGhostscriptPath();
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+        // Try Ghostscript first if available
+        if ($gsPath) {
+            $escapedGsPath = $isWindows ? '"' . $gsPath . '"' : escapeshellarg($gsPath);
+            $escapedOutput = $isWindows ? '"' . $pngPath . '"' : escapeshellarg($pngPath);
+            $escapedInput = $isWindows ? '"' . $filePath . '"' : escapeshellarg($filePath);
+
+            // Render at 300 DPI for better OCR accuracy
+            $cmd = sprintf('%s -sDEVICE=png16m -r300 -dFirstPage=%d -dLastPage=%d -dNOPAUSE -dBATCH -sOutputFile=%s %s 2>&1',
+                $escapedGsPath,
+                $pageNumber,
+                $pageNumber,
+                $escapedOutput,
+                $escapedInput
+            );
+
+            exec($cmd, $output, $returnVar);
+
+            if ($returnVar !== 0 || !file_exists($pngPath)) {
+                // clean any partial file
+                @unlink($pngPath);
+            }
+        }
+
+        // If Ghostscript not available or failed, try Imagick if installed
+        if (!file_exists($pngPath)) {
+            if (!extension_loaded('imagick')) {
+                return null;
+            }
+
+            try {
+                $im = new \Imagick();
+                $im->setResolution(300, 300);
+                // Read zero-based page index
+                $im->readImage($filePath . '[' . ($pageNumber - 1) . ']');
+                $im->setImageFormat('png32');
+                $im->writeImage($pngPath);
+                $im->clear();
+                $im->destroy();
+            } catch (\Exception $e) {
+                @unlink($pngPath);
+                return null;
+            }
+        }
+
+        // Run tesseract via PHP wrapper
+        try {
+            $ocr = (new TesseractOCR($pngPath))
+                ->executable(config('ocr.tesseract_path', 'tesseract'))
+                ->lang($lang);
+
+            $text = $ocr->run();
+        } catch (\Exception $e) {
+            \Log::warning('Tesseract OCR failed: ' . $e->getMessage());
+            $text = null;
+        }
+
+        @unlink($pngPath);
+
+        return $text ? trim($text) : null;
+    }
+
+    /**
      * Extract order ID from filename
      * This is especially useful for image-based PDFs where text extraction fails
      */
@@ -612,6 +711,19 @@ class ProcessOrderLabelImport implements ShouldQueue
             $pageNumber = $pageInfo['page_number'];
             $pageText = $pageInfo['text'];
             $orderId = $pageInfo['order_id'];
+
+            // If no order ID from text, try OCR on the specific page
+            if (!$orderId) {
+                try {
+                    $ocr = $this->ocrPageText($filePath, $pageNumber, 'eng');
+                    if ($ocr) {
+                        $pageText .= "\n" . $ocr;
+                        $orderId = $this->extractOrderId($pageText);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Failed OCR for recovered page $pageNumber: " . $e->getMessage());
+                }
+            }
 
             try {
                 // Generate filename based on order ID
