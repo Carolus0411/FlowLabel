@@ -51,10 +51,6 @@ class AppServiceProvider extends ServiceProvider
 
             return null;
         });
-
-        // if( ! app()->runningInConsole()) {
-        //     config(['site.meta.description' => settings('meta_description')]);
-        //     config(['site.meta.keyword' => settings('meta_keyword')]);
-        // }
+        // make change
     }
 }
