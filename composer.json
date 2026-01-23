@@ -23,9 +23,7 @@
         "smalot/pdfparser": "^2.12",
         "spatie/laravel-permission": "^6.18",
         "spatie/livewire-filepond": "^1.5",
-        "spatie/pdf-to-image": "^1.2",
-        "spatie/simple-excel": "^3.7",
-        "thiagoalessio/tesseract_ocr": "^2.13"
+        "spatie/simple-excel": "^3.7"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

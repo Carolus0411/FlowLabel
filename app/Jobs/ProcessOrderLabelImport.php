@@ -12,7 +12,6 @@ use App\Models\OrderLabel;
 use Illuminate\Support\Facades\Storage;
 use Smalot\PdfParser\Parser;
 use setasign\Fpdi\Fpdi;
-use thiagoalessio\TesseractOCR\TesseractOCR;
 use Throwable;
 
 class ProcessOrderLabelImport implements ShouldQueue
@@ -240,7 +239,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                     $pageText = isset($pages[$i - 1]) ? $pages[$i - 1]->getText() : '';
                  }
 
-                $orderId = $this->extractOrderId($pageText, $filePath, $i);
+                $orderId = $this->extractOrderId($pageText);
 
                 $fpdi = new Fpdi();
                 $fpdi->setSourceFile($filePath);
@@ -281,7 +280,6 @@ class ProcessOrderLabelImport implements ShouldQueue
                     'batch_no' => $this->batchNo,
                     'three_pl_id' => $this->threePlId,
                     'code' => $uniqueCode,
-                    'order_id' => $orderId,
                     'order_date' => now(),
                     'note' => $orderId ? "Order ID: $orderId" : ('PDF Split: ' . $splitFileName),
                     'original_filename' => $originalName,
@@ -364,12 +362,6 @@ class ProcessOrderLabelImport implements ShouldQueue
                     }
 
                     $orderId = $this->extractOrderId($text);
-
-                    // Validate data before processing
-                    if (empty(trim($text)) && !$orderId) {
-                        \Log::warning("Skipping page $pageNumber: No text extracted and no Order ID found");
-                        continue; // Skip this page
-                    }
 
                     // Generate unique code and filename
                     if ($orderId) {
@@ -459,11 +451,8 @@ class ProcessOrderLabelImport implements ShouldQueue
         }
     }
 
-    private function extractOrderId(string $text, ?string $pdfPath = null, ?int $pageNumber = null): ?string
+    private function extractOrderId(string $text): ?string
     {
-        // Preprocess text for better extraction
-        $text = $this->preprocessText($text);
-
         // Get 3PL name to determine extraction logic
         $threePlName = null;
         if ($this->threePlId) {
@@ -479,16 +468,6 @@ class ProcessOrderLabelImport implements ShouldQueue
         }
 
         // If filename extraction fails, try text extraction
-        // For image-based PDFs, use OCR if text is empty
-        if (empty(trim($text)) && $pdfPath && $pageNumber && $threePlName && str_contains($threePlName, 'tiktok')) {
-            $ocrText = $this->extractTextWithOCR($pdfPath, $pageNumber);
-            if ($ocrText) {
-                \Log::info("Using OCR text for page $pageNumber: " . substr($ocrText, 0, 100));
-                $text = $ocrText;
-                $text = $this->preprocessText($text);
-            }
-        }
-
         // SHOPEE format: Order ID like "260101T6XF69GN" (alphanumeric, usually 14 chars)
         if ($threePlName && str_contains($threePlName, 'shopee')) {
             // Pattern 1: "Order ID" followed by alphanumeric code
@@ -526,22 +505,6 @@ class ProcessOrderLabelImport implements ShouldQueue
             }
         }
 
-        // TIKTOK format: For OCR-extracted text, look for alphanumeric codes
-        if ($threePlName && str_contains($threePlName, 'tiktok')) {
-            // Priority: Numeric 18 digit order ID (TikTok standard)
-            if (preg_match('/\b(\d{18})\b/', $text, $matches)) {
-                return $matches[1];
-            }
-            // Pattern for alphanumeric order ID from OCR (e.g., JX6908578411)
-            if (preg_match('/\b([A-Z]{2}\d{10,})\b/i', $text, $matches)) {
-                return $matches[1];
-            }
-            // Fallback: Any alphanumeric 10-16 chars
-            if (preg_match('/\b([A-Z0-9]{10,16})\b/i', $text, $matches)) {
-                return $matches[1];
-            }
-        }
-
         // TIKTOK or default format: Numeric Order ID
         // 1. PRIORITY: TT Order ID or Order Id with long numeric value (18+ digits)
         // Matches: "TT Order ID : 582108769742652773" or "TT Order ID ：582107960589780854" (with full-width colon)
@@ -550,48 +513,20 @@ class ProcessOrderLabelImport implements ShouldQueue
             return $matches[1];
         }
 
-        // 2. NEW: Handle "Ship : Order Id :" pattern (common in J&T labels)
-        if (preg_match('/Ship\s*:\s*Order\s*Id\s*[:\s：\.]*\s*(\d{15,})/iu', $text, $matches)) {
-            return $matches[1];
-        }
-
-        // 3. Fallback: Very long number sequence (15+ digits) usually found at bottom of labels
+        // 2. Fallback: Very long number sequence (15+ digits) usually found at bottom of labels
         if (preg_match('/\b(\d{15,})\b/', $text, $matches)) {
             return $matches[1];
         }
 
-        // 4. Generic Order patterns with shorter numbers (phone numbers, etc.)
+        // 3. Generic Order patterns with shorter numbers (phone numbers, etc.)
         // Matches: "Order No 123", "Order #123", "Order Number: 123"
         if (preg_match('/Order\s*(?:No|#|Number)\s*[:\.]?\s*(\d{8,})/i', $text, $matches)) {
             return $matches[1];
         }
 
-        // 5. Loose match for text that might be linearized weirdly
+        // 4. Loose match for text that might be linearized weirdly
         if (preg_match('/Order\s*(?:Id|No|#)?\s*.{0,50}?\s*(\d{10,})/is', $text, $matches)) {
              return $matches[1];
-        }
-
-        // 6. If text extraction failed and we have PDF path, try OCR for image-based PDFs
-        if (empty(trim($text)) && $pdfPath && $pageNumber && ($threePlName && str_contains($threePlName, 'tiktok'))) {
-            \Log::info("Text extraction failed, attempting OCR for TikTok PDF page $pageNumber");
-            $ocrText = $this->extractTextWithOCR($pdfPath, $pageNumber);
-            if ($ocrText) {
-                \Log::info("OCR extracted text: " . substr($ocrText, 0, 100));
-                // Try to extract order ID from OCR text
-                $ocrText = $this->preprocessText($ocrText);
-                
-                // TikTok OCR patterns - look for alphanumeric codes
-                if (preg_match('/\b([A-Z0-9]{10,16})\b/', $ocrText, $matches)) {
-                    \Log::info("Order ID extracted via OCR: " . $matches[1]);
-                    return $matches[1];
-                }
-                
-                // Fallback: any long alphanumeric sequence
-                if (preg_match('/\b([A-Z0-9]{8,})\b/', $ocrText, $matches)) {
-                    \Log::info("Order ID extracted via OCR fallback: " . $matches[1]);
-                    return $matches[1];
-                }
-            }
         }
 
         return null;
@@ -603,9 +538,6 @@ class ProcessOrderLabelImport implements ShouldQueue
      */
     private function sanitizeText(string $text): string
     {
-        // First preprocess
-        $text = $this->preprocessText($text);
-
         // Replace full-width characters with ASCII equivalents
         $text = str_replace('：', ':', $text);
         $text = str_replace('（', '(', $text);
@@ -615,27 +547,6 @@ class ProcessOrderLabelImport implements ShouldQueue
         // Remove any remaining non-ASCII characters that might cause issues
         // Keep common punctuation and alphanumeric
         $text = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
-
-        return $text;
-    }
-
-    /**
-     * Preprocess text for better extraction
-     * Clean up common issues in PDF text extraction
-     */
-    private function preprocessText(string $text): string
-    {
-        // Normalize whitespace: replace multiple spaces/newlines with single space
-        $text = preg_replace('/\s+/', ' ', $text);
-
-        // Remove excessive newlines
-        $text = preg_replace('/\n{3,}/', "\n\n", $text);
-
-        // Trim whitespace
-        $text = trim($text);
-
-        // Fix common OCR errors or extraction artifacts
-        // Example: fix broken words, but keep simple for now
 
         return $text;
     }
@@ -663,22 +574,6 @@ class ProcessOrderLabelImport implements ShouldQueue
         // SHOPEE: Look for alphanumeric order ID (YYMMDD + alphanumeric)
         if ($threePlName && str_contains($threePlName, 'shopee')) {
             if (preg_match('/(\d{6}[A-Z0-9]{8,10})/i', $baseName, $matches)) {
-                return $matches[1];
-            }
-        }
-
-        // TIKTOK: Look for alphanumeric order ID (like JX6908578411 or similar patterns)
-        if ($threePlName && str_contains($threePlName, 'tiktok')) {
-            // Pattern 1: Alphanumeric starting with letters (e.g., JX6908578411)
-            if (preg_match('/\b([A-Z]{2}\d{10,})\b/i', $baseName, $matches)) {
-                return $matches[1];
-            }
-            // Pattern 2: Any alphanumeric sequence 10-16 chars
-            if (preg_match('/\b([A-Z0-9]{10,16})\b/i', $baseName, $matches)) {
-                return $matches[1];
-            }
-            // Pattern 3: Fallback to numeric 15+
-            if (preg_match('/(\d{15,})/', $baseName, $matches)) {
                 return $matches[1];
             }
         }
@@ -771,7 +666,6 @@ class ProcessOrderLabelImport implements ShouldQueue
                     'batch_no' => $this->batchNo,
                     'three_pl_id' => $this->threePlId,
                     'code' => $uniqueCode,
-                    'order_id' => $orderId,
                     'order_date' => now(),
                     'note' => $orderId ? "Order ID: $orderId (Recovered)" : ('PDF Page (Recovered): ' . $pageNumber),
                     'original_filename' => $this->originalName,
@@ -839,36 +733,6 @@ class ProcessOrderLabelImport implements ShouldQueue
         } catch (\Exception $e) {
             \Log::error("Ghostscript split exception: " . $e->getMessage());
             return false;
-        }
-    }
-
-    /**
-     * Extract text from PDF page using OCR for image-based PDFs
-     */
-    private function extractTextWithOCR(string $pdfPath, int $pageNumber = 1): ?string
-    {
-        try {
-            // Convert PDF page to image using Ghostscript
-            $imagePath = tempnam(sys_get_temp_dir(), 'pdf_page_') . '.png';
-            $gsCommand = "gswin64c -dNOPAUSE -dBATCH -sDEVICE=png16m -r600 -dFirstPage=$pageNumber -dLastPage=$pageNumber -sOutputFile=\"$imagePath\" \"$pdfPath\"";
-            exec($gsCommand, $output, $returnVar);
-
-            if ($returnVar !== 0) {
-                \Log::warning("Failed to convert PDF page $pageNumber to image: " . implode("\n", $output));
-                return null;
-            }
-
-            // OCR using Tesseract
-            $tesseract = new TesseractOCR($imagePath);
-            $text = $tesseract->run();
-
-            // Cleanup
-            unlink($imagePath);
-
-            return $text;
-        } catch (\Exception $e) {
-            \Log::error("OCR extraction failed for page $pageNumber: " . $e->getMessage());
-            return null;
         }
     }
 }
