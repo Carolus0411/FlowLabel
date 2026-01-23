@@ -56,6 +56,15 @@ class SuperAdminSeeder extends Seeder
                 'export order-label',
                 'print order-label',
 
+                // Print Label
+                'view print-label',
+                'create print-label',
+                'update print-label',
+                'delete print-label',
+                'import print-label',
+                'export print-label',
+                'print print-label',
+
                 // 3PL Management
                 'view three-pl',
                 'create three-pl',

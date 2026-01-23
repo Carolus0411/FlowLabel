@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
 use App\Models\OrderLabel;
 
-class OrderLabelController extends Controller
+class PrintLabelController extends Controller
 {
     public function download($path)
     {
-        Gate::authorize('view order-label');
+        Gate::authorize('view print-label');
 
         // Decode the path parameter that was URL encoded
         $decodedPath = urldecode($path);
@@ -48,7 +48,7 @@ class OrderLabelController extends Controller
                     $downloadName .= '.pdf';
                 }
             } else {
-                $downloadName = "order_label_{$labelId}_page_{$pageNumber}.pdf";
+                $downloadName = "print_label_{$labelId}_page_{$pageNumber}.pdf";
             }
 
             $tempFileName = "temp_" . $downloadName; // Start with temp prefix logic inside, handled by path below
@@ -138,7 +138,7 @@ class OrderLabelController extends Controller
 
     public function downloadAll(Request $request)
     {
-        Gate::authorize('view order-label');
+        Gate::authorize('view print-label');
 
         // Get filters from request
         $date1 = $request->get('date1', date('Y-m-01'));
@@ -158,7 +158,7 @@ class OrderLabelController extends Controller
             return back()->with('error', 'No PDF files found in the current filtered list');
         }
 
-        $zipFileName = 'order_label_files_' . date('Y-m-d_H-i-s') . '.zip';
+        $zipFileName = 'print_label_files_' . date('Y-m-d_H-i-s') . '.zip';
         $zipPath = storage_path('app/temp/' . $zipFileName);
 
         // Create temp directory if it doesn't exist
@@ -206,14 +206,14 @@ class OrderLabelController extends Controller
 
     public function show(OrderLabel $orderLabel)
     {
-        Gate::authorize('view order-label');
+        Gate::authorize('view print-label');
 
-        return view('order-label.show', compact('orderLabel'));
+        return view('print-label.show', compact('orderLabel'));
     }
 
     public function markPrinted($id)
     {
-        Gate::authorize('view order-label');
+        Gate::authorize('view print-label');
 
         $orderLabel = OrderLabel::findOrFail($id);
 

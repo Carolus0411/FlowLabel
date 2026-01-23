@@ -277,6 +277,38 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Route::get('/order-label/{orderLabel}', [\App\Http\Controllers\OrderLabelController::class, 'show'])
         ->name('order-label.show');
 
+    // Print Label routes
+    Volt::route('/print-label', 'print-label.index')->name('print-label.index');
+    Volt::route('/print-label/dashboard', 'print-label.dashboard')->name('print-label.dashboard');
+    Volt::route('/print-label/create', 'print-label.create')->name('print-label.create');
+    Volt::route('/print-label/{orderLabel}/edit', 'print-label.edit')->name('print-label.edit');
+    Volt::route('/print-label/import', 'print-label.import')->name('print-label.import');
+    Route::get('/print-label/download/{path}', [\App\Http\Controllers\PrintLabelController::class, 'download'])
+        ->where('path', '.*')
+        ->name('print-label.download');
+    Route::get('/print-label/download-all', [\App\Http\Controllers\PrintLabelController::class, 'downloadAll'])
+        ->name('print-label.download-all');
+    Route::get('/print-label/download-batch-zip', function() {
+        $zipPath = session('batch_download_zip');
+        $zipFileName = session('batch_download_filename');
+
+        \Log::info('Download batch zip requested', [
+            'zipPath' => $zipPath,
+            'zipFileName' => $zipFileName,
+            'fileExists' => $zipPath ? file_exists($zipPath) : false
+        ]);
+
+        if ($zipPath && file_exists($zipPath)) {
+            session()->forget(['batch_download_zip', 'batch_download_filename']);
+            return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+        }
+
+        \Log::error('Batch zip download failed - file not found');
+        abort(404, 'Download file not found or expired');
+    })->name('print-label.download-batch-zip');
+    Route::get('/print-label/{orderLabel}', [\App\Http\Controllers\PrintLabelController::class, 'show'])
+        ->name('print-label.show');
+
     Volt::route('/delivery-order', 'delivery-order.index')->name('delivery-order.index');
     Volt::route('/delivery-order/create', 'delivery-order.create')->name('delivery-order.create');
     Volt::route('/delivery-order/{deliveryOrder}/edit', 'delivery-order.edit')->name('delivery-order.edit');

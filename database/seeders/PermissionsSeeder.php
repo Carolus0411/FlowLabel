@@ -13,7 +13,9 @@ class PermissionsSeeder extends Seeder
     public function run(): void
     {
         // Disable foreign key checks to avoid errors during truncation
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
 
         DB::table('permissions')->truncate();
 
@@ -305,8 +307,59 @@ class PermissionsSeeder extends Seeder
   'updated_at' => '2026-01-19 09:23:33',
   'resource' => 'three-pl',
 ],
+            // Print Label permissions
+            [
+  'id' => 36,
+  'name' => 'view print-label',
+  'guard_name' => 'web',
+  'created_at' => '2026-01-23 09:43:44',
+  'updated_at' => '2026-01-23 09:43:44',
+  'resource' => 'print-label',
+],
+            [
+  'id' => 37,
+  'name' => 'create print-label',
+  'guard_name' => 'web',
+  'created_at' => '2026-01-23 09:43:44',
+  'updated_at' => '2026-01-23 09:43:44',
+  'resource' => 'print-label',
+],
+            [
+  'id' => 38,
+  'name' => 'update print-label',
+  'guard_name' => 'web',
+  'created_at' => '2026-01-23 09:43:44',
+  'updated_at' => '2026-01-23 09:43:44',
+  'resource' => 'print-label',
+],
+            [
+  'id' => 39,
+  'name' => 'delete print-label',
+  'guard_name' => 'web',
+  'created_at' => '2026-01-23 09:43:44',
+  'updated_at' => '2026-01-23 09:43:44',
+  'resource' => 'print-label',
+],
+            [
+  'id' => 40,
+  'name' => 'import print-label',
+  'guard_name' => 'web',
+  'created_at' => '2026-01-23 09:43:44',
+  'updated_at' => '2026-01-23 09:43:44',
+  'resource' => 'print-label',
+],
+            [
+  'id' => 41,
+  'name' => 'export print-label',
+  'guard_name' => 'web',
+  'created_at' => '2026-01-23 09:43:44',
+  'updated_at' => '2026-01-23 09:43:44',
+  'resource' => 'print-label',
+],
         ]);
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
     }
 }
