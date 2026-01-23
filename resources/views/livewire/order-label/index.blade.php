@@ -618,8 +618,8 @@ new class extends Component {
             @endforelse
 
             {{-- Pagination for grouped view --}}
-            <div class="mt-6">
-                {{ $batches->links() }}
+            <div class="mt-6 flex justify-center">
+                {{ $batches->appends(request()->query())->links() }}
             </div>
         </div>
     @else
