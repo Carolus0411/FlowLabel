@@ -12,13 +12,58 @@ sudo apt-get install ghostscript -y
 gs --version
 ```
 
-### 2. Install PHP Extensions
+### 2. Install Tesseract OCR (Required for Text Extraction from Images)
 
 ```bash
-sudo apt-get install php-cli php-mbstring php-xml php-zip php-gd php-curl php-mysql -y
+# Install Tesseract OCR
+sudo apt-get install tesseract-ocr -y
+
+# Install additional language packs (common ones)
+sudo apt-get install tesseract-ocr-eng tesseract-ocr-ind tesseract-ocr-chi-sim tesseract-ocr-chi-tra -y
+
+# Verify installation
+tesseract --version
+tesseract --list-langs
 ```
 
-### 3. Configure PHP Settings
+### Additional Language Packs (Optional)
+
+Based on your document types, install additional Tesseract language packs:
+
+```bash
+# For Indonesian documents
+sudo apt-get install tesseract-ocr-ind
+
+# For Chinese documents  
+sudo apt-get install tesseract-ocr-chi-sim tesseract-ocr-chi-tra
+
+# For other languages
+sudo apt-get install tesseract-ocr-deu tesseract-ocr-fra tesseract-ocr-spa
+```
+
+Update your `.env` file to include multiple languages if needed:
+
+```bash
+OCR_LANG=eng+ind+chi-sim
+```
+
+### 3. Install ImageMagick (Required for Image Processing)
+
+```bash
+sudo apt-get install imagemagick -y
+
+# Verify installation
+convert --version
+identify --version
+```
+
+### 4. Install PHP Extensions
+
+```bash
+sudo apt-get install php-cli php-mbstring php-xml php-zip php-gd php-curl php-mysql php-imagick -y
+```
+
+### 5. Configure PHP Settings
 
 Edit `/etc/php/8.x/cli/php.ini` and `/etc/php/8.x/fpm/php.ini`:
 
@@ -34,6 +79,20 @@ Restart PHP-FPM:
 ```bash
 sudo systemctl restart php8.x-fpm
 ```
+
+### 6. Configure OCR Environment Variables
+
+Update your `.env` file with OCR settings:
+
+```bash
+# OCR Configuration
+TESSERACT_PATH=/usr/bin/tesseract
+OCR_LANG=eng+ind
+```
+
+**Note:** 
+- `TESSERACT_PATH`: Path to tesseract executable (usually `/usr/bin/tesseract` on Ubuntu)
+- `OCR_LANG`: Default OCR languages (eng=English, ind=Indonesian, chi-sim=Chinese Simplified)
 
 ## Storage Permissions
 
@@ -164,14 +223,43 @@ gs --version
 which gs
 ```
 
-### 2. Test PHP Configuration
+### 2. Test Tesseract OCR
+
+```bash
+# Test basic functionality
+tesseract --version
+
+# List available languages
+tesseract --list-langs
+
+# Test OCR on a sample image (if available)
+echo "Testing Tesseract OCR..." > test.txt
+tesseract test.txt test_output
+cat test_output.txt
+rm test.txt test_output.txt
+```
+
+### 3. Test ImageMagick
+
+```bash
+convert --version
+identify --version
+
+# Test image conversion
+echo "Testing ImageMagick..." > test.txt
+convert test.txt test.png
+identify test.png
+rm test.txt test.png
+```
+
+### 4. Test PHP Configuration
 
 ```bash
 php -i | grep memory_limit
 php -i | grep max_execution_time
 ```
 
-### 3. Test Queue Worker
+### 5. Test Queue Worker
 
 ```bash
 # Run manually first
@@ -182,15 +270,20 @@ php artisan queue:work --once
 tail -f storage/logs/laravel.log
 ```
 
-### 4. Test File Permissions
+### 7. Test OCR Functionality
 
 ```bash
-# Try creating a file in storage
-sudo -u www-data touch storage/app/test.txt
-
-# If successful, remove it
-sudo rm storage/app/test.txt
+# Run OCR test script
+cd /var/www/labsysflow
+php test_ocr_ubuntu.php
 ```
+
+This script will test:
+- TesseractOCR PHP class loading
+- OCR configuration
+- Tesseract executable availability
+- Available language packs
+- Basic OCR functionality with a test image
 
 ## Troubleshooting
 
@@ -229,17 +322,51 @@ which gs
 gs --version
 ```
 
-### Memory Issues
+### Tesseract OCR Not Found
 
 ```bash
-# Increase PHP memory limit
-sudo sed -i 's/memory_limit = .*/memory_limit = 1024M/' /etc/php/8.x/cli/php.ini
-sudo sed -i 's/memory_limit = .*/memory_limit = 1024M/' /etc/php/8.x/fpm/php.ini
+# Install Tesseract OCR
+sudo apt-get install tesseract-ocr
 
-# Restart services
-sudo systemctl restart php8.x-fpm
-sudo supervisorctl restart labsysflow-worker:*
+# Install language packs
+sudo apt-get install tesseract-ocr-eng tesseract-ocr-ind
+
+# Check installation
+tesseract --version
+tesseract --list-langs
+
+# If using custom path, update .env
+echo "TESSERACT_PATH=/usr/bin/tesseract" >> .env
 ```
+
+### ImageMagick Not Found
+
+```bash
+# Install ImageMagick
+sudo apt-get install imagemagick
+
+# Check installation
+convert --version
+identify --version
+```
+
+### OCR Language Not Available
+
+```bash
+# Check available languages
+tesseract --list-langs
+
+# Install additional languages as needed
+sudo apt-get install tesseract-ocr-eng    # English
+sudo apt-get install tesseract-ocr-ind    # Indonesian
+sudo apt-get install tesseract-ocr-chi-sim  # Chinese Simplified
+sudo apt-get install tesseract-ocr-chi-tra  # Chinese Traditional
+
+# Update .env with desired language
+echo "OCR_LANG=eng+ind" >> .env
+```
+
+### Memory Issues
 
 ## Monitoring
 

@@ -75,8 +75,8 @@ class ProcessOrderLabelImport implements ShouldQueue
     {
         // Add ignore user abort
         ignore_user_abort(true);
-        set_time_limit(600);
-        ini_set('memory_limit', '1024M');
+        set_time_limit(3600);
+        ini_set('memory_limit', '6114M');
 
         $this->splitPDF($this->filePath, $this->originalName);
 
