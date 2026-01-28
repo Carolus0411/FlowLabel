@@ -24,7 +24,7 @@ class ProcessOrderLabelImport implements ShouldQueue
     public $userId;
     public $batchNo;
     public $threePlId;
-    public $timeout = 600; // 10 minutes
+    public $timeout = 3600; // 1 hour
 
     /**
      * Create a new job instance.
@@ -369,6 +369,10 @@ class ProcessOrderLabelImport implements ShouldQueue
                 foreach ($pages as $pageIndex => $page) {
                     $pageNumber = $pageIndex + 1;
 
+                    if ($pageNumber % 100 == 0) {
+                        \Log::info("Fallback processing: $pageNumber / $pageCount pages completed");
+                    }
+
                     try {
                         $text = $page->getText();
                     } catch (\Exception $e) {
@@ -540,8 +544,20 @@ class ProcessOrderLabelImport implements ShouldQueue
             return $matches[1];
         }
 
+        // 1.5. Handle OCR errors where digits might be separated by spaces
+        // Remove spaces between digits to reconstruct long numbers
+        $textNoSpaces = preg_replace('/(\d)\s+(\d)/', '$1$2', $text);
+        if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\s：\.]*\s*(\d{15,})/iu', $textNoSpaces, $matches)) {
+            return $matches[1];
+        }
+
         // 2. Fallback: Very long number sequence (15+ digits) usually found at bottom of labels
         if (preg_match('/\b(\d{15,})\b/', $text, $matches)) {
+            return $matches[1];
+        }
+
+        // 2.5. Fallback with space removal
+        if (preg_match('/\b(\d{15,})\b/', $textNoSpaces, $matches)) {
             return $matches[1];
         }
 
@@ -637,7 +653,10 @@ class ProcessOrderLabelImport implements ShouldQueue
         try {
             $ocr = (new TesseractOCR($pngPath))
                 ->executable(config('ocr.tesseract_path', 'tesseract'))
-                ->lang($lang);
+                ->lang($lang)
+                ->psm(6) // Uniform block of text - better for long numbers
+                ->oem(1) // Legacy OCR engine - more accurate for digits
+                ->config('tessedit_char_whitelist', '0123456789'); // Only allow digits for better accuracy
 
             $text = $ocr->run();
         } catch (\Exception $e) {
@@ -816,6 +835,10 @@ class ProcessOrderLabelImport implements ShouldQueue
 
             // Split each page individually
             for ($i = 1; $i <= $pageCount; $i++) {
+                if ($i % 100 == 0) {
+                    \Log::info("Ghostscript splitting: $i / $pageCount pages");
+                }
+
                 $outputFile = $outputDir . 'page_' . $i . '.pdf';
 
                 // Escape paths for shell command
