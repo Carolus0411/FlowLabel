@@ -41,31 +41,24 @@ class ProcessOrderLabelImport implements ShouldQueue
 
     /**
      * Generate batch number with format FLOW/YY/MM/DD/XXX
+     * Uses atomic incrementing via AutoCode model
      */
     private function generateBatchNumber(): string
     {
-        $today = date('Y-m-d');
-        $year = date('y');
-        $month = date('m');
-        $day = date('d');
+        $today = now()->format('Y-m-d');
+        $year = now()->format('y');
+        $month = now()->format('m');
+        $day = now()->format('d');
+        $prefix = "FLOW/$year/$month/$day/";
 
-        // Get last batch number for today
-        $lastBatch = OrderLabel::whereDate('created_at', $today)
-            ->whereNotNull('batch_no')
-            ->where('batch_no', 'like', "FLOW/$year/$month/$day/%")
-            ->orderBy('batch_no', 'desc')
-            ->value('batch_no');
+        // Use atomic increment to prevent race conditions
+        $autoCode = \App\Models\AutoCode::firstOrCreate(['prefix' => $prefix]);
+        $autoCode->increment('num');
+        
+        // Refresh to get the updated number
+        $sequence = $autoCode->fresh()->num;
 
-        // Extract sequence number from last batch
-        $sequence = 1;
-        if ($lastBatch) {
-            $parts = explode('/', $lastBatch);
-            if (count($parts) === 5) {
-                $sequence = intval($parts[4]) + 1;
-            }
-        }
-
-        return sprintf('FLOW/%s/%s/%s/%03d', $year, $month, $day, $sequence);
+        return sprintf('%s%03d', $prefix, $sequence);
     }
 
     /**

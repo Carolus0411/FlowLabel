@@ -15,7 +15,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
 }; ?>
 <div>
-    <div class="px-10 lg:px-0 flex items-center justify-center min-h-dvh bg-gray-100 bg-cover bg-no-repeat bg-center bg-[url(../img/bg.jpg)] dark:bg-none dark:bg-neutral-900">
+    <div class="px-10 lg:px-0 flex items-center justify-center min-h-dvh bg-gray-100 dark:bg-none dark:bg-neutral-900">
         <div class="w-md shadow">
             <div class="bg-white dark:bg-neutral-800 p-8 space-y-6">
 

@@ -10,27 +10,27 @@ class Code {
 
     public function autoCode( $format, $reset = 'month', $date = '', $length = 4 ): string
     {
-        if (empty($date)) $date = date('Y-m-d');
-
-        $time = strtotime($date);
+        $dt = !empty($date) ? \Illuminate\Support\Carbon::parse($date) : now();
 
         if ($reset == 'year') {
-            $key = $format .'|'. date('Y', $time);
+            $key = $format .'|'. $dt->format('Y');
         } else {
-            $key = $format .'|'. date('Y', $time) .'|'. date('m', $time);
+            $key = $format .'|'. $dt->format('Y') .'|'. $dt->format('m');
         }
 
-        $code = Code::updateOrCreate(
+        $code = AutoCode::updateOrCreate(
             [ 'key' => $key, 'format' => $format ],
-        )->increment('num');
+        );
+        $code->increment('num');
+        $code->refresh();
 
         //$code = Code::where('key', $key)->first();
 
         $replacer = [
-            '{Y}' => date('Y', $time),
-            '{y}' => date('y', $time),
-            '{m}' => date('m', $time),
-            '{d}' => date('d', $time),
+            '{Y}' => $dt->format('Y'),
+            '{y}' => $dt->format('y'),
+            '{m}' => $dt->format('m'),
+            '{d}' => $dt->format('d'),
             '{num}' => Str::padLeft($code->num, $length, '0'),
         ];
 
@@ -39,9 +39,8 @@ class Code {
 
     public static function auto( $code, $date = '', $length = 4 ): string
     {
-        $date = $date ? $date : date('Y-m-d');
-        $time = strtotime($date);
-        $prefix = $code . '/'.date('y', $time).'/'.date('m', $time).'/';
+        $dt = !empty($date) ? \Illuminate\Support\Carbon::parse($date) : now();
+        $prefix = $code . '/'.$dt->format('y').'/'.$dt->format('m').'/';
         AutoCode::updateOrCreate(
             ['prefix' => $prefix],
         )->increment('num');

@@ -91,7 +91,7 @@ new class extends Component {
             ['key' => 'order_date', 'label' => 'Order Date', 'format' => ['date', 'd-m-Y']],
             ['key' => 'page_number', 'label' => 'Page', 'class' => 'text-center'],
             ['key' => 'file_download', 'label' => 'Download', 'disableLink' => true, 'sortable' => false, 'class' => 'text-center'],
-            ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'whitespace-nowrap', 'format' => ['date', 'd-M-y, H:i']],
+            ['key' => 'updated_at', 'label' => 'Updated At', 'class' => 'whitespace-nowrap', 'format' => ['date', 'd-m-Y H:i:s']],
         ];
     }
 
@@ -587,7 +587,7 @@ new class extends Component {
                             @endif
                             <div class="border-l pl-3">
                                 <div class="text-xs text-gray-500">Import Date</div>
-                                <div class="font-semibold text-sm text-gray-700">{{ \Carbon\Carbon::parse($batch->import_date)->format('d-M-Y H:i') }}</div>
+                                <div class="font-semibold text-sm text-gray-700">{{ \Carbon\Carbon::parse($batch->import_date)->timezone('Asia/Jakarta')->format('d-m-Y H:i:s') }}</div>
                             </div>
                             <div class="border-l pl-3">
                                 <div class="text-xs text-gray-500">Original File</div>
