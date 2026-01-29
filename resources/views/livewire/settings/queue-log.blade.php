@@ -103,7 +103,7 @@ new class extends Component {
                 @endif
             @endscope
             @scope('cell_created_at', $batch)
-                {{ \Carbon\Carbon::parse($batch->created_at)->format('d-m-Y H:i:s') }}
+                {{ \Carbon\Carbon::createFromTimestamp($batch->created_at)->timezone('Asia/Jakarta')->format('d-m-Y H:i:s') }}
             @endscope
         </x-table>
     </div>
@@ -125,7 +125,7 @@ new class extends Component {
                     </div>
                 @endscope
                 @scope('cell_failed_at', $job)
-                     {{ \Carbon\Carbon::parse($job->failed_at)->diffForHumans() }}
+                     {{ \Carbon\Carbon::parse($job->failed_at)->timezone('Asia/Jakarta')->format('d-m-Y H:i:s') }} ({{ \Carbon\Carbon::parse($job->failed_at)->diffForHumans() }})
                 @endscope
             </x-table>
         </div>
