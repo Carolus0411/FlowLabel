@@ -152,7 +152,7 @@ new class extends Component {
                         'Order "' . $orderLabel->code . '" sudah berstatus Printed. ' .
                         'Ubah filter Print Status untuk melihat order ini.',
                         position: 'toast-top toast-center',
-                        timeout: 5000
+                        timeout: 10800000
                     );
                     // Keep print_status as 'not_printed' - user must manually change it
                     $this->searchInput = '';

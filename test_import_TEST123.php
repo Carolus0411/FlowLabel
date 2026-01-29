@@ -35,8 +35,8 @@ $batch = Bus::batch([$job])->dispatch();
 
 echo "Batch ID: " . $batch->id . "\n";
 
-echo "Waiting for completion (timeout 300s)...\n";
-$timeout = 300;
+echo "Waiting for completion (timeout 10800s)...\n";
+$timeout = 10800;
 $start = time();
 
 while (!$batch->finished() && (time() - $start) < $timeout) {
