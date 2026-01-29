@@ -24,7 +24,7 @@ class ProcessOrderLabelImport implements ShouldQueue
     public $userId;
     public $batchNo;
     public $threePlId;
-    public $timeout = 3600; // 1 hour
+    public $timeout = 11000; // 3 hour
 
     /**
      * Create a new job instance.
