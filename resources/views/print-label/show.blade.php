@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-layouts.app>
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <x-header title="Print Label Details" separator />
@@ -92,4 +92,4 @@
             </x-card>
         </div>
     </div>
-</x-app-layout>
+</x-layouts.app>
