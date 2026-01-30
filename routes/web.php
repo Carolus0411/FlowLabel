@@ -13,7 +13,7 @@ Route::get('/', function () {
 require __DIR__.'/auth.php';
 
 Route::get('/', function () {
-    return redirect()->route('order-label.index');
+    return redirect()->route('order-label.dashboard');
 })->name('home');
 
 /**

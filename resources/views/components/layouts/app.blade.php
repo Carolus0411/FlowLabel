@@ -84,6 +84,7 @@
             {{-- MENU --}}
             <x-menu activate-by-route class="text-[13px] font-light">
 
+                <x-menu-item title="Dashboard" icon="o-home" link="{{ route('order-label.dashboard') }}" :hidden="auth()->user()->cannot('view order-label')" />
                 <x-menu-item title="Order Label" icon="o-document-text" link="{{ route('order-label.index') }}" :hidden="auth()->user()->cannot('view order-label')" />
                 <x-menu-item title="Print Label" icon="o-printer" link="{{ route('print-label.index') }}" :hidden="auth()->user()->cannot('view print-label')" />
 
