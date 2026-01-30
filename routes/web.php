@@ -35,7 +35,7 @@ Route::get('/order-label-download/{path}', [\App\Http\Controllers\OrderLabelCont
 Route::prefix('cp')->middleware(['auth'])->group(function () {
 
     Route::get('/', function () {
-        return redirect()->route('order-label.dashboard');
+        return redirect()->route('dashboard');
     });
 
     Volt::route('/dashboard', 'dashboard')->name('dashboard');
