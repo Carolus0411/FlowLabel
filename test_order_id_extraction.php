@@ -85,14 +85,14 @@ $textTestCases = [
 
 foreach ($textTestCases as $case) {
     list($text, $platform, $expected) = $case;
-    
+
     // Mock the threePlId for platform
     if ($platform === 'shopee') {
         $job->threePlId = 1; // We'll assume this works
     }
-    
+
     $result = $textMethod->invoke($job, $text);
-    
+
     echo "Text: '$text' (Platform: $platform)\n";
     echo "  Expected: $expected\n";
     echo "  Result: " . ($result ? $result : 'NULL') . "\n";

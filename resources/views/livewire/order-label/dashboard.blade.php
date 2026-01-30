@@ -61,6 +61,51 @@ new class extends Component {
             ->limit(10)
             ->get();
 
+        // Platform breakdown
+        $platformStats = OrderLabel::query()
+            ->selectRaw('three_pl_id, 
+                COUNT(*) as total_orders,
+                SUM(CASE WHEN printed_at IS NOT NULL THEN 1 ELSE 0 END) as printed_orders,
+                SUM(CASE WHEN printed_at IS NULL THEN 1 ELSE 0 END) as pending_orders')
+            ->with('threePl')
+            ->where('saved', 1)
+            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->groupBy('three_pl_id')
+            ->orderBy('total_orders', 'desc')
+            ->get();
+
+        // Status distribution
+        $statusStats = OrderLabel::query()
+            ->selectRaw('status, COUNT(*) as count')
+            ->where('saved', 1)
+            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->groupBy('status')
+            ->get()
+            ->pluck('count', 'status');
+
+        // Recent batches (last 5)
+        $recentBatches = OrderLabel::query()
+            ->selectRaw('batch_no, 
+                three_pl_id,
+                COUNT(*) as total_pages,
+                SUM(CASE WHEN printed_at IS NOT NULL THEN 1 ELSE 0 END) as printed_count,
+                MAX(created_at) as import_date,
+                MAX(order_date) as latest_order_date')
+            ->with('threePl')
+            ->where('saved', 1)
+            ->whereNotNull('batch_no')
+            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->groupBy('batch_no', 'three_pl_id')
+            ->orderBy('import_date', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Print status distribution for pie chart
+        $printStatusData = [
+            'printed' => $totalPrinted,
+            'pending' => $totalNotPrinted,
+        ];
+
         // Top batches by page count
         $topBatches = OrderLabel::query()
             ->select('batch_no', DB::raw('COUNT(*) as total_pages'), DB::raw('SUM(CASE WHEN printed_at IS NOT NULL THEN 1 ELSE 0 END) as printed_count'))
@@ -128,6 +173,10 @@ new class extends Component {
             'topBatches' => $topBatches,
             'dailyStats' => $dailyStats,
             'hourlyStats' => $hourlyStats,
+            'platformStats' => $platformStats,
+            'statusStats' => $statusStats,
+            'recentBatches' => $recentBatches,
+            'printStatusData' => $printStatusData,
         ];
     }
 }; ?>
@@ -206,49 +255,98 @@ new class extends Component {
                 <canvas id="dailyChart" height="100"></canvas>
             </x-card>
 
-            {{-- Recent Printed Orders --}}
-            <x-card title="Recent Printed Orders" class="shadow-lg">
+            {{-- Platform Breakdown --}}
+            @if($platformStats->count() > 0)
+            <x-card title="Platform Performance" class="shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @foreach($platformStats as $platform)
+                    <div class="card bg-base-100 border border-base-300">
+                        <div class="card-body p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="avatar placeholder">
+                                        <div class="bg-primary text-primary-content rounded-full w-8">
+                                            <span class="text-xs">{{ substr($platform->threePl->name ?? 'N/A', 0, 2) }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-sm">{{ $platform->threePl->name ?? 'Unknown Platform' }}</h3>
+                                        <p class="text-xs text-gray-500">{{ number_format($platform->total_orders) }} orders</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span>Printed</span>
+                                    <span class="font-semibold text-success">{{ $platform->printed_orders }}</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span>Pending</span>
+                                    <span class="font-semibold text-warning">{{ $platform->pending_orders }}</span>
+                                </div>
+                                @php
+                                    $platformEfficiency = $platform->total_orders > 0 ? round(($platform->printed_orders / $platform->total_orders) * 100) : 0;
+                                @endphp
+                                <progress class="progress progress-primary progress-sm" value="{{ $platformEfficiency }}" max="100"></progress>
+                                <p class="text-xs text-center text-gray-500">{{ $platformEfficiency }}% efficiency</p>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </x-card>
+            @endif
+
+            {{-- Recent Batches --}}
+            <x-card title="Recent Batches" class="shadow-lg">
                 <div class="overflow-x-auto">
                     <table class="table table-zebra table-sm">
                         <thead>
                             <tr>
-                                <th>Code</th>
-                                <th>Batch</th>
-                                <th>Page</th>
-                                <th>Prints</th>
-                                <th>Printed At</th>
+                                <th>Batch No</th>
+                                <th>Platform</th>
+                                <th>Pages</th>
+                                <th>Printed</th>
+                                <th>Progress</th>
+                                <th>Import Date</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($recentPrinted as $order)
+                            @forelse($recentBatches as $batch)
                             <tr>
                                 <td>
-                                    <a href="{{ route('order-label.edit', $order->id) }}" class="link link-primary font-medium">
-                                        {{ $order->code }}
-                                    </a>
+                                    <x-badge value="{{ $batch->batch_no }}" class="badge-info badge-sm font-mono" />
                                 </td>
                                 <td>
-                                    @if($order->batch_no)
-                                    <x-badge value="{{ $order->batch_no }}" class="badge-info badge-sm font-mono" />
-                                    @else
-                                    <span class="text-gray-400">-</span>
-                                    @endif
+                                    <div class="flex items-center gap-2">
+                                        <div class="avatar placeholder">
+                                            <div class="bg-secondary text-secondary-content rounded-full w-6">
+                                                <span class="text-xs">{{ substr($batch->threePl->name ?? 'N/A', 0, 1) }}</span>
+                                            </div>
+                                        </div>
+                                        <span class="text-sm">{{ $batch->threePl->name ?? 'Unknown' }}</span>
+                                    </div>
                                 </td>
                                 <td>
-                                    @if($order->page_number)
-                                    <x-badge value="{{ $order->page_number }}" class="badge-primary badge-sm" />
-                                    @else
-                                    <span class="text-gray-400">-</span>
-                                    @endif
+                                    <x-badge value="{{ $batch->total_pages }}" class="badge-neutral badge-sm" />
                                 </td>
                                 <td>
-                                    <x-badge value="{{ $order->print_count }}x" class="badge-success badge-sm" />
+                                    <x-badge value="{{ $batch->printed_count }}" class="badge-success badge-sm" />
                                 </td>
-                                <td class="text-sm">{{ $order->printed_at ? \Carbon\Carbon::parse($order->printed_at)->format('d M Y, H:i') : '-' }}</td>
+                                <td>
+                                    @php
+                                        $progress = $batch->total_pages > 0 ? round(($batch->printed_count / $batch->total_pages) * 100) : 0;
+                                    @endphp
+                                    <div class="flex items-center gap-2">
+                                        <progress class="progress progress-success progress-xs flex-1" value="{{ $progress }}" max="100"></progress>
+                                        <span class="text-xs font-semibold">{{ $progress }}%</span>
+                                    </div>
+                                </td>
+                                <td class="text-sm">{{ $batch->import_date ? \Carbon\Carbon::parse($batch->import_date)->format('d M Y') : '-' }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="text-center text-gray-500 py-4">No printed orders yet</td>
+                                <td colspan="6" class="text-center text-gray-500 py-4">No recent batches</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -266,6 +364,40 @@ new class extends Component {
                         <span class="text-3xl font-bold">{{ $printEfficiency }}%</span>
                     </div>
                     <p class="text-sm text-gray-600 mt-4">{{ number_format($totalPrinted) }} of {{ number_format($totalOrders) }} printed</p>
+                </div>
+            </x-card>
+
+            {{-- Print Status Distribution --}}
+            <x-card title="Print Status" class="shadow-lg">
+                <canvas id="statusChart" height="200"></canvas>
+            </x-card>
+
+            {{-- Status Distribution --}}
+            @if($statusStats->count() > 0)
+            <x-card title="Order Status" class="shadow-lg">
+                <div class="space-y-3">
+                    @foreach($statusStats as $status => $count)
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full {{ $status === 'open' ? 'bg-warning' : 'bg-success' }}"></div>
+                            <span class="text-sm capitalize">{{ $status }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold">{{ number_format($count) }}</span>
+                            <span class="text-xs text-gray-500">({{ $totalOrders > 0 ? round(($count / $totalOrders) * 100) : 0 }}%)</span>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </x-card>
+            @endif
+
+            {{-- Quick Actions --}}
+            <x-card title="Quick Actions" class="shadow-lg">
+                <div class="space-y-2">
+                    <x-button label="Import PDF" link="{{ route('order-label.import') }}" icon="o-cloud-arrow-up" class="btn-primary btn-sm w-full justify-start" />
+                    <x-button label="View All Orders" link="{{ route('order-label.index') }}" icon="o-list-bullet" class="btn-outline btn-sm w-full justify-start" />
+                    <x-button label="Export Data" link="{{ route('order-label.index') }}?export=1" icon="o-arrow-down-tray" class="btn-outline btn-sm w-full justify-start" />
                 </div>
             </x-card>
 
@@ -415,23 +547,25 @@ new class extends Component {
                 });
             }
 
-            // Hourly Chart - Bar chart with DaisyUI colors
-            const hourlyCtx = document.getElementById('hourlyChart');
-            if (hourlyCtx) {
-                @if($period === 'today' && count($hourlyStats) > 0)
-                new Chart(hourlyCtx, {
-                    type: 'bar',
+            // Status Chart - Doughnut chart
+            const statusCtx = document.getElementById('statusChart');
+            if (statusCtx) {
+                new Chart(statusCtx, {
+                    type: 'doughnut',
                     data: {
-                        labels: @json(array_column($hourlyStats, 'hour')),
+                        labels: ['Printed', 'Pending'],
                         datasets: [{
-                            label: 'Prints',
-                            data: @json(array_column($hourlyStats, 'count')),
-                            backgroundColor: 'hsl(var(--p))',
-                            borderColor: 'hsl(var(--p))',
-                            borderWidth: 0,
-                            borderRadius: 8,
-                            barThickness: 'flex',
-                            maxBarThickness: 30
+                            data: [@json($printStatusData['printed']), @json($printStatusData['pending'])],
+                            backgroundColor: [
+                                'hsl(var(--su))',
+                                'hsl(var(--wa))'
+                            ],
+                            borderColor: [
+                                'hsl(var(--su))',
+                                'hsl(var(--wa))'
+                            ],
+                            borderWidth: 2,
+                            hoverOffset: 4
                         }]
                     },
                     options: {
@@ -439,42 +573,29 @@ new class extends Component {
                         maintainAspectRatio: true,
                         plugins: {
                             legend: {
-                                display: false
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
                             },
                             tooltip: {
                                 backgroundColor: 'rgba(0, 0, 0, 0.8)',
                                 padding: 10,
                                 cornerRadius: 6,
-                                displayColors: false
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+                                        return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                                    }
+                                }
                             }
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    precision: 0,
-                                    font: {
-                                        size: 11
-                                    }
-                                },
-                                grid: {
-                                    color: 'rgba(0, 0, 0, 0.05)'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    font: {
-                                        size: 10
-                                    }
-                                },
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        }
+                        cutout: '60%'
                     }
                 });
-                @endif
             }
         });
     </script>

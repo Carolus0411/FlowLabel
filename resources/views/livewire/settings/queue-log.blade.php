@@ -49,7 +49,7 @@ new class extends Component {
 
     public function retryAllFailed(): void
     {
-        Artisan::call('queue:retry', ['all' => true]);
+        Artisan::call('queue:retry', ['id' => 'all']);
         $this->success('Retry command dispatched!');
     }
 

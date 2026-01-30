@@ -54,7 +54,7 @@ class ProcessOrderLabelImport implements ShouldQueue
         // Use atomic increment to prevent race conditions
         $autoCode = \App\Models\AutoCode::firstOrCreate(['prefix' => $prefix]);
         $autoCode->increment('num');
-        
+
         // Refresh to get the updated number
         $sequence = $autoCode->fresh()->num;
 
