@@ -535,7 +535,7 @@ new class extends Component {
             <x-subtitle-date :date1="$date1" :date2="$date2" />
         </x-slot:subtitle>
         <x-slot:actions>
-            <x-button label="Dashboard" link="{{ route('order-label.dashboard') }}" icon="o-chart-bar" class="btn-outline" />
+            <x-button label="Dashboard" link="{{ route('dashboard') }}" icon="o-chart-bar" class="btn-outline" />
             <x-button label="Download Selected" wire:click="downloadSelected" spinner="downloadSelected" icon="o-arrow-down-tray" class="btn-success" :disabled="count($selectedItems) === 0" />
             <x-button label="Import PDF" link="{{ route('order-label.import') }}"
                      icon="o-document-arrow-up" class="btn-primary" />

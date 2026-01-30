@@ -84,14 +84,14 @@
             {{-- MENU --}}
             <x-menu activate-by-route class="text-[13px] font-light">
 
-                <x-menu-item title="Dashboard" icon="o-home" link="{{ route('order-label.dashboard') }}" :hidden="auth()->user()->cannot('view order-label')" />
+                <x-menu-item title="Dashboard" icon="o-home" link="{{ route('dashboard') }}" :hidden="auth()->user()->cannot('view order-label')" />
                 <x-menu-item title="Order Label" icon="o-document-text" link="{{ route('order-label.index') }}" :hidden="auth()->user()->cannot('view order-label')" />
                 <x-menu-item title="Print Label" icon="o-printer" link="{{ route('print-label.index') }}" :hidden="auth()->user()->cannot('view print-label')" />
+                <x-menu-item title="Queue Log" icon="o-queue-list" link="{{ route('queue-log') }}" />
 
                 <x-menu-sub title="Setup" icon="o-cog-6-tooth">
                     <x-menu-item title="3PL" link="{{ route('three-pl.index') }}" :hidden="auth()->user()->cannot('view three-pl')" />
                     <x-menu-item title="Settings" link="{{ route('setting.general') }}" :hidden="auth()->user()->cannot('view general-setting')" />
-                    <x-menu-item title="Queue Log" link="{{ route('settings.queue-log') }}" />
                 </x-menu-sub>
 
                 <x-menu-sub title="Users" icon="o-users">

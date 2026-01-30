@@ -13,7 +13,7 @@ Route::get('/', function () {
 require __DIR__.'/auth.php';
 
 Route::get('/', function () {
-    return redirect()->route('order-label.dashboard');
+    return redirect()->route('dashboard');
 })->name('home');
 
 /**
@@ -247,7 +247,7 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
         ->middleware(\Spatie\Permission\Middleware\RoleMiddleware::class . ':Super Admin');
 
     Volt::route('/order-label', 'order-label.index')->name('order-label.index');
-    Volt::route('/order-label/dashboard', 'order-label.dashboard')->name('order-label.dashboard');
+    Volt::route('/dashboard', 'order-label.dashboard')->name('dashboard');
     Volt::route('/order-label/create', 'order-label.create')->name('order-label.create');
     Volt::route('/order-label/{orderLabel}/edit', 'order-label.edit')->name('order-label.edit');
     Volt::route('/order-label/import', 'order-label.import')->name('order-label.import');
@@ -416,7 +416,7 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
     Volt::route('/settings/account-mapping', 'setting.account-mapping')->name('setting.account-mapping');
     Volt::route('/settings/code', 'setting.code')->name('setting.code');
     Volt::route('/settings/draft', 'setting.draft')->name('setting.draft');
-    Volt::route('/settings/queue-log', 'settings.queue-log')->name('settings.queue-log');
+    Volt::route('/queue-log', 'queue-log')->name('queue-log');
 
     // print
     Route::get('/print/cash-in/{cashIn}', [\App\Http\Controllers\CashInPrintController::class, 'show'])->name('print.cash-in');

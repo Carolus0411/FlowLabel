@@ -12,6 +12,7 @@
     themes:
         light --default,
         dark --prefersdark;
+    exclude: properties;
 }
 
 /* maryUI */

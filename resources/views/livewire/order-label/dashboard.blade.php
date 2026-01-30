@@ -35,568 +35,575 @@ new class extends Component {
         }
 
         // Build base query
-        $query = OrderLabel::query()->where('saved', 1);
-
-        if ($start && $end) {
-            $query->whereBetween('order_date', [$start, $end]);
-        }
+        $baseQuery = OrderLabel::query()
+            ->where('saved', 1)
+            ->with('threePl')
+            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]));
 
         // Total Statistics
-        $totalOrders = $query->count();
-        $totalPrinted = (clone $query)->whereNotNull('printed_at')->count();
-        $totalNotPrinted = (clone $query)->whereNull('printed_at')->count();
-        $totalBatches = (clone $query)->whereNotNull('batch_no')->distinct('batch_no')->count('batch_no');
+        $totalOrders = (clone $baseQuery)->count();
+        $totalPrinted = (clone $baseQuery)->whereNotNull('printed_at')->count();
+        $totalNotPrinted = $totalOrders - $totalPrinted;
+        $totalBatches = (clone $baseQuery)->whereNotNull('batch_no')->distinct('batch_no')->count('batch_no');
+
+        // Additional useful statistics
+        $todayPrinted = OrderLabel::where('saved', 1)
+            ->whereNotNull('printed_at')
+            ->whereDate('printed_at', $now->toDateString())
+            ->count();
+
+        $todayPending = OrderLabel::where('saved', 1)
+            ->whereNull('printed_at')
+            ->whereDate('created_at', $now->toDateString())
+            ->count();
 
         // Average print count
-        $avgPrintCount = (clone $query)->whereNotNull('printed_at')->avg('print_count') ?? 0;
+        $avgPrintCount = (clone $baseQuery)->whereNotNull('printed_at')->avg('print_count') ?? 0;
 
-        // Print efficiency (percentage of printed orders)
+        // Print efficiency
         $printEfficiency = $totalOrders > 0 ? round(($totalPrinted / $totalOrders) * 100, 2) : 0;
 
-        // Recent printed orders (last 10)
-        $recentPrinted = OrderLabel::query()
-            ->where('saved', 1)
-            ->whereNotNull('printed_at')
-            ->orderBy('printed_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        // Platform breakdown
+        // Platform statistics
         $platformStats = OrderLabel::query()
-            ->selectRaw('three_pl_id, 
-                COUNT(*) as total_orders,
-                SUM(CASE WHEN printed_at IS NOT NULL THEN 1 ELSE 0 END) as printed_orders,
-                SUM(CASE WHEN printed_at IS NULL THEN 1 ELSE 0 END) as pending_orders')
+            ->select([
+                'three_pl_id',
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(CASE WHEN printed_at IS NOT NULL THEN 1 ELSE 0 END) as printed_orders'),
+                DB::raw('SUM(CASE WHEN printed_at IS NULL THEN 1 ELSE 0 END) as pending_orders')
+            ])
             ->with('threePl')
             ->where('saved', 1)
             ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
             ->groupBy('three_pl_id')
-            ->orderBy('total_orders', 'desc')
+            ->orderByDesc('total_orders')
+            ->limit(6)
             ->get();
 
-        // Status distribution
-        $statusStats = OrderLabel::query()
-            ->selectRaw('status, COUNT(*) as count')
-            ->where('saved', 1)
-            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status');
-
-        // Recent batches (last 5)
+        // Recent activity
         $recentBatches = OrderLabel::query()
-            ->selectRaw('batch_no, 
-                three_pl_id,
-                COUNT(*) as total_pages,
-                SUM(CASE WHEN printed_at IS NOT NULL THEN 1 ELSE 0 END) as printed_count,
-                MAX(created_at) as import_date,
-                MAX(order_date) as latest_order_date')
+            ->select([
+                'batch_no',
+                'three_pl_id',
+                DB::raw('COUNT(*) as total_pages'),
+                DB::raw('SUM(CASE WHEN printed_at IS NOT NULL THEN 1 ELSE 0 END) as printed_count'),
+                DB::raw('MAX(created_at) as import_date')
+            ])
             ->with('threePl')
             ->where('saved', 1)
             ->whereNotNull('batch_no')
             ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
             ->groupBy('batch_no', 'three_pl_id')
-            ->orderBy('import_date', 'desc')
-            ->limit(5)
+            ->orderByDesc('import_date')
+            ->limit(6)
             ->get();
 
-        // Print status distribution for pie chart
+        // Status summary
+        $statusSummary = OrderLabel::query()
+            ->select([
+                DB::raw("CASE
+                    WHEN printed_at IS NOT NULL THEN 'printed'
+                    WHEN status = 'open' THEN 'open'
+                    WHEN status = 'processing' THEN 'processing'
+                    WHEN status = 'completed' THEN 'completed'
+                    ELSE 'other'
+                END as status_group"),
+                DB::raw('COUNT(*) as count')
+            ])
+            ->where('saved', 1)
+            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->groupBy('status_group')
+            ->get()
+            ->pluck('count', 'status_group');
+
+        // Print status for chart
         $printStatusData = [
             'printed' => $totalPrinted,
             'pending' => $totalNotPrinted,
         ];
 
-        // Top batches by page count
-        $topBatches = OrderLabel::query()
-            ->select('batch_no', DB::raw('COUNT(*) as total_pages'), DB::raw('SUM(CASE WHEN printed_at IS NOT NULL THEN 1 ELSE 0 END) as printed_count'))
-            ->where('saved', 1)
-            ->whereNotNull('batch_no')
-            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
-            ->groupBy('batch_no')
-            ->orderBy('total_pages', 'desc')
-            ->limit(5)
-            ->get();
-
-        // Daily statistics for chart (last 7 days)
-        $dailyStats = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i);
-            $dayStart = $date->copy()->startOfDay();
-            $dayEnd = $date->copy()->endOfDay();
-
-            $printed = OrderLabel::where('saved', 1)
-                ->whereNotNull('printed_at')
-                ->whereBetween('printed_at', [$dayStart, $dayEnd])
-                ->count();
-
-            $notPrinted = OrderLabel::where('saved', 1)
-                ->whereNull('printed_at')
-                ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->count();
-
-            $dailyStats[] = [
-                'date' => $date->format('D'),
-                'printed' => $printed,
-                'not_printed' => $notPrinted,
-            ];
-        }
-
-        // Hourly statistics for today
-        $hourlyStats = [];
-        if ($this->period === 'today') {
-            for ($h = 0; $h < 24; $h++) {
-                $hourStart = $now->copy()->setTime($h, 0, 0);
-                $hourEnd = $now->copy()->setTime($h, 59, 59);
-
-                $printed = OrderLabel::where('saved', 1)
-                    ->whereNotNull('printed_at')
-                    ->whereBetween('printed_at', [$hourStart, $hourEnd])
-                    ->count();
-
-                if ($printed > 0) {
-                    $hourlyStats[] = [
-                        'hour' => str_pad($h, 2, '0', STR_PAD_LEFT) . ':00',
-                        'count' => $printed,
-                    ];
-                }
-            }
-        }
+        // Performance metrics
+        $performanceMetrics = [
+            'avg_print_time' => $this->calculateAvgPrintTime($start, $end),
+            'peak_hour' => $this->getPeakPrintHour($start, $end),
+            'success_rate' => $printEfficiency,
+        ];
 
         return [
             'totalOrders' => $totalOrders,
             'totalPrinted' => $totalPrinted,
             'totalNotPrinted' => $totalNotPrinted,
             'totalBatches' => $totalBatches,
+            'todayPrinted' => $todayPrinted,
+            'todayPending' => $todayPending,
             'avgPrintCount' => round($avgPrintCount, 1),
             'printEfficiency' => $printEfficiency,
-            'recentPrinted' => $recentPrinted,
-            'topBatches' => $topBatches,
-            'dailyStats' => $dailyStats,
-            'hourlyStats' => $hourlyStats,
             'platformStats' => $platformStats,
-            'statusStats' => $statusStats,
             'recentBatches' => $recentBatches,
+            'statusSummary' => $statusSummary,
             'printStatusData' => $printStatusData,
+            'performanceMetrics' => $performanceMetrics,
+            'period' => $this->period,
         ];
+    }
+
+    private function calculateAvgPrintTime($start, $end): string
+    {
+        $avgTime = OrderLabel::query()
+            ->where('saved', 1)
+            ->whereNotNull('printed_at')
+            ->whereNotNull('created_at')
+            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (printed_at - created_at))) as avg_seconds'))
+            ->value('avg_seconds');
+
+        if (!$avgTime) return 'N/A';
+
+        $hours = floor($avgTime / 3600);
+        $minutes = floor(($avgTime % 3600) / 60);
+
+        if ($hours > 0) {
+            return "{$hours} jam {$minutes} menit";
+        }
+
+        return "{$minutes} menit";
+    }
+
+    private function getPeakPrintHour($start, $end): string
+    {
+        $peakHour = OrderLabel::query()
+            ->where('saved', 1)
+            ->whereNotNull('printed_at')
+            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->select(DB::raw('EXTRACT(HOUR FROM printed_at) as hour, COUNT(*) as count'))
+            ->groupBy(DB::raw('EXTRACT(HOUR FROM printed_at)'))
+            ->orderByDesc('count')
+            ->value('hour');
+
+        return $peakHour !== null ? sprintf("%02d:00", $peakHour) : 'N/A';
     }
 }; ?>
 
-<div>
-    <x-header title="Order Label Dashboard" separator progress-indicator>
-        <x-slot:subtitle>
-            Monitor your order label printing activities
-        </x-slot:subtitle>
-        <x-slot:actions>
-            <div class="flex gap-2">
-                <x-button label="Today" wire:click="$set('period', 'today')" :class="$period === 'today' ? 'btn-primary btn-sm' : 'btn-outline btn-sm'" />
-                <x-button label="Week" wire:click="$set('period', 'week')" :class="$period === 'week' ? 'btn-primary btn-sm' : 'btn-outline btn-sm'" />
-                <x-button label="Month" wire:click="$set('period', 'month')" :class="$period === 'month' ? 'btn-primary btn-sm' : 'btn-outline btn-sm'" />
-                <x-button label="All" wire:click="$set('period', 'all')" :class="$period === 'all' ? 'btn-primary btn-sm' : 'btn-outline btn-sm'" />
-                <div class="divider divider-horizontal mx-1"></div>
-                <x-button label="View All Orders" link="{{ route('order-label.index') }}" icon="o-list-bullet" class="btn-primary btn-sm" />
-            </div>
-        </x-slot:actions>
-    </x-header>
-
-    {{-- Statistics Cards in Horizontal Layout --}}
-    {{-- <div class="stats stats-vertical lg:stats-horizontal shadow w-full mb-6"> --}}
-    <div class="flex items-center gap-8 shadow w-full mb-6">
-        <div class="stat">
-            <div class="stat-figure text-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-            </div>
-            <div class="stat-title">Total Orders</div>
-            <div class="stat-value text-primary">{{ number_format($totalOrders) }}</div>
-            <div class="stat-desc">{{ ucfirst($period) }} period</div>
+<div class="space-y-6 dark:bg-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
+    {{-- Header --}}
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors">Label Printing Dashboard</h1>
+            <p class="text-gray-600 dark:text-gray-400 transition-colors">Monitor produksi dan distribusi label order</p>
         </div>
-
-        <div class="stat">
-            <div class="stat-figure text-success">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <div class="stat-title">Printed Orders</div>
-            <div class="stat-value text-success">{{ number_format($totalPrinted) }}</div>
-            <div class="stat-desc">{{ $printEfficiency }}% efficiency</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-figure text-warning">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <div class="stat-title">Pending Print</div>
-            <div class="stat-value text-warning">{{ number_format($totalNotPrinted) }}</div>
-            <div class="stat-desc">Awaiting action</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-figure text-secondary">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-                </svg>
-            </div>
-            <div class="stat-title">Total Batches</div>
-            <div class="stat-value text-secondary">{{ number_format($totalBatches) }}</div>
-            <div class="stat-desc">Avg {{ $avgPrintCount }}x prints</div>
+        <div class="flex flex-wrap gap-2 dark:text-gray-800">
+            <button wire:click="$set('period', 'today')"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ $period === 'today'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:shadow-sm' }}">
+                Hari Ini
+            </button>
+            <button wire:click="$set('period', 'week')"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ $period === 'week'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:shadow-sm' }}">
+                Minggu Ini
+            </button>
+            <button wire:click="$set('period', 'month')"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ $period === 'month'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:shadow-sm' }}">
+                Bulan Ini
+            </button>
+            <button wire:click="$set('period', 'all')"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ $period === 'all'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:shadow-sm' }}">
+                Semua
+            </button>
         </div>
     </div>
 
-    {{-- Main Content in Horizontal Layout --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {{-- Charts Section - Takes 2 columns --}}
-        <div class="lg:col-span-2 space-y-6">
-            {{-- 7 Days Overview Chart --}}
-            <x-card title="7 Days Overview" class="shadow-lg">
-                <canvas id="dailyChart" height="100"></canvas>
-            </x-card>
+    {{-- Key Metrics --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {{-- Total Orders --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200 hover:shadow-md dark:hover:shadow-gray-900/70">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors">Total Order</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2 transition-colors">{{ number_format($totalOrders) }}</p>
+                </div>
+                <div class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg transition-colors">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400 dark:bg-gray-700transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600 transition-colors">
+                <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">Periode: {{ ucfirst($period) }}</p>
+            </div>
+        </div>
 
-            {{-- Platform Breakdown --}}
-            @if($platformStats->count() > 0)
-            <x-card title="Platform Performance" class="shadow-lg">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @foreach($platformStats as $platform)
-                    <div class="card bg-base-100 border border-base-300">
-                        <div class="card-body p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center gap-2">
-                                    <div class="avatar placeholder">
-                                        <div class="bg-primary text-primary-content rounded-full w-8">
-                                            <span class="text-xs">{{ substr($platform->threePl->name ?? 'N/A', 0, 2) }}</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-semibold text-sm">{{ $platform->threePl->name ?? 'Unknown Platform' }}</h3>
-                                        <p class="text-xs text-gray-500">{{ number_format($platform->total_orders) }} orders</p>
-                                    </div>
+        {{-- Printed Orders --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200 hover:shadow-md dark:hover:shadow-gray-900/70">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors">Tercetak</p>
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-2 transition-colors">{{ number_format($totalPrinted) }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">{{ $printEfficiency }}% efisiensi</p>
+                </div>
+                <div class="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg transition-colors">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600 transition-colors">
+                <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">{{ $todayPrinted }} dicetak hari ini</p>
+            </div>
+        </div>
+
+        {{-- Pending Orders --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200 hover:shadow-md dark:hover:shadow-gray-900/70">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors">Menunggu</p>
+                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2 transition-colors">{{ number_format($totalNotPrinted) }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">Perlu tindakan</p>
+                </div>
+                <div class="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg transition-colors">
+                    <svg class="w-6 h-6 text-amber-600 dark:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600 transition-colors">
+                <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">{{ $todayPending }} baru hari ini</p>
+            </div>
+        </div>
+
+        {{-- Performance --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200 hover:shadow-md dark:hover:shadow-gray-900/70">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors">Performa</p>
+                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-2 transition-colors">{{ $performanceMetrics['avg_print_time'] }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">Rata-rata waktu cetak</p>
+                </div>
+                <div class="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg transition-colors">
+                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600 transition-colors">
+                <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">Jam puncak: {{ $performanceMetrics['peak_hour'] }}</p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Main Content --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {{-- Left Column --}}
+        <div class="lg:col-span-2 space-y-6">
+            {{-- Platform Performance --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white transition-colors">Performa Platform</h3>
+                    <span class="text-sm text-gray-500 dark:text-gray-300 transition-colors bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">{{ $platformStats->count() }} platform</span>
+                </div>
+
+                <div class="space-y-4">
+                    @forelse($platformStats as $platform)
+                    <div class="flex items-center justify-between p-4 rounded-lg border border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/70 transition-all duration-200 cursor-pointer group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center transition-colors group-hover:bg-blue-100 dark:group-hover:bg-blue-800/50">
+                                <span class="text-blue-600 dark:text-blue-300 font-semibold transition-colors">
+                                    {{ substr($platform->threePl->name ?? 'NA', 0, 2) }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-300">{{ $platform->threePl->name ?? 'Unknown Platform' }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 transition-colors">{{ number_format($platform->total_orders) }} order</p>
+                            </div>
+                        </div>
+
+                        <div class="text-right">
+                            <div class="flex items-center space-x-4">
+                                <div>
+                                    <p class="font-semibold text-green-600 dark:text-green-400 transition-colors">{{ $platform->printed_orders }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">Tercetak</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-amber-600 dark:text-amber-400 transition-colors">{{ $platform->pending_orders }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 transition-colors">Menunggu</p>
                                 </div>
                             </div>
-                            <div class="space-y-2">
-                                <div class="flex justify-between text-xs">
-                                    <span>Printed</span>
-                                    <span class="font-semibold text-success">{{ $platform->printed_orders }}</span>
+                            @php
+                                $efficiency = $platform->total_orders > 0 ? round(($platform->printed_orders / $platform->total_orders) * 100) : 0;
+                            @endphp
+                            <div class="mt-2">
+                                <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-500" style="width: {{ $efficiency }}%"></div>
                                 </div>
-                                <div class="flex justify-between text-xs">
-                                    <span>Pending</span>
-                                    <span class="font-semibold text-warning">{{ $platform->pending_orders }}</span>
-                                </div>
-                                @php
-                                    $platformEfficiency = $platform->total_orders > 0 ? round(($platform->printed_orders / $platform->total_orders) * 100) : 0;
-                                @endphp
-                                <progress class="progress progress-primary progress-sm" value="{{ $platformEfficiency }}" max="100"></progress>
-                                <p class="text-xs text-center text-gray-500">{{ $platformEfficiency }}% efficiency</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-300 mt-1 transition-colors">{{ $efficiency }}% efisiensi</p>
                             </div>
                         </div>
                     </div>
-                    @endforeach
+                    @empty
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400 transition-colors">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="mt-2 text-gray-400 dark:text-gray-300 transition-colors">Tidak ada data platform</p>
+                    </div>
+                    @endforelse
                 </div>
-            </x-card>
-            @endif
+            </div>
 
             {{-- Recent Batches --}}
-            <x-card title="Recent Batches" class="shadow-lg">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white transition-colors">Batch Terbaru</h3>
+                    <a href="{{ route('order-label.index') }}" class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors inline-flex items-center gap-1">
+                        Lihat Semua
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+
                 <div class="overflow-x-auto">
-                    <table class="table table-zebra table-sm">
+                    <table class="w-full">
                         <thead>
-                            <tr>
-                                <th>Batch No</th>
-                                <th>Platform</th>
-                                <th>Pages</th>
-                                <th>Printed</th>
-                                <th>Progress</th>
-                                <th>Import Date</th>
+                            <tr class="border-b border-gray-200 dark:border-gray-600">
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Batch No</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Platform</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Total</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Progress</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Tanggal</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($recentBatches as $batch)
-                            <tr>
-                                <td>
-                                    <x-badge value="{{ $batch->batch_no }}" class="badge-info badge-sm font-mono" />
+                            <tr class="border-b border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors duration-150">
+                                <td class="py-3 px-4">
+                                    <span class="inline-block px-3 py-1 text-xs font-mono bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full border border-blue-100 dark:border-blue-800 transition-colors">
+                                        {{ $batch->batch_no }}
+                                    </span>
                                 </td>
-                                <td>
-                                    <div class="flex items-center gap-2">
-                                        <div class="avatar placeholder">
-                                            <div class="bg-secondary text-secondary-content rounded-full w-6">
-                                                <span class="text-xs">{{ substr($batch->threePl->name ?? 'N/A', 0, 1) }}</span>
-                                            </div>
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-6 h-6 rounded bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center transition-colors">
+                                            <span class="text-xs font-semibold text-purple-600 dark:text-purple-300 transition-colors">
+                                                {{ substr($batch->threePl->name ?? 'N', 0, 1) }}
+                                            </span>
                                         </div>
-                                        <span class="text-sm">{{ $batch->threePl->name ?? 'Unknown' }}</span>
+                                        <span class="text-sm text-gray-700 dark:text-gray-300 transition-colors">{{ $batch->threePl->name ?? 'Unknown' }}</span>
                                     </div>
                                 </td>
-                                <td>
-                                    <x-badge value="{{ $batch->total_pages }}" class="badge-neutral badge-sm" />
+                                <td class="py-3 px-4">
+                                    <span class="font-medium text-gray-900 dark:text-white transition-colors">{{ $batch->total_pages }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-1 transition-colors">halaman</span>
                                 </td>
-                                <td>
-                                    <x-badge value="{{ $batch->printed_count }}" class="badge-success badge-sm" />
-                                </td>
-                                <td>
+                                <td class="py-3 px-4">
                                     @php
                                         $progress = $batch->total_pages > 0 ? round(($batch->printed_count / $batch->total_pages) * 100) : 0;
+                                        $color = $progress >= 80 ? 'bg-green-500 dark:bg-green-400' : ($progress >= 50 ? 'bg-blue-500 dark:bg-blue-400' : 'bg-amber-500 dark:bg-amber-400');
+                                        $textColor = $progress >= 80 ? 'text-green-600 dark:text-green-300' : ($progress >= 50 ? 'text-blue-600 dark:text-blue-300' : 'text-amber-600 dark:text-amber-300');
                                     @endphp
-                                    <div class="flex items-center gap-2">
-                                        <progress class="progress progress-success progress-xs flex-1" value="{{ $progress }}" max="100"></progress>
-                                        <span class="text-xs font-semibold">{{ $progress }}%</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                            <div class="h-full {{ $color }} rounded-full transition-all duration-500" style="width: {{ $progress }}%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium {{ $textColor }} transition-colors">
+                                            {{ $progress }}%
+                                        </span>
                                     </div>
                                 </td>
-                                <td class="text-sm">{{ $batch->import_date ? \Carbon\Carbon::parse($batch->import_date)->format('d M Y') : '-' }}</td>
+                                <td class="py-3 px-4 text-sm text-gray-600 dark:text-gray-300 transition-colors">
+                                    {{ $batch->import_date ? \Carbon\Carbon::parse($batch->import_date)->format('d/m/Y') : '-' }}
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center text-gray-500 py-4">No recent batches</td>
+                                <td colspan="5" class="py-8 text-center text-gray-500 dark:text-gray-300 transition-colors">
+                                    <svg class="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <p class="dark:text-gray-400">Tidak ada batch tersedia</p>
+                                </td>
                             </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-            </x-card>
+            </div>
         </div>
 
-        {{-- Sidebar Section - Takes 1 column --}}
+        {{-- Right Column --}}
         <div class="space-y-6">
-            {{-- Print Efficiency Radial Progress --}}
-            <x-card title="Print Efficiency" class="shadow-lg">
-                <div class="flex flex-col items-center py-6">
-                    <div class="radial-progress text-primary" style="--value:{{ $printEfficiency }}; --size:10rem; --thickness: 12px;" role="progressbar">
-                        <span class="text-3xl font-bold">{{ $printEfficiency }}%</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-4">{{ number_format($totalPrinted) }} of {{ number_format($totalOrders) }} printed</p>
-                </div>
-            </x-card>
+            {{-- Print Status --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 transition-colors">Status Pencetakan</h3>
 
-            {{-- Print Status Distribution --}}
-            <x-card title="Print Status" class="shadow-lg">
-                <canvas id="statusChart" height="200"></canvas>
-            </x-card>
-
-            {{-- Status Distribution --}}
-            @if($statusStats->count() > 0)
-            <x-card title="Order Status" class="shadow-lg">
-                <div class="space-y-3">
-                    @foreach($statusStats as $status => $count)
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full {{ $status === 'open' ? 'bg-warning' : 'bg-success' }}"></div>
-                            <span class="text-sm capitalize">{{ $status }}</span>
+                <div class="space-y-6">
+                    {{-- Printed vs Pending --}}
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Tercetak</p>
+                                <p class="text-2xl font-bold text-green-600 dark:text-green-400 transition-colors">{{ number_format($printStatusData['printed']) }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Menunggu</p>
+                                <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 transition-colors">{{ number_format($printStatusData['pending']) }}</p>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-semibold">{{ number_format($count) }}</span>
-                            <span class="text-xs text-gray-500">({{ $totalOrders > 0 ? round(($count / $totalOrders) * 100) : 0 }}%)</span>
+
+                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            @php
+                                $total = $printStatusData['printed'] + $printStatusData['pending'];
+                                $printedPercentage = $total > 0 ? ($printStatusData['printed'] / $total) * 100 : 0;
+                            @endphp
+                            <div class="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-700" style="width: {{ $printedPercentage }}%"></div>
                         </div>
+                        <p class="text-center text-sm text-gray-600 dark:text-gray-300 mt-2 transition-colors">
+                            {{ number_format($printedPercentage, 1) }}% sudah tercetak
+                        </p>
                     </div>
-                    @endforeach
-                </div>
-            </x-card>
-            @endif
 
-            {{-- Quick Actions --}}
-            <x-card title="Quick Actions" class="shadow-lg">
-                <div class="space-y-2">
-                    <x-button label="Import PDF" link="{{ route('order-label.import') }}" icon="o-cloud-arrow-up" class="btn-primary btn-sm w-full justify-start" />
-                    <x-button label="View All Orders" link="{{ route('order-label.index') }}" icon="o-list-bullet" class="btn-outline btn-sm w-full justify-start" />
-                    <x-button label="Export Data" link="{{ route('order-label.index') }}?export=1" icon="o-arrow-down-tray" class="btn-outline btn-sm w-full justify-start" />
-                </div>
-            </x-card>
-
-            {{-- Hourly Activity (Today only) --}}
-            @if($period === 'today' && count($hourlyStats) > 0)
-            <x-card title="Today's Activity" class="shadow-lg">
-                <canvas id="hourlyChart" height="200"></canvas>
-            </x-card>
-            @endif
-        </div>
-    </div>
-
-    {{-- Top Batches --}}
-    <x-card title="Top Batches by Pages" class="shadow-lg mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            @forelse($topBatches as $batch)
-            <div class="card bg-base-100 border border-base-300 hover:shadow-xl transition-all">
-                <div class="card-body p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <x-badge value="{{ $batch->batch_no }}" class="badge-primary badge-sm font-mono" />
-                        <span class="text-2xl font-bold">{{ $batch->total_pages }}</span>
-                    </div>
-                    <div class="text-xs space-y-1 mb-2">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Printed:</span>
-                            <span class="font-semibold text-success">{{ $batch->printed_count }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Pending:</span>
-                            <span class="font-semibold text-warning">{{ $batch->total_pages - $batch->printed_count }}</span>
+                    {{-- Status Summary --}}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3 transition-colors">Ringkasan Status</h4>
+                        <div class="space-y-2">
+                            @foreach(['printed' => 'Tercetak', 'open' => 'Terbuka', 'processing' => 'Diproses', 'completed' => 'Selesai', 'other' => 'Lainnya'] as $key => $label)
+                                @if(isset($statusSummary[$key]) && $statusSummary[$key] > 0)
+                                <div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors duration-150 cursor-pointer">
+                                    <div class="flex items-center space-x-3">
+                                        @php
+                                            $statusIcons = [
+                                                'printed' => '<svg class="w-4 h-4 text-green-500 dark:text-green-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>',
+                                                'open' => '<svg class="w-4 h-4 text-amber-500 dark:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>',
+                                                'processing' => '<svg class="w-4 h-4 text-blue-500 dark:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>',
+                                                'completed' => '<svg class="w-4 h-4 text-purple-500 dark:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+                                                'other' => '<svg class="w-4 h-4 text-gray-500 dark:text-gray-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+                                            ];
+                                        @endphp
+                                        <div>{!! $statusIcons[$key] ?? $statusIcons['other'] !!}</div>
+                                        <span class="text-sm text-gray-700 dark:text-gray-300 transition-colors">{{ $label }}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-medium text-gray-900 dark:text-white transition-colors">{{ number_format($statusSummary[$key]) }}</span>
+                                        @php
+                                            $percentage = $totalOrders > 0 ? round(($statusSummary[$key] / $totalOrders) * 100) : 0;
+                                        @endphp
+                                        <span class="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors">
+                                            {{ $percentage }}%
+                                        </span>
+                                    </div>
+                                </div>
+                                @endif
+                            @endforeach
                         </div>
                     </div>
-                    @php
-                        $percentage = $batch->total_pages > 0 ? round(($batch->printed_count / $batch->total_pages) * 100) : 0;
-                    @endphp
-                    <progress class="progress progress-success" value="{{ $percentage }}" max="100"></progress>
-                    <p class="text-xs text-center text-gray-500 mt-1">{{ $percentage }}% complete</p>
                 </div>
             </div>
-            @empty
-            <div class="col-span-full text-center text-gray-500 py-8">No batches available</div>
-            @endforelse
+
+            {{-- Performance Metrics --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 transition-colors">Metrik Performa</h3>
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors duration-150 cursor-pointer">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-800 flex items-center justify-center transition-colors">
+                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Rata-rata Cetak</p>
+                                <p class="text-lg font-bold text-gray-900 dark:text-white transition-colors">{{ $avgPrintCount }}x</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-100 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-800/40 transition-colors duration-150 cursor-pointer">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-800 flex items-center justify-center transition-colors">
+                                <svg class="w-4 h-4 text-green-600 dark:text-green-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Jam Puncak</p>
+                                <p class="text-lg font-bold text-gray-900 dark:text-white transition-colors">{{ $performanceMetrics['peak_hour'] }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg border border-purple-100 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-800/40 transition-colors duration-150 cursor-pointer">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-800 flex items-center justify-center transition-colors">
+                                <svg class="w-4 h-4 text-purple-600 dark:text-purple-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">Total Batch</p>
+                                <p class="text-lg font-bold text-gray-900 dark:text-white transition-colors">{{ number_format($totalBatches) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Quick Actions --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 transition-colors">Aksi Cepat</h3>
+
+                <div class="space-y-2">
+                    <a href="{{ route('order-label.import') }}"
+                       class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-200 cursor-pointer group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-800 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-700 transition-colors">
+                                <svg class="w-4 h-4 text-blue-600 dark:text-blue-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+                            <span class="font-medium text-gray-700 dark:text-gray-300 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-300">Import PDF</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+
+                    <a href="{{ route('order-label.index') }}"
+                       class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/40 hover:border-green-200 dark:hover:border-green-700 transition-all duration-200 cursor-pointer group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-800 flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-700 transition-colors">
+                                <svg class="w-4 h-4 text-green-600 dark:text-green-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                            </div>
+                            <span class="font-medium text-gray-700 dark:text-gray-300 transition-colors group-hover:text-green-600 dark:group-hover:text-green-300">Lihat Semua Order</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors group-hover:text-green-500 dark:group-hover:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+
+                    <button wire:click="$refresh"
+                       class="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-amber-50 dark:hover:bg-amber-900/40 hover:border-amber-200 dark:hover:border-amber-700 transition-all duration-200 cursor-pointer group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-800 flex items-center justify-center group-hover:bg-amber-200 dark:group-hover:bg-amber-700 transition-colors">
+                                <svg class="w-4 h-4 text-amber-600 dark:text-amber-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </div>
+                            <span class="font-medium text-gray-700 dark:text-gray-300 transition-colors group-hover:text-amber-600 dark:group-hover:text-amber-300">Refresh Dashboard</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors group-hover:text-amber-500 dark:group-hover:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 17l-4 4m0 0l-4-4m4 4V3" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </div>
-    </x-card>
-
-    {{-- Chart.js Scripts --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Daily Chart - Line chart with DaisyUI colors
-            const dailyCtx = document.getElementById('dailyChart');
-            if (dailyCtx) {
-                new Chart(dailyCtx, {
-                    type: 'line',
-                    data: {
-                        labels: @json(array_column($dailyStats, 'date')),
-                        datasets: [
-                            {
-                                label: 'Printed',
-                                data: @json(array_column($dailyStats, 'printed')),
-                                borderColor: 'hsl(var(--su))',
-                                backgroundColor: 'hsla(var(--su), 0.1)',
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.4,
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                                pointBackgroundColor: 'hsl(var(--su))',
-                                pointBorderColor: '#fff',
-                                pointBorderWidth: 2
-                            },
-                            {
-                                label: 'Not Printed',
-                                data: @json(array_column($dailyStats, 'not_printed')),
-                                borderColor: 'hsl(var(--wa))',
-                                backgroundColor: 'hsla(var(--wa), 0.1)',
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.4,
-                                pointRadius: 5,
-                                pointHoverRadius: 7,
-                                pointBackgroundColor: 'hsl(var(--wa))',
-                                pointBorderColor: '#fff',
-                                pointBorderWidth: 2
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                                align: 'end',
-                                labels: {
-                                    usePointStyle: true,
-                                    pointStyle: 'circle',
-                                    padding: 15,
-                                    font: {
-                                        size: 12,
-                                        weight: '500'
-                                    }
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                padding: 12,
-                                cornerRadius: 8,
-                                titleFont: {
-                                    size: 13,
-                                    weight: '600'
-                                },
-                                bodyFont: {
-                                    size: 12
-                                },
-                                displayColors: true,
-                                boxWidth: 10,
-                                boxHeight: 10,
-                                usePointStyle: true
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    precision: 0,
-                                    font: {
-                                        size: 11
-                                    }
-                                },
-                                grid: {
-                                    color: 'rgba(0, 0, 0, 0.05)'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    font: {
-                                        size: 11
-                                    }
-                                },
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Status Chart - Doughnut chart
-            const statusCtx = document.getElementById('statusChart');
-            if (statusCtx) {
-                new Chart(statusCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Printed', 'Pending'],
-                        datasets: [{
-                            data: [@json($printStatusData['printed']), @json($printStatusData['pending'])],
-                            backgroundColor: [
-                                'hsl(var(--su))',
-                                'hsl(var(--wa))'
-                            ],
-                            borderColor: [
-                                'hsl(var(--su))',
-                                'hsl(var(--wa))'
-                            ],
-                            borderWidth: 2,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 15,
-                                    usePointStyle: true,
-                                    pointStyle: 'circle'
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                padding: 10,
-                                cornerRadius: 6,
-                                callbacks: {
-                                    label: function(context) {
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
-                                        return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
-                                    }
-                                }
-                            }
-                        },
-                        cutout: '60%'
-                    }
-                });
-            }
-        });
-    </script>
+    </div>
 </div>
