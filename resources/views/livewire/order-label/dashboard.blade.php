@@ -7,14 +7,17 @@ use Illuminate\Support\Facades\DB;
 
 new class extends Component {
     public string $period = 'today'; // today, week, month, all
+    private string $timezone = 'Asia/Jakarta'; // UTC+7
 
     public function with(): array
     {
-        $now = Carbon::now();
+        // Set Carbon timezone ke UTC+7
+        Carbon::setLocale('id');
+        $now = Carbon::now($this->timezone);
         $start = null;
         $end = null;
 
-        // Set date range based on period
+        // Set date range based on period dengan timezone UTC+7
         switch($this->period) {
             case 'today':
                 $start = $now->copy()->startOfDay();
@@ -34,11 +37,16 @@ new class extends Component {
                 break;
         }
 
-        // Build base query
+        // Build base query - Perhatikan konversi timezone untuk field tanggal
         $baseQuery = OrderLabel::query()
             ->where('saved', 1)
             ->with('threePl')
-            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]));
+            ->when($start && $end, function($q) use ($start, $end) {
+                // Konversi waktu ke UTC untuk query database
+                $utcStart = $start->copy()->timezone('UTC');
+                $utcEnd = $end->copy()->timezone('UTC');
+                return $q->whereBetween('order_date', [$utcStart, $utcEnd]);
+            });
 
         // Total Statistics
         $totalOrders = (clone $baseQuery)->count();
@@ -46,15 +54,18 @@ new class extends Component {
         $totalNotPrinted = $totalOrders - $totalPrinted;
         $totalBatches = (clone $baseQuery)->whereNotNull('batch_no')->distinct('batch_no')->count('batch_no');
 
-        // Additional useful statistics
+        // Additional useful statistics dengan timezone UTC+7
+        $todayStart = $now->copy()->startOfDay()->timezone('UTC');
+        $todayEnd = $now->copy()->endOfDay()->timezone('UTC');
+
         $todayPrinted = OrderLabel::where('saved', 1)
             ->whereNotNull('printed_at')
-            ->whereDate('printed_at', $now->toDateString())
+            ->whereBetween('printed_at', [$todayStart, $todayEnd])
             ->count();
 
         $todayPending = OrderLabel::where('saved', 1)
             ->whereNull('printed_at')
-            ->whereDate('created_at', $now->toDateString())
+            ->whereBetween('created_at', [$todayStart, $todayEnd])
             ->count();
 
         // Average print count
@@ -63,7 +74,7 @@ new class extends Component {
         // Print efficiency
         $printEfficiency = $totalOrders > 0 ? round(($totalPrinted / $totalOrders) * 100, 2) : 0;
 
-        // Platform statistics
+        // Platform statistics dengan konversi timezone
         $platformStats = OrderLabel::query()
             ->select([
                 'three_pl_id',
@@ -73,13 +84,17 @@ new class extends Component {
             ])
             ->with('threePl')
             ->where('saved', 1)
-            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->when($start && $end, function($q) use ($start, $end) {
+                $utcStart = $start->copy()->timezone('UTC');
+                $utcEnd = $end->copy()->timezone('UTC');
+                return $q->whereBetween('order_date', [$utcStart, $utcEnd]);
+            })
             ->groupBy('three_pl_id')
             ->orderByDesc('total_orders')
             ->limit(6)
             ->get();
 
-        // Recent activity
+        // Recent activity dengan konversi timezone
         $recentBatches = OrderLabel::query()
             ->select([
                 'batch_no',
@@ -91,13 +106,17 @@ new class extends Component {
             ->with('threePl')
             ->where('saved', 1)
             ->whereNotNull('batch_no')
-            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->when($start && $end, function($q) use ($start, $end) {
+                $utcStart = $start->copy()->timezone('UTC');
+                $utcEnd = $end->copy()->timezone('UTC');
+                return $q->whereBetween('order_date', [$utcStart, $utcEnd]);
+            })
             ->groupBy('batch_no', 'three_pl_id')
             ->orderByDesc('import_date')
             ->limit(6)
             ->get();
 
-        // Status summary
+        // Status summary dengan konversi timezone
         $statusSummary = OrderLabel::query()
             ->select([
                 DB::raw("CASE
@@ -110,7 +129,11 @@ new class extends Component {
                 DB::raw('COUNT(*) as count')
             ])
             ->where('saved', 1)
-            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->when($start && $end, function($q) use ($start, $end) {
+                $utcStart = $start->copy()->timezone('UTC');
+                $utcEnd = $end->copy()->timezone('UTC');
+                return $q->whereBetween('order_date', [$utcStart, $utcEnd]);
+            })
             ->groupBy('status_group')
             ->get()
             ->pluck('count', 'status_group');
@@ -143,6 +166,7 @@ new class extends Component {
             'printStatusData' => $printStatusData,
             'performanceMetrics' => $performanceMetrics,
             'period' => $this->period,
+            'currentDate' => $now->format('d/m/Y'),
         ];
     }
 
@@ -152,7 +176,11 @@ new class extends Component {
             ->where('saved', 1)
             ->whereNotNull('printed_at')
             ->whereNotNull('created_at')
-            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
+            ->when($start && $end, function($q) use ($start, $end) {
+                $utcStart = $start->copy()->timezone('UTC');
+                $utcEnd = $end->copy()->timezone('UTC');
+                return $q->whereBetween('order_date', [$utcStart, $utcEnd]);
+            })
             ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (printed_at - created_at))) as avg_seconds'))
             ->value('avg_seconds');
 
@@ -173,9 +201,13 @@ new class extends Component {
         $peakHour = OrderLabel::query()
             ->where('saved', 1)
             ->whereNotNull('printed_at')
-            ->when($start && $end, fn($q) => $q->whereBetween('order_date', [$start, $end]))
-            ->select(DB::raw('EXTRACT(HOUR FROM printed_at) as hour, COUNT(*) as count'))
-            ->groupBy(DB::raw('EXTRACT(HOUR FROM printed_at)'))
+            ->when($start && $end, function($q) use ($start, $end) {
+                $utcStart = $start->copy()->timezone('UTC');
+                $utcEnd = $end->copy()->timezone('UTC');
+                return $q->whereBetween('order_date', [$utcStart, $utcEnd]);
+            })
+            ->select(DB::raw("EXTRACT(HOUR FROM printed_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta') as hour, COUNT(*) as count"))
+            ->groupBy(DB::raw("EXTRACT(HOUR FROM printed_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')"))
             ->orderByDesc('count')
             ->value('hour');
 
@@ -189,6 +221,14 @@ new class extends Component {
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white transition-colors">Label Printing Dashboard</h1>
             <p class="text-gray-600 dark:text-gray-400 transition-colors">Monitor produksi dan distribusi label order</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">
+                <span class="inline-flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    Waktu: UTC+7 (Jakarta/Bangkok) - {{ $currentDate }}
+                </span>
+            </p>
         </div>
         <div class="flex flex-wrap gap-2">
             <button wire:click="$set('period', 'today')"
