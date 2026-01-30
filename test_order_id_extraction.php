@@ -37,10 +37,10 @@ foreach ($testFilenames as $filename) {
 // Now test with actual job logic
 echo "\n=== Testing with Job Logic ===\n\n";
 
-// Create a mock job
+// Create a mock job with a filename that won't extract an order ID
 $job = new App\Jobs\ProcessOrderLabelImport(
     'test-path/test.pdf',
-    '2758420016283453.pdf',
+    'shopee_labels.pdf', // Filename without order ID
     1,
     null
 );
@@ -65,4 +65,36 @@ foreach ($testCases as $case) {
 
     echo "Filename: $filename (Platform: $platform)\n";
     echo "  Result: " . ($result ? $result : 'NULL') . "\n\n";
+}
+
+// Test text extraction
+echo "\n=== Testing Text Extraction ===\n\n";
+
+$textMethod = $reflection->getMethod('extractOrderId');
+$textMethod->setAccessible(true);
+
+// Set the threePlId for platform detection
+$job->threePlId = 1; // Assume Shopee is ID 1, but actually we need to mock the ThreePl model
+
+// For testing, let's directly test the patterns
+$textTestCases = [
+    ['No.Pesanan: 260130CACMAMHT', 'shopee', '260130CACMAMHT'],
+    ['Order ID: 260101T6XF69GN', 'shopee', '260101T6XF69GN'],
+    ['260130CACMAMHT', 'shopee', '260130CACMAMHT'],
+];
+
+foreach ($textTestCases as $case) {
+    list($text, $platform, $expected) = $case;
+    
+    // Mock the threePlId for platform
+    if ($platform === 'shopee') {
+        $job->threePlId = 1; // We'll assume this works
+    }
+    
+    $result = $textMethod->invoke($job, $text);
+    
+    echo "Text: '$text' (Platform: $platform)\n";
+    echo "  Expected: $expected\n";
+    echo "  Result: " . ($result ? $result : 'NULL') . "\n";
+    echo "  Status: " . ($result === $expected ? '✓ PASS' : '✗ FAIL') . "\n\n";
 }

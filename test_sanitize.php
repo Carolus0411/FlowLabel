@@ -5,16 +5,17 @@
 function sanitizeText(string $text): string
 {
     // Replace full-width characters with ASCII equivalents
-    $text = str_replace("\u{ff1a}", ':', $text); // Full-width colon
-    $text = str_replace("\u{ff08}", '(', $text); // Full-width (
-    $text = str_replace("\u{ff09}", ')', $text); // Full-width )
-    $text = str_replace("\u{3000}", ' ', $text); // Full-width space
+    $text = str_replace('：', ':', $text);
+    $text = str_replace('（', '(', $text);
+    $text = str_replace('）', ')', $text);
+    $text = str_replace('　', ' ', $text); // Full-width space
 
     // Remove any remaining non-ASCII characters that might cause issues
     // Keep common punctuation and alphanumeric
-    $text = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
+    $sanitized = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
 
-    return $text;
+    // Ensure we always return a string
+    return $sanitized !== null ? $sanitized : $text;
 }
 
 echo "Testing Text Sanitization\n";

@@ -17,6 +17,6 @@
       Psy\Exception\ParseErrorException::fromParseError(Object(PhpParser\Error))
 
   2   vendor\psy\psysh\src\CodeCleaner.php:269
-      Psy\CodeCleaner::parse("<?php \App\Models\ServiceChargeGroup::all()-;
+      Psy\CodeCleaner::parse("<?php App\Models\ThreePl::all()-;
 ")
 

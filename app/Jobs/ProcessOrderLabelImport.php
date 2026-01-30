@@ -230,7 +230,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                  if ((microtime(true) - $startTime) > $timeLimitSafe) {
                     $pageText = "Time limit safe reached.";
                  } else {
-                    $pageText = isset($pages[$i - 1]) ? $pages[$i - 1]->getText() : '';
+                    $pageText = isset($pages[$i - 1]) ? (string) $pages[$i - 1]->getText() : '';
                  }
 
                 $orderId = $this->extractOrderId($pageText);
@@ -305,7 +305,7 @@ class ProcessOrderLabelImport implements ShouldQueue
 
                 // Store failed page info for fallback processing
                 try {
-                    $pageText = isset($pages[$i - 1]) ? $pages[$i - 1]->getText() : '';
+                    $pageText = isset($pages[$i - 1]) ? (string) $pages[$i - 1]->getText() : '';
                 } catch (\Exception $textError) {
                     \Log::warning("Page $i text extraction also failed: " . $textError->getMessage());
                     $pageText = 'Text extraction failed';
@@ -367,7 +367,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                     }
 
                     try {
-                        $text = $page->getText();
+                        $text = (string) $page->getText();
                     } catch (\Exception $e) {
                          $text = 'Text extraction failed';
                     }
@@ -463,7 +463,7 @@ class ProcessOrderLabelImport implements ShouldQueue
                     'split_filename' => $fallbackFileName,
                     'page_number' => 1,
                     'file_path' => 'order-label-splits/' . $batchFolderName . '/' . $fallbackFileName,
-                    'extracted_text' => $this->sanitizeText($pdf->getText()),
+                    'extracted_text' => $this->sanitizeText((string) $pdf->getText()),
                     'status' => 'open',
                     'saved' => 1,
                     'created_by' => $this->userId,
@@ -494,6 +494,11 @@ class ProcessOrderLabelImport implements ShouldQueue
         // If filename extraction fails, try text extraction
         // SHOPEE format: Order ID like "260101T6XF69GN" (alphanumeric, usually 14 chars)
         if ($threePlName && str_contains($threePlName, 'shopee')) {
+            // Pattern 0: "No.Pesanan" followed by alphanumeric code
+            if (preg_match('/No\.?\s*Pesanan\s*[:\.]?\s*([A-Z0-9]{12,16})/i', $text, $matches)) {
+                return $matches[1];
+            }
+
             // Pattern 1: "Order ID" followed by alphanumeric code
             if (preg_match('/Order\s*ID\s*[:\.]?\s*([A-Z0-9]{12,16})/i', $text, $matches)) {
                 return $matches[1];
@@ -582,9 +587,10 @@ class ProcessOrderLabelImport implements ShouldQueue
 
         // Remove any remaining non-ASCII characters that might cause issues
         // Keep common punctuation and alphanumeric
-        $text = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
+        $sanitized = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
 
-        return $text;
+        // Ensure we always return a string
+        return $sanitized !== null ? $sanitized : $text;
     }
 
     /**
