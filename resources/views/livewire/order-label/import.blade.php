@@ -89,7 +89,7 @@ new class extends Component {
                 <p class="mb-4">You can leave this page or upload another file. The system will process the PDF in the background.</p>
 
                 <div class="flex gap-3">
-                    <x-button label="Check Progress in Queue Log" link="{{ route('settings.queue-log') }}" class="btn-primary" />
+                    <x-button label="Check Progress in Queue Log" link="{{ route('queue-log') }}" class="btn-primary" />
                     <x-button label="Upload Another" wire:click="resetForm" class="btn-outline" />
                 </div>
              </div>
@@ -100,7 +100,8 @@ new class extends Component {
 
                 <div class="mb-4 p-4 bg-blue-50 dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-gray-700">
                     <h3 class="font-semibold text-blue-800 mb-2">PDF Import Instructions:</h3>
-                    <ul class=Select Platform (3PL) first</li>
+                    <ul>
+                        <li>• Select Platform (3PL) first</li>
                         <li>• Upload a PDF file (max 100MB)</li>
                         <li>• The file will be processed in the background (Queue)</li>
                         <li>• Large files (500+ pages) may take several minutes</li>
