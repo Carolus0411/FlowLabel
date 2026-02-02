@@ -32,6 +32,11 @@ Route::get('/order-label-download/{path}', [\App\Http\Controllers\OrderLabelCont
     ->where('path', '.*')
     ->name('order-label.public-download');
 
+// Public route for downloading print label PDF (no auth required)
+Route::get('/print-label-download/{path}', [\App\Http\Controllers\PrintLabelController::class, 'publicDownload'])
+    ->where('path', '.*')
+    ->name('print-label.public-download');
+
 Route::prefix('cp')->middleware(['auth'])->group(function () {
 
     Route::get('/', function () {
