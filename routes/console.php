@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Cleanup draft settlements every hour
 Schedule::command('settlement:cleanup-drafts --hours=24')->hourly();
+
+// Cleanup old split PDF files daily at 2:00 AM
+Schedule::command('pdf:cleanup-old-splits --days=30')->dailyAt('02:00');
