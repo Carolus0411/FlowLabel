@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 new class extends Component {
     public string $period = 'today'; // today, week, month, all
+    public array $platformChartData = [];
+    public array $platformPieData = [];
     private string $timezone = 'Asia/Jakarta'; // UTC+7
 
     public function with(): array
@@ -94,6 +96,77 @@ new class extends Component {
             ->limit(6)
             ->get();
 
+        // Prepare chart data for platform comparison
+        $this->platformChartData = [
+            'type' => 'bar',
+            'data' => [
+                'labels' => $platformStats->map(fn($p) => $p->threePl->name ?? 'Unknown')->toArray(),
+                'datasets' => [
+                    [
+                        'label' => 'Total Label',
+                        'data' => $platformStats->pluck('total_orders')->toArray(),
+                        'backgroundColor' => [
+                            'rgba(59, 130, 246, 0.8)',  // blue
+                            'rgba(16, 185, 129, 0.8)',  // green
+                            'rgba(245, 158, 11, 0.8)',  // amber
+                            'rgba(139, 92, 246, 0.8)',  // purple
+                            'rgba(236, 72, 153, 0.8)',  // pink
+                            'rgba(239, 68, 68, 0.8)',   // red
+                        ],
+                        'borderWidth' => 1
+                    ]
+                ]
+            ],
+            'options' => [
+                'responsive' => true,
+                'maintainAspectRatio' => false,
+                'indexAxis' => 'y',
+                'scales' => [
+                    'x' => [
+                        'beginAtZero' => true,
+                        'ticks' => [
+                            'stepSize' => 1
+                        ]
+                    ]
+                ],
+                'plugins' => [
+                    'legend' => [
+                        'display' => false
+                    ]
+                ]
+            ]
+        ];
+
+        // Prepare pie chart data for platform distribution
+        $this->platformPieData = [
+            'type' => 'doughnut',
+            'data' => [
+                'labels' => $platformStats->map(fn($p) => $p->threePl->name ?? 'Unknown')->toArray(),
+                'datasets' => [
+                    [
+                        'data' => $platformStats->pluck('total_orders')->toArray(),
+                        'backgroundColor' => [
+                            '#3B82F6', // blue-500
+                            '#10B981', // green-500
+                            '#F59E0B', // amber-500
+                            '#8B5CF6', // purple-500
+                            '#EC4899', // pink-500
+                            '#EF4444', // red-500
+                        ],
+                    ]
+                ]
+            ],
+            'options' => [
+                'responsive' => true,
+                'maintainAspectRatio' => false,
+                'plugins' => [
+                    'legend' => [
+                        'position' => 'bottom'
+                    ]
+                ]
+            ]
+        ];
+
         // Recent activity dengan konversi timezone
         $recentBatches = OrderLabel::query()
             ->select([
@@ -161,6 +234,8 @@ new class extends Component {
             'avgPrintCount' => round($avgPrintCount, 1),
             'printEfficiency' => $printEfficiency,
             'platformStats' => $platformStats,
+            'platformChartData' => $this->platformChartData,
+            'platformPieData' => $this->platformPieData,
             'recentBatches' => $recentBatches,
             'statusSummary' => $statusSummary,
             'printStatusData' => $printStatusData,
@@ -340,6 +415,45 @@ new class extends Component {
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Left Column --}}
         <div class="lg:col-span-2 space-y-6">
+            {{-- Platform Comparison Chart --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white transition-colors">Perbandingan Total Label per Platform</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Visualisasi distribusi label dari setiap platform</p>
+                    </div>
+                    <div class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                </div>
+
+                @if($platformStats->isEmpty())
+                    <div class="text-center py-12">
+                        <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <p class="mt-4 text-gray-500 dark:text-gray-400">Tidak ada data untuk ditampilkan</p>
+                    </div>
+                @else
+                    <div class="h-80 w-full relative">
+                        <x-chart wire:model="platformChartData" />
+                    </div>
+
+                    {{-- Platform Summary Cards --}}
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                        @foreach($platformStats->take(3) as $platform)
+                        <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 transition-colors">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">{{ $platform->threePl->name ?? 'Unknown' }}</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($platform->total_orders) }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">label</p>
+                        </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
             {{-- Platform Performance --}}
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
                 <div class="flex items-center justify-between mb-6">
@@ -477,6 +591,55 @@ new class extends Component {
 
         {{-- Right Column --}}
         <div class="space-y-6">
+            {{-- Platform Distribution Pie Chart --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white transition-colors">Distribusi Platform</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Persentase label per platform</p>
+                    </div>
+                    <div class="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                        <svg class="w-5 h-5 text-purple-600 dark:text-purple-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/>
+                            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                @if($platformStats->isEmpty())
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/>
+                        </svg>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Tidak ada data</p>
+                    </div>
+                @else
+                    <div class="h-64 w-full flex items-center justify-center relative">
+                        <x-chart wire:model="platformPieData" />
+                    </div>
+
+                    {{-- Legend --}}
+                    <div class="mt-6 space-y-2">
+                        @foreach($platformStats as $index => $platform)
+                        @php
+                            $colors = ['bg-blue-500', 'bg-green-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-red-500'];
+                            $percentage = $totalOrders > 0 ? round(($platform->total_orders / $totalOrders) * 100, 1) : 0;
+                        @endphp
+                        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 rounded-full {{ $colors[$index % 6] }}"></div>
+                                <span class="text-sm text-gray-700 dark:text-gray-300">{{ $platform->threePl->name ?? 'Unknown' }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ $percentage }}%</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({{ number_format($platform->total_orders) }})</span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
             {{-- Print Status --}}
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/50 p-6 border border-gray-100 dark:border-gray-700 transition-all duration-200">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 transition-colors">Status Pencetakan</h3>
@@ -646,4 +809,6 @@ new class extends Component {
             </div>
         </div>
     </div>
+
+
 </div>
