@@ -30,7 +30,7 @@ class CleanupOldSplitPdfs extends Command
     {
         $days = (int) $this->option('days');
         $cutoffDate = Carbon::now()->subDays($days);
-        
+
         $this->info("Cleaning up split PDF files older than {$days} days (before {$cutoffDate->format('Y-m-d H:i:s')})...");
 
         $disk = Storage::disk('public');
@@ -101,13 +101,13 @@ class CleanupOldSplitPdfs extends Command
 
         // Clean up empty batch folders
         $this->info("Checking and cleaning up empty batch folders...");
-        
+
         foreach ($batchFoldersToDelete as $batchFolder) {
             try {
                 // Check if folder still exists and is empty
                 if ($disk->exists($batchFolder)) {
                     $files = $disk->files($batchFolder);
-                    
+
                     if (empty($files)) {
                         // Folder is empty, delete it
                         $disk->deleteDirectory($batchFolder);
@@ -128,7 +128,7 @@ class CleanupOldSplitPdfs extends Command
             try {
                 if ($disk->exists($directory)) {
                     $files = $disk->files($directory);
-                    
+
                     if (empty($files)) {
                         $disk->deleteDirectory($directory);
                         $deletedFolders++;
@@ -144,7 +144,7 @@ class CleanupOldSplitPdfs extends Command
         $this->info("Cleanup completed!");
         $this->info("Files deleted: {$deletedFiles}");
         $this->info("Folders deleted: {$deletedFolders}");
-        
+
         if ($errors > 0) {
             $this->warn("Errors encountered: {$errors}");
         }

@@ -21,6 +21,7 @@
         "setasign/fpdf": "^1.8",
         "setasign/fpdi": "^2.6",
         "smalot/pdfparser": "^2.12",
+        "spatie/laravel-backup": "^9.4",
         "spatie/laravel-permission": "^6.18",
         "spatie/livewire-filepond": "^1.5",
         "spatie/simple-excel": "^3.7",
