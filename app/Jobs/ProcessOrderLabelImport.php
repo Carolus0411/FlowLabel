@@ -585,12 +585,25 @@ class ProcessOrderLabelImport implements ShouldQueue
         $text = str_replace('）', ')', $text);
         $text = str_replace('　', ' ', $text); // Full-width space
 
-        // Remove any remaining non-ASCII characters that might cause issues
-        // Keep common punctuation and alphanumeric
+        // Remove UTF-16 surrogate pairs that were incorrectly encoded as UTF-8.
+        // Surrogate codepoints (U+D800–U+DFFF) are invalid in UTF-8 but some PDF
+        // parsers emit them (e.g. for emoji). PostgreSQL UTF8 rejects these bytes
+        // (0xED 0xA0 0x80 – 0xED 0xBF 0xBF) and raises "invalid byte sequence".
+        $text = preg_replace('/\xED[\xA0-\xBF][\x80-\xBF]/', '', $text);
+
+        // Strip any remaining invalid UTF-8 byte sequences using iconv.
+        // This handles other malformed multibyte characters beyond surrogates.
+        $converted = iconv('UTF-8', 'UTF-8//IGNORE', $text ?? '');
+        if ($converted !== false) {
+            $text = $converted;
+        }
+
+        // Remove any remaining non-ASCII characters that might cause issues.
+        // Keep common printable ASCII only.
         $sanitized = preg_replace('/[^\x20-\x7E\r\n\t]/u', '', $text);
 
-        // Ensure we always return a string
-        return $sanitized !== null ? $sanitized : $text;
+        // Ensure we always return a string (fall back without /u flag if still broken)
+        return $sanitized !== null ? $sanitized : preg_replace('/[^\x20-\x7E\r\n\t]/', '', $text);
     }
 
     /**
