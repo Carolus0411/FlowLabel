@@ -494,26 +494,86 @@ class ProcessOrderLabelImport implements ShouldQueue
         // If filename extraction fails, try text extraction
         // SHOPEE format: Order ID like "260101T6XF69GN" (alphanumeric, usually 14 chars)
         if ($threePlName && str_contains($threePlName, 'shopee')) {
+            // Shopee regex often gets confused between 0 and O in the second section of the alphanumeric string
+            // Let's replace 'O' with '0' ONLY after the initial 6 digits, if it's supposed to be an alphanumeric code.
+            // However, shopee order IDs *can* contain '0'. Tesseract OCR often reads '0' as 'O'.
+            // Actually, Shopee IDs format is YYMMDD + [A-Z0-9].
+            // A common fix is allowing 'O' in the regex, but replacing it with '0' if the platform actually uses '0'
+            // For now, let's just make the regex accept 'O' as part of A-Z and just match exactly what is there.
+            // Wait, the user specifically mentioned: 260227SW0FHUAV, but OCR reads 260227SWOFHUAV (letter O).
+            // Let's replace letter 'O' with number '0' if that's standard for Shopee (they don't use letter O, they use zero 0).
+            $fixShopeeO = function($code) {
+                // Ensure length is matched (usually 14-15 chars)
+                if (strlen($code) >= 12) {
+                    $prefix = substr($code, 0, 6);
+                    $suffix = substr($code, 6);
+                    // Shopee order IDs don't use letter O, they only use 0
+                    $suffix = str_replace('O', '0', $suffix);
+                    return $prefix . $suffix;
+                }
+                return $code;
+            };
+
             // Pattern 0: "No.Pesanan" followed by alphanumeric code
-            if (preg_match('/No\.?\s*Pesanan\s*[:\.]?\s*([A-Z0-9]{12,16})/i', $text, $matches)) {
-                return $matches[1];
+            // Flexible separator ([:\.\s]*) handles OCR artifacts like extra spaces/dots
+            if (preg_match('/No\.?\s*Pesanan\s*[:\.\s]*([A-Z0-9]{12,16})/i', $text, $matches)) {
+                return $fixShopeeO(strtoupper(trim($matches[1])));
+            }
+
+            // Pattern 0b: "No.Pesanan" with possible OCR spaces INSIDE the order ID
+            if (preg_match('/No\.?\s*Pesanan\s*[:\.\s]*([\dA-Z][0-9A-Z\s]{10,18})/i', $text, $matches)) {
+                $candidate = strtoupper(preg_replace('/\s+/', '', $matches[1]));
+                if (preg_match('/^\d{6}[A-Z0-9]{6,12}$/', $candidate)) {
+                    return $fixShopeeO($candidate);
+                }
+            }
+
+            // Pattern 0c: OCR abbreviated form "N.P:" or "N.P :" (abbreviated "No.Pesanan")
+            if (preg_match('/N\.?\s*P\.?\s*[:\s]+([A-Z0-9]{12,16})/i', $text, $matches)) {
+                return $fixShopeeO(strtoupper(trim($matches[1])));
+            }
+
+            // Pattern 0d: OCR abbreviated with spaces inside the order ID
+            if (preg_match('/N\.?\s*P\.?\s*[:\s]+([\dA-Z][0-9A-Z\s]{10,18})/i', $text, $matches)) {
+                $candidate = strtoupper(preg_replace('/\s+/', '', $matches[1]));
+                if (preg_match('/^\d{6}[A-Z0-9]{6,12}$/', $candidate)) {
+                    return $fixShopeeO($candidate);
+                }
+            }
+
+            // Pattern 0e: "Pesan: (260227SUNRXHAY)" form – OCR captures it in parentheses
+            if (preg_match('/Pesan\s*[:\s]+\(?\s*([A-Z0-9]{12,16})\s*\)?/i', $text, $matches)) {
+                return $fixShopeeO(strtoupper(trim($matches[1])));
+            }
+
+            // Pattern 0f: "P: 260227SUNRXHAY" – ultra-abbreviated OCR form
+            // Notice some OCR outputs are like "P: (260227SWOFHUAV)"
+            if (preg_match('/\bP:\s*\(?\s*([A-Z0-9]{12,16})\s*\)?/i', $text, $matches)) {
+                $candidate = strtoupper(trim($matches[1]));
+                // Must start with 6 digits (YYMMDD prefix) to be a valid Shopee order ID
+                if (preg_match('/^\d{6}[A-Z0-9]{6,10}$/', $candidate)) {
+                    return $fixShopeeO($candidate);
+                }
             }
 
             // Pattern 1: "Order ID" followed by alphanumeric code
-            if (preg_match('/Order\s*ID\s*[:\.]?\s*([A-Z0-9]{12,16})/i', $text, $matches)) {
-                return $matches[1];
+            if (preg_match('/Order\s*ID\s*[:\.\s]*([A-Z0-9]{12,16})/i', $text, $matches)) {
+                return $fixShopeeO(strtoupper(trim($matches[1])));
             }
 
             // Pattern 2: Standalone alphanumeric code (date prefix + alphanumeric)
-            // Format: YYMMDD + alphanumeric (e.g., 260101T6XF69GN)
-            if (preg_match('/\b(\d{6}[A-Z0-9]{8,10})\b/', $text, $matches)) {
-                return $matches[1];
+            if (preg_match('/\b(\d{6}[A-Z0-9]{8,10})\b/i', $text, $matches)) {
+                return $fixShopeeO(strtoupper($matches[1]));
             }
 
             // Pattern 3: Generic "Order" with alphanumeric
-            if (preg_match('/Order\s*(?:No|#|Number)?\s*[:\.]?\s*([A-Z0-9]{10,16})/i', $text, $matches)) {
-                return $matches[1];
+            if (preg_match('/Order\s*(?:No|#|Number)?\s*[:\.\s]*([A-Z0-9]{10,16})/i', $text, $matches)) {
+                return $fixShopeeO(strtoupper(trim($matches[1])));
             }
+
+            // Shopee: none of the patterns matched – return null immediately to avoid
+            // the generic numeric fallbacks picking up barcode numbers from the label.
+            return null;
         }
 
         // LAZADA format: Order ID like "2758420016283453" (numeric 16 digits)
@@ -661,14 +721,30 @@ class ProcessOrderLabelImport implements ShouldQueue
             }
         }
 
+        // Determine OCR whitelist based on platform
+        // Shopee uses alphanumeric order IDs (e.g. 260227SUNRXHAY), so we must allow letters.
+        // TikTok and Lazada use purely numeric IDs, so digits-only is fine there.
+        $threePlName = null;
+        if ($this->threePlId) {
+            $threePl = \App\Models\ThreePl::find($this->threePlId);
+            $threePlName = $threePl ? strtolower($threePl->name) : null;
+        }
+        $isShopee = $threePlName && str_contains($threePlName, 'shopee');
+
+        $whitelist = $isShopee
+            ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-:/()'   // alphanumeric + punct for Shopee
+            : '0123456789';                              // digits-only for TikTok / Lazada
+
+        $psm = $isShopee ? 11 : 6; // PSM 11 = sparse text (better for labels); PSM 6 = block of text
+
         // Run tesseract via PHP wrapper
         try {
             $ocr = (new TesseractOCR($pngPath))
                 ->executable(config('ocr.tesseract_path', 'tesseract'))
                 ->lang($lang)
-                ->psm(6) // Uniform block of text - better for long numbers
-                ->oem(1) // Legacy OCR engine - more accurate for digits
-                ->config('tessedit_char_whitelist', '0123456789'); // Only allow digits for better accuracy
+                ->psm($psm)
+                ->oem(1) // Neural-net LSTM engine - accurate for both digit and alphanum
+                ->config('tessedit_char_whitelist', $whitelist);
 
             $text = $ocr->run();
         } catch (\Exception $e) {
