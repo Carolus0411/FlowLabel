@@ -494,49 +494,48 @@ class ProcessOrderLabelImport implements ShouldQueue
         // If filename extraction fails, try text extraction
         // SHOPEE format: Order ID like "260101T6XF69GN" (alphanumeric, usually 14 chars)
         if ($threePlName && str_contains($threePlName, 'shopee')) {
-            // Shopee regex often gets confused between 0 and O in the second section of the alphanumeric string
-            // Let's replace 'O' with '0' ONLY after the initial 6 digits, if it's supposed to be an alphanumeric code.
-            // However, shopee order IDs *can* contain '0'. Tesseract OCR often reads '0' as 'O'.
-            // Actually, Shopee IDs format is YYMMDD + [A-Z0-9].
-            // A common fix is allowing 'O' in the regex, but replacing it with '0' if the platform actually uses '0'
-            // For now, let's just make the regex accept 'O' as part of A-Z and just match exactly what is there.
-            // Wait, the user specifically mentioned: 260227SW0FHUAV, but OCR reads 260227SWOFHUAV (letter O).
-            // Let's replace letter 'O' with number '0' if that's standard for Shopee (they don't use letter O, they use zero 0).
+            // Pre-normalize the OCR text: replace uppercase 'O' with '0' before pattern matching.
+            // Shopee order IDs never use the letter O — Tesseract OCR commonly misreads digit 0 as
+            // letter O, e.g. '26O4O2QWRU4XAW' instead of '260402QWRU4XAW'.
+            // str_replace is case-sensitive here, so only uppercase 'O' is replaced.
+            // Lowercase 'o' (in words like "No.Pesanan", "Pero", "Batas") is preserved,
+            // keeping the keyword patterns intact.
+            $text = str_replace('O', '0', $text);
+            // fixShopeeO is kept as a secondary safety net for any 'O' that slipped
+            // through the pre-normalization above (e.g. from OCR on individual characters).
             $fixShopeeO = function($code) {
-                // Ensure length is matched (usually 14-15 chars)
-                if (strlen($code) >= 12) {
-                    $prefix = substr($code, 0, 6);
-                    $suffix = substr($code, 6);
-                    // Shopee order IDs don't use letter O, they only use 0
-                    $suffix = str_replace('O', '0', $suffix);
-                    return $prefix . $suffix;
-                }
-                return $code;
+                return str_replace('O', '0', $code);
             };
 
-            // Pattern 0: "No.Pesanan" followed by alphanumeric code
-            // Flexible separator ([:\.\s]*) handles OCR artifacts like extra spaces/dots
-            if (preg_match('/No\.?\s*Pesanan\s*[:\.\s]*([A-Z0-9]{12,16})/i', $text, $matches)) {
+            // Pattern 0: "No.Pesanan" followed by alphanumeric code.
+            // Use exact Shopee format (\d{6}[A-Z0-9]{8,10}) with a non-alphanumeric
+            // lookahead to prevent greedy over-capture when the order ID is immediately
+            // adjacent to other alphanumeric text (e.g. "260402QWRU4XAWCOD Cek Dulu").
+            // When this stricter pattern fails, execution falls through to Pattern 0e
+            // ("Pesan: (orderID)") which is always delimited by parentheses.
+            if (preg_match('/No\.?\s*Pesanan\s*[:\.\s]*(\d{6}[A-Z0-9]{8,10})(?![A-Z0-9])/i', $text, $matches)) {
                 return $fixShopeeO(strtoupper(trim($matches[1])));
             }
 
-            // Pattern 0b: "No.Pesanan" with possible OCR spaces INSIDE the order ID
+            // Pattern 0b: "No.Pesanan" with possible OCR spaces INSIDE the order ID.
+            // Validation uses exact Shopee format (6 digit date + exactly 8-10 alphanum suffix)
+            // to prevent over-capture of adjacent text like "COD Cek Dulu" across newlines.
             if (preg_match('/No\.?\s*Pesanan\s*[:\.\s]*([\dA-Z][0-9A-Z\s]{10,18})/i', $text, $matches)) {
                 $candidate = strtoupper(preg_replace('/\s+/', '', $matches[1]));
-                if (preg_match('/^\d{6}[A-Z0-9]{6,12}$/', $candidate)) {
+                if (preg_match('/^\d{6}[A-Z0-9]{8,10}$/', $candidate)) {
                     return $fixShopeeO($candidate);
                 }
             }
 
             // Pattern 0c: OCR abbreviated form "N.P:" or "N.P :" (abbreviated "No.Pesanan")
-            if (preg_match('/N\.?\s*P\.?\s*[:\s]+([A-Z0-9]{12,16})/i', $text, $matches)) {
+            if (preg_match('/N\.?\s*P\.?\s*[:\s]+(\d{6}[A-Z0-9]{8,10})(?![A-Z0-9])/i', $text, $matches)) {
                 return $fixShopeeO(strtoupper(trim($matches[1])));
             }
 
             // Pattern 0d: OCR abbreviated with spaces inside the order ID
             if (preg_match('/N\.?\s*P\.?\s*[:\s]+([\dA-Z][0-9A-Z\s]{10,18})/i', $text, $matches)) {
                 $candidate = strtoupper(preg_replace('/\s+/', '', $matches[1]));
-                if (preg_match('/^\d{6}[A-Z0-9]{6,12}$/', $candidate)) {
+                if (preg_match('/^\d{6}[A-Z0-9]{8,10}$/', $candidate)) {
                     return $fixShopeeO($candidate);
                 }
             }
@@ -551,13 +550,13 @@ class ProcessOrderLabelImport implements ShouldQueue
             if (preg_match('/\bP:\s*\(?\s*([A-Z0-9]{12,16})\s*\)?/i', $text, $matches)) {
                 $candidate = strtoupper(trim($matches[1]));
                 // Must start with 6 digits (YYMMDD prefix) to be a valid Shopee order ID
-                if (preg_match('/^\d{6}[A-Z0-9]{6,10}$/', $candidate)) {
+                if (preg_match('/^\d{6}[A-Z0-9]{8,10}$/', $candidate)) {
                     return $fixShopeeO($candidate);
                 }
             }
 
             // Pattern 1: "Order ID" followed by alphanumeric code
-            if (preg_match('/Order\s*ID\s*[:\.\s]*([A-Z0-9]{12,16})/i', $text, $matches)) {
+            if (preg_match('/Order\s*ID\s*[:\.\s]*(\d{6}[A-Z0-9]{8,10})(?![A-Z0-9])/i', $text, $matches)) {
                 return $fixShopeeO(strtoupper(trim($matches[1])));
             }
 
