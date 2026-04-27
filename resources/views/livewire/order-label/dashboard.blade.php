@@ -256,7 +256,7 @@ new class extends Component {
                 $utcEnd = $end->copy()->timezone('UTC');
                 return $q->whereBetween('order_date', [$utcStart, $utcEnd]);
             })
-            ->select(DB::raw('AVG(EXTRACT(EPOCH FROM (printed_at - created_at))) as avg_seconds'))
+            ->select(DB::raw('AVG(TIMESTAMPDIFF(SECOND, created_at, printed_at)) as avg_seconds'))
             ->value('avg_seconds');
 
         if (!$avgTime) return 'N/A';
@@ -281,8 +281,8 @@ new class extends Component {
                 $utcEnd = $end->copy()->timezone('UTC');
                 return $q->whereBetween('order_date', [$utcStart, $utcEnd]);
             })
-            ->select(DB::raw("EXTRACT(HOUR FROM printed_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta') as hour, COUNT(*) as count"))
-            ->groupBy(DB::raw("EXTRACT(HOUR FROM printed_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Jakarta')"))
+            ->select(DB::raw("HOUR(CONVERT_TZ(printed_at, '+00:00', '+07:00')) as hour, COUNT(*) as count"))
+            ->groupBy(DB::raw("hour"))
             ->orderByDesc('count')
             ->value('hour');
 

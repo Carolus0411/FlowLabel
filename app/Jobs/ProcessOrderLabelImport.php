@@ -115,8 +115,9 @@ class ProcessOrderLabelImport implements ShouldQueue
         } catch (\Exception $fpdiError) {
             \Log::error("FPDI Error: " . $fpdiError->getMessage());
 
-            // If FPDI fails, try to repair with Ghostscript if available
-            if ($this->tryGhostscriptRepair($absPath, $originalName, $outputDir, $pages, $pageCount)) {
+            // If FPDI fails, try to repair with Ghostscript if available.
+            // Re-parse the repaired PDF so page metadata comes from the normalized file.
+            if ($this->tryGhostscriptRepair($absPath, $originalName, $outputDir)) {
                 return;
             }
 
@@ -159,7 +160,7 @@ class ProcessOrderLabelImport implements ShouldQueue
         return null;
     }
 
-    private function tryGhostscriptRepair($filePath, $originalName, $outputDir, $pages, $pageCount): bool
+    private function tryGhostscriptRepair($filePath, $originalName, $outputDir): bool
     {
         $gsPath = $this->getGhostscriptPath();
         if (!$gsPath) return false;
@@ -181,6 +182,12 @@ class ProcessOrderLabelImport implements ShouldQueue
 
             if ($returnVar === 0 && file_exists($repairedPath)) {
                 try {
+                    $parser = new Parser();
+                    $pdf = $parser->parseFile($repairedPath);
+                    $pages = $pdf->getPages();
+                    $pageCount = count($pages);
+
+                    \Log::info("Ghostscript repaired PDF and found $pageCount pages for {$originalName}");
                     $this->splitWithFPDI($repairedPath, $originalName, $outputDir, $pages, $pageCount);
                     return true;
                 } catch (\Exception $e) {
@@ -215,7 +222,7 @@ class ProcessOrderLabelImport implements ShouldQueue
 
         $usedFilenames = [];
         $startTime = microtime(true);
-        $timeLimitSafe = 550; // Use a comfortable limit slightly less than job timeout
+        $timeLimitSafe = 1800; // 550 Use a comfortable limit slightly less than job timeout
         $failedPages = []; // Track failed pages for Ghostscript fallback
 
         for ($i = 1; $i <= $pageCount; $i++) {
@@ -593,6 +600,22 @@ class ProcessOrderLabelImport implements ShouldQueue
             }
         }
 
+        // BLIBLI format: Air waybill like "BLIGO04505352318-1"
+        if ($threePlName && str_contains($threePlName, 'blibli')) {
+            // Pattern 1: "Air waybill" label followed by BLIGO... code
+            if (preg_match('/Air\s*waybill\s*[:\-\.\s]*(BLIGO[\d]+-[\d]+)/i', $text, $matches)) {
+                return strtoupper(trim($matches[1]));
+            }
+
+            // Pattern 2: Standalone BLIGO... code anywhere in text
+            if (preg_match('/\b(BLIGO[\d]+-[\d]+)\b/i', $text, $matches)) {
+                return strtoupper(trim($matches[1]));
+            }
+
+            // Blibli: none of the patterns matched – return null to avoid false positives
+            return null;
+        }
+
         // TIKTOK or default format: Numeric Order ID
         // 1. PRIORITY: TT Order ID or Order Id with long numeric value (18+ digits)
         // Matches: "TT Order ID : 582108769742652773" or "TT Order ID ：582107960589780854" (with full-width colon)
@@ -780,6 +803,13 @@ class ProcessOrderLabelImport implements ShouldQueue
         if ($threePlName && str_contains($threePlName, 'shopee')) {
             if (preg_match('/(\d{6}[A-Z0-9]{8,10})/i', $baseName, $matches)) {
                 return $matches[1];
+            }
+        }
+
+        // BLIBLI: Look for Air waybill format (BLIGO...) in filename
+        if ($threePlName && str_contains($threePlName, 'blibli')) {
+            if (preg_match('/(BLIGO[\d]+-[\d]+)/i', $baseName, $matches)) {
+                return strtoupper($matches[1]);
             }
         }
 
