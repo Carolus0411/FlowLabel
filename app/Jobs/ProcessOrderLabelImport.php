@@ -106,22 +106,23 @@ class ProcessOrderLabelImport implements ShouldQueue
             $pdf = $parser->parseFile($absPath);
             $pages = $pdf->getPages();
             $pageCount = count($pages);
+            $isImageOnlyPdf = $this->isTextlessPdf($pages);
 
-            \Log::info("PDF Parser found $pageCount pages for $originalName");
+            \Log::info("PDF Parser found $pageCount pages for $originalName (image-only={$isImageOnlyPdf})");
 
             // Try FPDI approach first
-            $this->splitWithFPDI($absPath, $originalName, $outputDir, $pages, $pageCount);
+            $this->splitWithFPDI($absPath, $originalName, $outputDir, $pages, $pageCount, $isImageOnlyPdf);
 
         } catch (\Exception $fpdiError) {
             \Log::error("FPDI Error: " . $fpdiError->getMessage());
 
             // If FPDI fails, try to repair with Ghostscript if available
-            if ($this->tryGhostscriptRepair($absPath, $originalName, $outputDir, $pages, $pageCount)) {
+            if ($this->tryGhostscriptRepair($absPath, $originalName, $outputDir, $pages, $pageCount, $isImageOnlyPdf)) {
                 return;
             }
 
             // If repair not possible, use virtual fallback
-            $this->fallbackPDFProcessing($absPath, $originalName, $outputDir);
+            $this->fallbackPDFProcessing($absPath, $originalName, $outputDir, $isImageOnlyPdf);
         }
     }
 
@@ -134,8 +135,9 @@ class ProcessOrderLabelImport implements ShouldQueue
             ? [
                 'gswin64c.exe',
                 'gswin32c.exe',
-                'C:\Program Files\gs\gs10.04.0\bin\gswin64c.exe',
-                'C:\Program Files\gs\gs10.06.0\bin\gswin64c.exe',
+                'C:\\Program Files\\gs\\gs*\\bin\\gswin64c.exe',
+                'C:\\Program Files\\gs\\gs*\\bin\\gswin32c.exe',
+                'C:\\Program Files (x86)\\gs\\gs*\\bin\\gswin32c.exe',
             ]
             : [
                 'gs', // Linux/Ubuntu standard path
@@ -144,22 +146,47 @@ class ProcessOrderLabelImport implements ShouldQueue
             ];
 
         foreach ($paths as $path) {
+            if ($isWindows && str_contains($path, '*')) {
+                foreach (glob($path) as $candidate) {
+                    if (file_exists($candidate)) {
+                        return $candidate;
+                    }
+                }
+                continue;
+            }
+
             // Check absolute paths directly
             if (strpos($path, ':') !== false || strpos($path, '/') === 0) {
-                if (file_exists($path)) return $path;
+                if (file_exists($path)) {
+                    return $path;
+                }
             } else {
                 // Check in PATH using platform-specific command
                 $output = [];
                 $returnVar = 0;
                 $cmd = $isWindows ? "where $path 2>nul" : "which $path 2>/dev/null";
                 exec($cmd, $output, $returnVar);
-                if ($returnVar === 0 && !empty($output)) return trim($output[0]);
+                if ($returnVar === 0 && !empty($output)) {
+                    return trim($output[0]);
+                }
             }
         }
+
         return null;
     }
 
-    private function tryGhostscriptRepair($filePath, $originalName, $outputDir, $pages, $pageCount): bool
+    private function isTextlessPdf(array $pages): bool
+    {
+        foreach ($pages as $page) {
+            if (trim((string) $page->getText()) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function tryGhostscriptRepair($filePath, $originalName, $outputDir, $pages, $pageCount, bool $isImageOnlyPdf = false): bool
     {
         $gsPath = $this->getGhostscriptPath();
         if (!$gsPath) return false;
@@ -181,7 +208,7 @@ class ProcessOrderLabelImport implements ShouldQueue
 
             if ($returnVar === 0 && file_exists($repairedPath)) {
                 try {
-                    $this->splitWithFPDI($repairedPath, $originalName, $outputDir, $pages, $pageCount);
+                    $this->splitWithFPDI($repairedPath, $originalName, $outputDir, $pages, $pageCount, $isImageOnlyPdf);
                     return true;
                 } catch (\Exception $e) {
                     \Log::error("Failed to split repaired PDF: " . $e->getMessage());
@@ -196,7 +223,7 @@ class ProcessOrderLabelImport implements ShouldQueue
         }
     }
 
-    private function splitWithFPDI($filePath, $originalName, $outputDir, $pages, $pageCount): void
+    private function splitWithFPDI($filePath, $originalName, $outputDir, $pages, $pageCount, bool $isImageOnlyPdf = false): void
     {
         $baseName = pathinfo($originalName, PATHINFO_FILENAME);
 
@@ -227,21 +254,43 @@ class ProcessOrderLabelImport implements ShouldQueue
 
             try {
                 // Text extraction
-                 if ((microtime(true) - $startTime) > $timeLimitSafe) {
+                $rawPageText = '';
+                if ((microtime(true) - $startTime) > $timeLimitSafe) {
                     $pageText = "Time limit safe reached.";
-                 } else {
-                    $pageText = isset($pages[$i - 1]) ? (string) $pages[$i - 1]->getText() : '';
-                 }
+                } else {
+                    $rawPageText = isset($pages[$i - 1]) ? trim((string) $pages[$i - 1]->getText()) : '';
+                    $pageText = $rawPageText;
+                }
+
+                $pageTextIsEmpty = $pageText === '';
+                $ocrFallbackUsed = false;
+                $ocrText = null;
+
+                if ($pageTextIsEmpty || $isImageOnlyPdf) {
+                    try {
+                        $ocrPageText = $this->ocrPageText($filePath, $i, 'eng');
+                        if ($ocrPageText) {
+                            $pageText = trim($ocrPageText);
+                            $ocrText = $pageText;
+                            $ocrFallbackUsed = true;
+                            \Log::info("OCR fallback used for page $i of {$originalName}");
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning("OCR fallback failed for page $i: " . $e->getMessage());
+                    }
+                }
 
                 $orderId = $this->extractOrderId($pageText);
+                $this->logPageTextExtraction($i, $orderId, $rawPageText, $ocrText, 'splitWithFPDI');
 
-                // If no order id found, attempt OCR on the page (use Ghostscript or Imagick to render)
-                if (!$orderId) {
+                // If no order id found and we have text from the page, attempt OCR only if not already tried
+                if (!$orderId && !$ocrFallbackUsed) {
                     try {
                         $ocrText = $this->ocrPageText($filePath, $i, 'eng');
                         if ($ocrText) {
                             $pageText .= "\n" . $ocrText;
                             $orderId = $this->extractOrderId($pageText);
+                            $this->logPageTextExtraction($i, $orderId, $rawPageText, $ocrText, 'splitWithFPDI-ocr');
                         }
                     } catch (\Exception $e) {
                         \Log::warning("OCR failed for page $i: " . $e->getMessage());
@@ -329,7 +378,7 @@ class ProcessOrderLabelImport implements ShouldQueue
         }
     }
 
-    private function fallbackPDFProcessing($filePath, $originalName, $outputDir): void
+    private function fallbackPDFProcessing($filePath, $originalName, $outputDir, bool $isImageOnlyPdf = false): void
     {
         $baseName = pathinfo($originalName, PATHINFO_FILENAME);
         $fallbackFileName = $baseName . '_original.pdf';
@@ -366,21 +415,40 @@ class ProcessOrderLabelImport implements ShouldQueue
                         \Log::info("Fallback processing: $pageNumber / $pageCount pages completed");
                     }
 
+                    $text = '';
                     try {
                         $text = (string) $page->getText();
                     } catch (\Exception $e) {
-                         $text = 'Text extraction failed';
+                        \Log::warning("Fallback page $pageNumber text extraction failed: " . $e->getMessage());
                     }
 
                     $orderId = $this->extractOrderId($text);
+                    $ocr = null;
+                    $this->logPageTextExtraction($pageNumber, $orderId, $text, $ocr, 'fallbackPDFProcessing');
 
-                    // If we still don't have an order ID, try OCR (use a simple English default)
-                    if (!$orderId) {
+                    // If the page has no extracted text or the whole PDF was image-only, perform OCR before order ID extraction
+                    if (trim($text) === '' || $isImageOnlyPdf) {
+                        try {
+                            $ocr = $this->ocrPageText($filePath, $pageNumber, 'eng');
+                            if ($ocr) {
+                                $text = trim($ocr);
+                                $orderId = $this->extractOrderId($text);
+                                \Log::info("Fallback OCR used for page $pageNumber in image-only PDF");
+                                $this->logPageTextExtraction($pageNumber, $orderId, '', $ocr, 'fallbackPDFProcessing-ocr');
+                            }
+                        } catch (\Exception $e) {
+                            \Log::warning("Fallback OCR failed for page $pageNumber: " . $e->getMessage());
+                        }
+                    }
+
+                    // If we still don't have an order ID, attempt OCR again only if original text existed and OCR wasn't used yet
+                    if (!$orderId && trim($text) !== '' && !$isImageOnlyPdf) {
                         try {
                             $ocr = $this->ocrPageText($filePath, $pageNumber, 'eng');
                             if ($ocr) {
                                 $text .= "\n" . $ocr;
                                 $orderId = $this->extractOrderId($text);
+                                $this->logPageTextExtraction($pageNumber, $orderId, $text, $ocr, 'fallbackPDFProcessing-ocr2');
                             }
                         } catch (\Exception $e) {
                             \Log::warning("Fallback OCR failed for page $pageNumber: " . $e->getMessage());
@@ -484,14 +552,14 @@ class ProcessOrderLabelImport implements ShouldQueue
             $threePlName = $threePl ? strtolower($threePl->name) : null;
         }
 
-        // First, try to extract from filename for image-based PDFs
+        // Preserve filename extraction as a fallback only.
+        // When the PDF contains text, prefer the text-extracted ID first.
         $orderIdFromFilename = $this->extractOrderIdFromFilename($this->originalName, $threePlName);
-        if ($orderIdFromFilename) {
-            \Log::info("Order ID extracted from filename: $orderIdFromFilename");
-            return $orderIdFromFilename;
-        }
 
-        // If filename extraction fails, try text extraction
+        // If filename is a numeric fallback and text extraction fails, use it.
+        // This avoids incorrect IDs when split pages are already named after an old code.
+
+        // Text extraction
         // SHOPEE format: Order ID like "260101T6XF69GN" (alphanumeric, usually 14 chars)
         if ($threePlName && str_contains($threePlName, 'shopee')) {
             // Pre-normalize the OCR text: replace uppercase 'O' with '0' before pattern matching.
@@ -593,40 +661,85 @@ class ProcessOrderLabelImport implements ShouldQueue
             }
         }
 
-        // TIKTOK or default format: Numeric Order ID
-        // 1. PRIORITY: TT Order ID or Order Id with long numeric value (18+ digits)
-        // Matches: "TT Order ID : 582108769742652773" or "TT Order ID ：582107960589780854" (with full-width colon)
-        // Also matches: "Order Id : 582107959496574940"
+        // TIKTOK format: only capture explicit TikTok Order ID labels
+        if ($threePlName && str_contains($threePlName, 'tiktok')) {
+            if ($tikTokOrderId = $this->extractTikTokOrderId($text)) {
+                return $tikTokOrderId;
+            }
+
+            if ($orderIdFromFilename) {
+                \Log::info("TikTok order ID extracted from filename fallback: $orderIdFromFilename");
+                return $orderIdFromFilename;
+            }
+
+            return null;
+        }
+
+        // Generic format: Numeric Order ID or long digits
         if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\s：\.]*\s*(\d{15,})/iu', $text, $matches)) {
             return $matches[1];
         }
 
-        // 1.5. Handle OCR errors where digits might be separated by spaces
-        // Remove spaces between digits to reconstruct long numbers
         $textNoSpaces = preg_replace('/(\d)\s+(\d)/', '$1$2', $text);
         if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\s：\.]*\s*(\d{15,})/iu', $textNoSpaces, $matches)) {
             return $matches[1];
         }
 
-        // 2. Fallback: Very long number sequence (15+ digits) usually found at bottom of labels
         if (preg_match('/\b(\d{15,})\b/', $text, $matches)) {
             return $matches[1];
         }
 
-        // 2.5. Fallback with space removal
         if (preg_match('/\b(\d{15,})\b/', $textNoSpaces, $matches)) {
             return $matches[1];
         }
 
-        // 3. Generic Order patterns with shorter numbers (phone numbers, etc.)
-        // Matches: "Order No 123", "Order #123", "Order Number: 123"
         if (preg_match('/Order\s*(?:No|#|Number)\s*[:\.]?\s*(\d{8,})/i', $text, $matches)) {
             return $matches[1];
         }
 
-        // 4. Loose match for text that might be linearized weirdly
         if (preg_match('/Order\s*(?:Id|No|#)?\s*.{0,50}?\s*(\d{10,})/is', $text, $matches)) {
              return $matches[1];
+        }
+
+        if ($orderIdFromFilename) {
+            \Log::info("Order ID extracted from filename fallback: $orderIdFromFilename");
+            return $orderIdFromFilename;
+        }
+
+        return null;
+    }
+
+    private function extractTikTokOrderId(string $text): ?string
+    {
+        $normalized = preg_replace('/\s+/', ' ', trim($text));
+        $patterns = [
+            '/(?:TT\s*)?Order\s*Id\s*[:\s：\.]*([0-9]{15,25})\b/iu',
+            '/(?:TT\s*)?Order\s*No\s*[:\s：\.]*([0-9]{15,25})\b/iu',
+            '/(?:TT\s*)?Order\s*Number\s*[:\s：\.]*([0-9]{15,25})\b/iu',
+            '/(?:TikTok\s*)?Order\s*ID\s*[:\s：\.]*([0-9]{15,25})\b/iu',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $normalized, $matches)) {
+                return $matches[1];
+            }
+        }
+
+        $normalizedNoSpaces = preg_replace('/(\d)\s+(\d)/', '$1$2', $normalized);
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $normalizedNoSpaces, $matches)) {
+                return $matches[1];
+            }
+        }
+
+        // As a final TikTok fallback, capture an 18-digit number when the label contains an Order keyword.
+        if (preg_match('/\b(?:Order|Order\s*ID|Order\s*No|Order\s*Number|TT\s*Order)\b/i', $normalized)) {
+            if (preg_match('/\b([0-9]{18})\b/', $normalized, $matches)) {
+                return $matches[1];
+            }
+            if (preg_match('/\b([0-9]{18})\b/', $normalizedNoSpaces, $matches)) {
+                return $matches[1];
+            }
         }
 
         return null;
@@ -665,6 +778,30 @@ class ProcessOrderLabelImport implements ShouldQueue
         return $sanitized !== null ? $sanitized : preg_replace('/[^\x20-\x7E\r\n\t]/', '', $text);
     }
 
+    private function logPageTextExtraction(int $pageNumber, ?string $orderId, string $rawText, ?string $ocrText = null, string $source = 'page'): void
+    {
+        $preview = function (string $value): string {
+            $value = preg_replace('/\s+/', ' ', trim($value));
+            $value = str_replace('"', "'", $value);
+            return strlen($value) > 200 ? substr($value, 0, 197) . '...' : $value;
+        };
+
+        $rawPreview = $preview($rawText);
+        $message = sprintf(
+            'PDF extraction page %d source=%s orderId=%s raw="%s"',
+            $pageNumber,
+            $source,
+            $orderId ?: 'null',
+            $rawPreview
+        );
+
+        if ($ocrText !== null) {
+            $message .= sprintf(' ocr="%s"', $preview($ocrText));
+        }
+
+        \Log::info($message);
+    }
+
     /**
      * OCR a single PDF page to plain text using Ghostscript (preferred) or Imagick as fallback
      */
@@ -676,15 +813,25 @@ class ProcessOrderLabelImport implements ShouldQueue
         $gsPath = $this->getGhostscriptPath();
         $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 
+        $threePlName = null;
+        if ($this->threePlId) {
+            $threePl = \App\Models\ThreePl::find($this->threePlId);
+            $threePlName = $threePl ? strtolower($threePl->name) : null;
+        }
+        $isShopee = $threePlName && str_contains($threePlName, 'shopee');
+        $isTikTok = $threePlName && str_contains($threePlName, 'tiktok');
+        $renderDpi = $isTikTok ? 300 : 300; // higher DPI for TikTok numeric order IDs
+
         // Try Ghostscript first if available
         if ($gsPath) {
             $escapedGsPath = $isWindows ? '"' . $gsPath . '"' : escapeshellarg($gsPath);
             $escapedOutput = $isWindows ? '"' . $pngPath . '"' : escapeshellarg($pngPath);
             $escapedInput = $isWindows ? '"' . $filePath . '"' : escapeshellarg($filePath);
 
-            // Render at 300 DPI for better OCR accuracy
-            $cmd = sprintf('%s -sDEVICE=png16m -r300 -dFirstPage=%d -dLastPage=%d -dNOPAUSE -dBATCH -sOutputFile=%s %s 2>&1',
+            // Render at platform-specific DPI for better OCR accuracy
+            $cmd = sprintf('%s -sDEVICE=png16m -r%d -dFirstPage=%d -dLastPage=%d -dNOPAUSE -dBATCH -sOutputFile=%s %s 2>&1',
                 $escapedGsPath,
+                $renderDpi,
                 $pageNumber,
                 $pageNumber,
                 $escapedOutput,
@@ -707,7 +854,7 @@ class ProcessOrderLabelImport implements ShouldQueue
 
             try {
                 $im = new \Imagick();
-                $im->setResolution(300, 300);
+                $im->setResolution($renderDpi, $renderDpi);
                 // Read zero-based page index
                 $im->readImage($filePath . '[' . ($pageNumber - 1) . ']');
                 $im->setImageFormat('png32');
@@ -723,13 +870,6 @@ class ProcessOrderLabelImport implements ShouldQueue
         // Determine OCR whitelist based on platform
         // Shopee uses alphanumeric order IDs (e.g. 260227SUNRXHAY), so we must allow letters.
         // TikTok and Lazada use purely numeric IDs, so digits-only is fine there.
-        $threePlName = null;
-        if ($this->threePlId) {
-            $threePl = \App\Models\ThreePl::find($this->threePlId);
-            $threePlName = $threePl ? strtolower($threePl->name) : null;
-        }
-        $isShopee = $threePlName && str_contains($threePlName, 'shopee');
-
         $whitelist = $isShopee
             ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-:/()'   // alphanumeric + punct for Shopee
             : '0123456789';                              // digits-only for TikTok / Lazada
@@ -819,16 +959,20 @@ class ProcessOrderLabelImport implements ShouldQueue
             $orderId = $pageInfo['order_id'];
 
             // If no order ID from text, try OCR on the specific page
+            $ocr = null;
             if (!$orderId) {
                 try {
                     $ocr = $this->ocrPageText($filePath, $pageNumber, 'eng');
                     if ($ocr) {
                         $pageText .= "\n" . $ocr;
                         $orderId = $this->extractOrderId($pageText);
+                        $this->logPageTextExtraction($pageNumber, $orderId, $pageInfo['text'], $ocr, 'ghostscriptFallback');
                     }
                 } catch (\Exception $e) {
                     \Log::warning("Failed OCR for recovered page $pageNumber: " . $e->getMessage());
                 }
+            } else {
+                $this->logPageTextExtraction($pageNumber, $orderId, $pageInfo['text'], null, 'ghostscriptFallback');
             }
 
             try {
