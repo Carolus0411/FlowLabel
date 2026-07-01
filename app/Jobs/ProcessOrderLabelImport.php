@@ -675,23 +675,23 @@ class ProcessOrderLabelImport implements ShouldQueue
             return null;
         }
 
-        // BLIBLI format: Package ID like "4507152913" (numeric, 10 digits)
+        // BLIBLI format: Order ID like "12194874080" (numeric, 11 digits)
         if ($threePlName && str_contains($threePlName, 'blibli')) {
-            // Pattern 1: "Package ID" followed by numeric code
-            if (preg_match('/Package\s*ID\s*[:\.\s]*(\d{8,15})/i', $text, $matches)) {
+            // Pattern 1: "No. pesanan" followed by numeric code
+            if (preg_match('/No\.?\s*p?esanan\s*[:\.\s]*(\d{8,15})/i', $text, $matches)) {
                 return $matches[1];
             }
 
-            // Pattern 2: "Package ID" with possible spaces inside the number
-            if (preg_match('/Package\s*ID\s*[:\.\s]*([\d][\d\s]{7,14})/i', $text, $matches)) {
+            // Pattern 2: "No. pesanan" with possible OCR spaces inside the number
+            if (preg_match('/No\.?\s*p?esanan\s*[:\.\s]*([\d][\d\s]{7,14})/i', $text, $matches)) {
                 $candidate = preg_replace('/\s+/', '', $matches[1]);
                 if (preg_match('/^\d{8,15}$/', $candidate)) {
                     return $candidate;
                 }
             }
 
-            // Pattern 3: "No. pesanan" as fallback
-            if (preg_match('/No\.?\s*p?esanan\s*[:\.\s]*(\d{8,15})/i', $text, $matches)) {
+            // Pattern 3: "Package ID" as fallback
+            if (preg_match('/Package\s*ID\s*[:\.\s]*(\d{8,15})/i', $text, $matches)) {
                 return $matches[1];
             }
 
