@@ -675,6 +675,44 @@ class ProcessOrderLabelImport implements ShouldQueue
             return null;
         }
 
+        // BLIBLI format: Package ID like "4507152913" (numeric, 10 digits)
+        if ($threePlName && str_contains($threePlName, 'blibli')) {
+            // Pattern 1: "Package ID" followed by numeric code
+            if (preg_match('/Package\s*ID\s*[:\.\s]*(\d{8,15})/i', $text, $matches)) {
+                return $matches[1];
+            }
+
+            // Pattern 2: "Package ID" with possible spaces inside the number
+            if (preg_match('/Package\s*ID\s*[:\.\s]*([\d][\d\s]{7,14})/i', $text, $matches)) {
+                $candidate = preg_replace('/\s+/', '', $matches[1]);
+                if (preg_match('/^\d{8,15}$/', $candidate)) {
+                    return $candidate;
+                }
+            }
+
+            // Pattern 3: "No. pesanan" as fallback
+            if (preg_match('/No\.?\s*p?esanan\s*[:\.\s]*(\d{8,15})/i', $text, $matches)) {
+                return $matches[1];
+            }
+
+            // Pattern 4: Standalone 10-12 digit number (Blibli order ID range)
+            if (preg_match('/\b(\d{10,12})\b/', $text, $matches)) {
+                return $matches[1];
+            }
+
+            // Pattern 5: "Order" keyword with digits
+            if (preg_match('/Order\s*(?:No|#|Number|Id)?\s*[:\.\s]*(\d{10,15})/i', $text, $matches)) {
+                return $matches[1];
+            }
+
+            if ($orderIdFromFilename) {
+                \Log::info("Blibli order ID extracted from filename fallback: $orderIdFromFilename");
+                return $orderIdFromFilename;
+            }
+
+            return null;
+        }
+
         // Generic format: Numeric Order ID or long digits
         if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\s：\.]*\s*(\d{15,})/iu', $text, $matches)) {
             return $matches[1];
@@ -820,7 +858,8 @@ class ProcessOrderLabelImport implements ShouldQueue
         }
         $isShopee = $threePlName && str_contains($threePlName, 'shopee');
         $isTikTok = $threePlName && str_contains($threePlName, 'tiktok');
-        $renderDpi = $isTikTok ? 300 : 300; // higher DPI for TikTok numeric order IDs
+        $isBlibli = $threePlName && str_contains($threePlName, 'blibli');
+        $renderDpi = ($isTikTok || $isBlibli) ? 300 : 300; // higher DPI for numeric order IDs
 
         // Try Ghostscript first if available
         if ($gsPath) {
@@ -869,10 +908,10 @@ class ProcessOrderLabelImport implements ShouldQueue
 
         // Determine OCR whitelist based on platform
         // Shopee uses alphanumeric order IDs (e.g. 260227SUNRXHAY), so we must allow letters.
-        // TikTok and Lazada use purely numeric IDs, so digits-only is fine there.
+        // TikTok, Lazada, Blibli use purely numeric IDs, so digits-only is fine there.
         $whitelist = $isShopee
             ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-:/()'   // alphanumeric + punct for Shopee
-            : '0123456789';                              // digits-only for TikTok / Lazada
+            : '0123456789';                              // digits-only for TikTok / Lazada / Blibli
 
         $psm = $isShopee ? 11 : 6; // PSM 11 = sparse text (better for labels); PSM 6 = block of text
 
@@ -919,6 +958,13 @@ class ProcessOrderLabelImport implements ShouldQueue
         // SHOPEE: Look for alphanumeric order ID (YYMMDD + alphanumeric)
         if ($threePlName && str_contains($threePlName, 'shopee')) {
             if (preg_match('/(\d{6}[A-Z0-9]{8,10})/i', $baseName, $matches)) {
+                return $matches[1];
+            }
+        }
+
+        // BLIBLI: Look for 10-12 digit numeric order ID in filename
+        if ($threePlName && str_contains($threePlName, 'blibli')) {
+            if (preg_match('/(\d{10,12})/', $baseName, $matches)) {
                 return $matches[1];
             }
         }
