@@ -713,29 +713,19 @@ class ProcessOrderLabelImport implements ShouldQueue
             return null;
         }
 
-        // WEBSTORE format: Connote number like "CSS5401184354945" (prefix letters + digits)
+        // WEBSTORE format: Order ID like "THNTSE001" (alphanumeric, short)
         if ($threePlName && str_contains($threePlName, 'webstore')) {
-            // Pattern 1: "Nomor Connote" or "Connote" followed by alphanumeric code
-            if (preg_match('/Connote\s*[:\.\s]*([A-Z]{2,4}\d{10,16})/i', $text, $matches)) {
+            // Pattern 1: "Order ID" or "Order Id" followed by alphanumeric code
+            if (preg_match('/Order\s*Id?\s*[:\.\s]*([A-Z0-9]{5,15})/i', $text, $matches)) {
                 return strtoupper(trim($matches[1]));
             }
 
-            // Pattern 2: "Nomor Connote" with possible OCR spaces
-            if (preg_match('/Connote\s*[:\.\s]*([A-Z]{2,4}[\d\s]{10,20})/i', $text, $matches)) {
+            // Pattern 2: "Order ID" with possible OCR spaces inside the code
+            if (preg_match('/Order\s*Id?\s*[:\.\s]*([A-Z0-9][A-Z0-9\s]{4,14})/i', $text, $matches)) {
                 $candidate = strtoupper(preg_replace('/\s+/', '', $matches[1]));
-                if (preg_match('/^[A-Z]{2,4}\d{10,16}$/', $candidate)) {
+                if (preg_match('/^[A-Z0-9]{5,15}$/', $candidate)) {
                     return $candidate;
                 }
-            }
-
-            // Pattern 3: Standalone prefix letters + digits (like CSS5401184354945)
-            if (preg_match('/\b([A-Z]{3}\d{13})\b/i', $text, $matches)) {
-                return strtoupper($matches[1]);
-            }
-
-            // Pattern 4: Any prefix letters (2-4) followed by 10-16 digits
-            if (preg_match('/\b([A-Z]{2,4}\d{10,16})\b/i', $text, $matches)) {
-                return strtoupper($matches[1]);
             }
 
             if ($orderIdFromFilename) {
@@ -1003,9 +993,9 @@ class ProcessOrderLabelImport implements ShouldQueue
             }
         }
 
-        // WEBSTORE: Look for prefix letters + digits (e.g. CSS5401184354945)
+        // WEBSTORE: Look for alphanumeric Order ID (e.g. THNTSE001)
         if ($threePlName && str_contains($threePlName, 'webstore')) {
-            if (preg_match('/([A-Z]{2,4}\d{10,16})/i', $baseName, $matches)) {
+            if (preg_match('/([A-Z0-9]{5,15})/i', $baseName, $matches)) {
                 return strtoupper($matches[1]);
             }
         }
