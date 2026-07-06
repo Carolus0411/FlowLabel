@@ -22,6 +22,7 @@ class ThreePlSeeder extends Seeder
             ['id' => 4, 'name' => 'Tokopedia', 'code' => 'TPD', 'created_at' => $now, 'updated_at' => $now],
             ['id' => 5, 'name' => 'Bukalapak', 'code' => 'BKL', 'created_at' => $now, 'updated_at' => $now],
             ['id' => 6, 'name' => 'Blibli', 'code' => 'BLB', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => 7, 'name' => 'Webstore', 'code' => 'WBS', 'created_at' => $now, 'updated_at' => $now],
         ];
 
         foreach ($platforms as $platform) {
@@ -38,5 +39,6 @@ class ThreePlSeeder extends Seeder
         $this->command->info('  - Tokopedia (ID: 4)');
         $this->command->info('  - Bukalapak (ID: 5)');
         $this->command->info('  - Blibli (ID: 6)');
+        $this->command->info('  - Webstore (ID: 7)');
     }
 }

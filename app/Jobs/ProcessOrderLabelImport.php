@@ -713,6 +713,39 @@ class ProcessOrderLabelImport implements ShouldQueue
             return null;
         }
 
+        // WEBSTORE format: Connote number like "CSS5401184354945" (prefix letters + digits)
+        if ($threePlName && str_contains($threePlName, 'webstore')) {
+            // Pattern 1: "Nomor Connote" or "Connote" followed by alphanumeric code
+            if (preg_match('/Connote\s*[:\.\s]*([A-Z]{2,4}\d{10,16})/i', $text, $matches)) {
+                return strtoupper(trim($matches[1]));
+            }
+
+            // Pattern 2: "Nomor Connote" with possible OCR spaces
+            if (preg_match('/Connote\s*[:\.\s]*([A-Z]{2,4}[\d\s]{10,20})/i', $text, $matches)) {
+                $candidate = strtoupper(preg_replace('/\s+/', '', $matches[1]));
+                if (preg_match('/^[A-Z]{2,4}\d{10,16}$/', $candidate)) {
+                    return $candidate;
+                }
+            }
+
+            // Pattern 3: Standalone prefix letters + digits (like CSS5401184354945)
+            if (preg_match('/\b([A-Z]{3}\d{13})\b/i', $text, $matches)) {
+                return strtoupper($matches[1]);
+            }
+
+            // Pattern 4: Any prefix letters (2-4) followed by 10-16 digits
+            if (preg_match('/\b([A-Z]{2,4}\d{10,16})\b/i', $text, $matches)) {
+                return strtoupper($matches[1]);
+            }
+
+            if ($orderIdFromFilename) {
+                \Log::info("Webstore order ID extracted from filename fallback: $orderIdFromFilename");
+                return $orderIdFromFilename;
+            }
+
+            return null;
+        }
+
         // Generic format: Numeric Order ID or long digits
         if (preg_match('/(?:TT\s*)?Order\s*Id\s*[:\s：\.]*\s*(\d{15,})/iu', $text, $matches)) {
             return $matches[1];
@@ -859,6 +892,7 @@ class ProcessOrderLabelImport implements ShouldQueue
         $isShopee = $threePlName && str_contains($threePlName, 'shopee');
         $isTikTok = $threePlName && str_contains($threePlName, 'tiktok');
         $isBlibli = $threePlName && str_contains($threePlName, 'blibli');
+        $isWebstore = $threePlName && str_contains($threePlName, 'webstore');
         $renderDpi = ($isTikTok || $isBlibli) ? 300 : 300; // higher DPI for numeric order IDs
 
         // Try Ghostscript first if available
@@ -909,11 +943,11 @@ class ProcessOrderLabelImport implements ShouldQueue
         // Determine OCR whitelist based on platform
         // Shopee uses alphanumeric order IDs (e.g. 260227SUNRXHAY), so we must allow letters.
         // TikTok, Lazada, Blibli use purely numeric IDs, so digits-only is fine there.
-        $whitelist = $isShopee
-            ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-:/()'   // alphanumeric + punct for Shopee
+        $whitelist = ($isShopee || $isWebstore)
+            ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-:/()'   // alphanumeric + punct for Shopee / Webstore
             : '0123456789';                              // digits-only for TikTok / Lazada / Blibli
 
-        $psm = $isShopee ? 11 : 6; // PSM 11 = sparse text (better for labels); PSM 6 = block of text
+        $psm = ($isShopee || $isWebstore) ? 11 : 6; // PSM 11 = sparse text (better for labels); PSM 6 = block of text
 
         // Run tesseract via PHP wrapper
         try {
@@ -966,6 +1000,13 @@ class ProcessOrderLabelImport implements ShouldQueue
         if ($threePlName && str_contains($threePlName, 'blibli')) {
             if (preg_match('/(\d{10,12})/', $baseName, $matches)) {
                 return $matches[1];
+            }
+        }
+
+        // WEBSTORE: Look for prefix letters + digits (e.g. CSS5401184354945)
+        if ($threePlName && str_contains($threePlName, 'webstore')) {
+            if (preg_match('/([A-Z]{2,4}\d{10,16})/i', $baseName, $matches)) {
+                return strtoupper($matches[1]);
             }
         }
 

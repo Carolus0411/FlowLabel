@@ -284,7 +284,7 @@ new class extends Component {
                 $pdfUrl = '';
                 if ($orderLabel->file_path) {
                     $pdfUrl = route('print-label.public-download', [
-                        'path' => urlencode($orderLabel->file_path),
+                        'path' => $orderLabel->file_path,
                         'page' => $orderLabel->page_number,
                         'label_id' => $orderLabel->id
                     ]);
@@ -435,7 +435,7 @@ new class extends Component {
                 <div class="flex gap-1">
                     {{-- Always show Download button --}}
                     <a href="{{ route('print-label.download', [
-                        'path' => urlencode($orderLabel->file_path),
+                        'path' => $orderLabel->file_path,
                         'page' => $orderLabel->page_number,
                         'label_id' => $orderLabel->id
                     ]) }}"

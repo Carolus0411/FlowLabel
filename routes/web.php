@@ -453,3 +453,4 @@ Route::prefix('cp')->middleware(['auth'])->group(function () {
         return redirect('/');
     })->name('users.logout');
 });
+

@@ -96,7 +96,7 @@ new class extends Component {
         </x-card>
     @else
         <x-card>
-            <x-form wire:submit="save">
+            <x-form wire:submit="save" enctype="multipart/form-data">
 
                 <div class="mb-4 p-4 bg-blue-50 dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-gray-700">
                     <h3 class="font-semibold text-blue-800 mb-2">PDF Import Instructions:</h3>
@@ -119,11 +119,10 @@ new class extends Component {
                     searchable />
 
                 @if($three_pl_id)
-                    <x-file wire:model="file" label="PDF File"
-                           hint="Select PDF file to split (max 100MB)"
-                           accept=".pdf"
-                           wire:target="save"
-                           wire:loading.attr="disabled" />
+            <x-file wire:model="file" label="PDF File"
+                   hint="Select PDF file to split (max 100MB)"
+                   accept=".pdf"
+                   wire:loading.attr="disabled" />
                 @endif
 
                 <x-slot:actions>

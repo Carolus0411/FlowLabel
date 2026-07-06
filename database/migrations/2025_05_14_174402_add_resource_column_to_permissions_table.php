@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('permissions', function (Blueprint $table) {
+        Schema::table(config('permission.table_names.permissions', 'permissions'), function (Blueprint $table) {
             $table->string('resource')->nullable()->index();
         });
     }
@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('permissions', function (Blueprint $table) {
+        Schema::table(config('permission.table_names.permissions', 'permissions'), function (Blueprint $table) {
             $table->dropColumn(['resource']);
         });
     }

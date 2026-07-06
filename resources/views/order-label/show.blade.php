@@ -51,7 +51,7 @@
                                 <div>
                                     <label class="text-sm font-medium text-gray-600">Download</label>
                                     <p>
-                                        <a href="{{ route('order-label.download', ['path' => urlencode($orderLabel->file_path)]) }}"
+                                        <a href="{{ route('order-label.download', ['path' => $orderLabel->file_path]) }}"
                                            class="btn btn-primary btn-sm">
                                             <x-icon name="o-arrow-down-tray" class="w-4 h-4 mr-1" />
                                             Download PDF
@@ -82,7 +82,7 @@
                 <x-slot:actions>
                     <x-button label="Back to List" link="{{ route('order-label.index') }}" icon="o-arrow-left" />
                     @if($orderLabel->file_path)
-                        <a href="{{ route('order-label.download', ['path' => urlencode($orderLabel->file_path)]) }}"
+                        <a href="{{ route('order-label.download', ['path' => $orderLabel->file_path]) }}"
                            class="btn btn-primary">
                             <x-icon name="o-arrow-down-tray" class="w-4 h-4 mr-1" />
                             Download PDF
