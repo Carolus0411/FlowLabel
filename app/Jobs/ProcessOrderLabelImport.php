@@ -677,6 +677,12 @@ class ProcessOrderLabelImport implements ShouldQueue
 
         // BLIBLI format: Order ID like "12194874080" (numeric, 11 digits)
         if ($threePlName && str_contains($threePlName, 'blibli')) {
+            // Pattern 0: digits before "No. pesanan" — PDF text extraction sometimes places
+            // the order number before the label (e.g. "12195899064No. pesanan:")
+            if (preg_match('/(\d{8,15})\s*No\.?\s*p?esanan/i', $text, $matches)) {
+                return $matches[1];
+            }
+
             // Pattern 1: "No. pesanan" followed by numeric code
             if (preg_match('/No\.?\s*p?esanan\s*[:\.\s]*(\d{8,15})/i', $text, $matches)) {
                 return $matches[1];
